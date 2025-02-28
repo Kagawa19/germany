@@ -20,9 +20,6 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Ensure psycopg2-binary installs correctly
-RUN apt-get install -y libpq-dev
-
 # Upgrade pip and install basic tools
 RUN pip install --upgrade pip setuptools wheel
 
@@ -38,5 +35,5 @@ RUN python -m spacy download en_core_web_md
 # Copy the application code
 COPY . .
 
-# Default command
-CMD ["python", "app.py"]
+# Default command to run the application
+CMD ["python", "main.py"]

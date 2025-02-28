@@ -1563,3 +1563,8 @@ Government ministries: Bundesministerium für w...' (limit: 3 results)
 2025-02-28 22:22:50,278 - __main__ - INFO - Loaded data with 13 rows for viewing
 2025-02-28 22:22:50,288 - __main__ - INFO - Displaying filtered data with 13 rows
 2025-02-28 22:22:50,290 - __main__ - INFO - Page rendering completed
+2025-02-28 22:26:31,945 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 22:26:31,947 - __main__ - INFO - Application started
+2025-02-28 22:26:31,955 - __main__ - INFO - User selected app mode: Home
+2025-02-28 22:26:31,958 - __main__ - INFO - Rendering Home page
+2025-02-28 22:26:31,967 - __main__ - INFO - Page rendering completed
