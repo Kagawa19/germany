@@ -11,7 +11,7 @@ streamlit==1.30.0
 
 # Database
 sqlalchemy==2.0.31
-psycopg2-binary==2.9.6
+psycopg2
 duckdb==0.8.1
 
 # ML & Analysis
@@ -44,6 +44,8 @@ pydantic==2.10.0
 beautifulsoup4==4.12.3
 debugpy==1.8.0
 pyjwt==2.7.0
+psycopg2-binary==2.9.9  # Use a newer version
+
 
 # Testing
 pytest==7.4.0
