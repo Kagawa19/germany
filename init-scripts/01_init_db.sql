@@ -1,4 +1,4 @@
--- Create the table with the specified columns
+-- Create the content_data table with the specified columns
 CREATE TABLE IF NOT EXISTS content_data (
     id SERIAL PRIMARY KEY,
     link VARCHAR(255) NOT NULL,
@@ -11,24 +11,27 @@ CREATE TABLE IF NOT EXISTS content_data (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes for faster queries
+-- Create indexes for faster queries on content_data
 CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);
 CREATE INDEX IF NOT EXISTS idx_content_data_theme ON content_data (theme);
 CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization);
 
--- Insert some sample data
-INSERT INTO content_data (link, summary, full_content, information, theme, organization)
-VALUES 
-    ('https://example.com/article1', 
-     'Example article summary', 
-     'This is the full content of the article. It contains detailed information about the topic.', 
-     'Additional information about the article', 
-     'Technology', 
-     'Example Org'),
-     
-    ('https://example.com/article2', 
-     'Another example article', 
-     'Full content for the second article with more detailed information.', 
-     'More metadata about this article', 
-     'Science', 
-     'Research Institute');
+-- Create the benefits table
+CREATE TABLE IF NOT EXISTS benefits (
+    id SERIAL PRIMARY KEY,
+    links TEXT[], -- Array to store multiple links
+    benefits_to_germany TEXT,
+    insights TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance on benefits
+CREATE INDEX IF NOT EXISTS idx_benefits_links ON benefits USING GIN(links);
+
+-- Create a relationship table (for many-to-many relationships)
+CREATE TABLE IF NOT EXISTS content_benefits (
+    content_id INTEGER REFERENCES content_data(id) ON DELETE CASCADE,
+    benefit_id INTEGER REFERENCES benefits(id) ON DELETE CASCADE,
+    PRIMARY KEY (content_id, benefit_id)
+);

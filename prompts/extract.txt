@@ -1,0 +1,6 @@
+Find web pages that involve [General Organisation] OR [Institutions] AND the [TOPICS]
+Search query:
+
+("german development cooperation" OR "germany development cooperation" OR "german technical cooperation" OR "germany technical cooperation" OR "German international cooperations" OR "germany international cooperation" OR "german international development cooperation" OR "germany international development cooperation" OR "GIZ" OR "BMZ" OR "KfW" OR "Bundesministerium für wirtschaftliche Zusammenarbeit" OR "Deutsche Gesellschaft für Internationale Zusammenarbeit" OR "German Federal Ministry for Economic Cooperation and Development" OR "Kreditanstalt für Wiederaufbau" OR "Credit Institute for Reconstruction" OR "German Development Bank")
+AND
+("promotion of indigenous peoples" OR "promotion of protected areas" OR "national parks" OR "conservation areas" OR "forest restoration" OR "land restoration" OR "marine protection" OR "marine reserves" OR "marine protected areas" OR "marine conservation" OR "ecosystem services" OR "Amazon tropical forest" OR "Congo Basin tropical forest" OR "sustainable agriculture" OR "agroforestry" OR "sustainable forestry" OR "sustainable logging" OR "sustainable fishing" OR "sustainable fisheries" OR "sustainable fisheries management" OR "sustainable aquaculture" OR "aquaculture and biodiversity conservation")

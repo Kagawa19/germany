@@ -1,0 +1,6 @@
+Using the search results from the Google Serper API, extract insights on:
+
+The benefits of Germany’s support for GERMANY in terms of job creation and value creation within Germany.
+How Germany's international cooperation contributes to security of supply for Germany.
+Provide quantitative data where possible (e.g., number of jobs created, trade volume, investment figures).
+Include specific examples of projects, partnerships, or case studies demonstrating these benefits.
