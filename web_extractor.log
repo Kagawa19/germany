@@ -94,3 +94,308 @@ NameError: name 'GoogleSerperAPIWrapper' is not defined
 2025-02-28 20:24:19,129 - __main__ - INFO - Fetching data from database
 2025-02-28 20:24:19,141 - __main__ - INFO - Fetched 0 rows from database
 2025-02-28 20:24:19,149 - __main__ - INFO - Page rendering completed
+2025-02-28 20:31:33,089 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:31:33,091 - __main__ - INFO - Application started
+2025-02-28 20:31:33,098 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:31:33,099 - __main__ - INFO - Rendering Home page
+2025-02-28 20:31:33,106 - __main__ - INFO - Page rendering completed
+2025-02-28 20:31:35,384 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:31:35,386 - __main__ - INFO - Application started
+2025-02-28 20:31:35,394 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:31:35,395 - __main__ - INFO - Rendering Home page
+2025-02-28 20:31:35,402 - __main__ - INFO - User clicked Process Data button from Home page
+2025-02-28 20:31:35,407 - __main__ - INFO - Starting data processing
+2025-02-28 20:31:40,459 - __main__ - INFO - Data processing completed successfully
+2025-02-28 20:31:40,462 - __main__ - INFO - Fetching data from database
+2025-02-28 20:31:40,472 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:31:40,478 - __main__ - INFO - Page rendering completed
+2025-02-28 20:33:10,748 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:33:10,749 - __main__ - INFO - Application started
+2025-02-28 20:33:10,755 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:33:10,756 - __main__ - INFO - Rendering Home page
+2025-02-28 20:33:10,761 - __main__ - INFO - User clicked Process Data button from Home page
+2025-02-28 20:33:10,763 - __main__ - INFO - Starting data processing
+2025-02-28 20:33:15,820 - __main__ - INFO - Data processing completed successfully
+2025-02-28 20:33:15,825 - __main__ - INFO - Fetching data from database
+2025-02-28 20:33:15,834 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:33:15,841 - __main__ - INFO - Page rendering completed
+2025-02-28 20:38:48,537 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:38:48,539 - __main__ - INFO - Application started
+2025-02-28 20:38:48,546 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:38:48,553 - __main__ - INFO - Rendering Home page
+2025-02-28 20:38:48,557 - __main__ - INFO - User clicked Process Data button from Home page
+2025-02-28 20:38:48,557 - __main__ - INFO - Starting data processing
+2025-02-28 20:38:53,619 - __main__ - INFO - Data processing completed successfully
+2025-02-28 20:38:53,621 - __main__ - INFO - Fetching data from database
+2025-02-28 20:38:53,633 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:38:53,642 - __main__ - INFO - Page rendering completed
+2025-02-28 20:39:09,152 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:39:09,155 - __main__ - INFO - Application started
+2025-02-28 20:39:09,162 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:39:09,164 - __main__ - INFO - Rendering Home page
+2025-02-28 20:39:09,171 - __main__ - INFO - User clicked Run Web Extraction button from Home page
+2025-02-28 20:39:09,178 - __main__ - INFO - Starting web extraction process
+2025-02-28 20:39:09,182 - __main__ - INFO - Initializing WebExtractor
+2025-02-28 20:39:09,183 - WebExtractor - INFO - Initializing WebExtractor
+2025-02-28 20:39:09,209 - WebExtractor - INFO - Successfully loaded SERPER_API_KEY
+2025-02-28 20:39:09,209 - WebExtractor - INFO - Default prompt path set to: prompts/extract.txt
+2025-02-28 20:39:09,211 - WebExtractor - INFO - WebExtractor initialized successfully
+2025-02-28 20:39:09,214 - __main__ - INFO - Running web extractor
+2025-02-28 20:39:09,219 - WebExtractor - INFO - Running web extractor
+2025-02-28 20:39:09,222 - WebExtractor - INFO - Starting web content extraction process
+2025-02-28 20:39:09,225 - WebExtractor - INFO - Reading prompt file: prompts/extract.txt
+2025-02-28 20:39:09,227 - WebExtractor - INFO - Successfully read prompt file (1097 chars)
+2025-02-28 20:39:09,235 - WebExtractor - INFO - Prompt content length: 1097 chars
+2025-02-28 20:39:09,236 - WebExtractor - INFO - Extracting search terms from prompt content
+2025-02-28 20:39:09,236 - WebExtractor - INFO - Found organizations section in prompt
+2025-02-28 20:39:09,237 - WebExtractor - INFO - Added organization: German development cooperation agencies: GIZ
+2025-02-28 20:39:09,244 - WebExtractor - INFO - Added organization: BMZ
+2025-02-28 20:39:09,247 - WebExtractor - INFO - Added organization: KfW
+Government ministries: Bundesministerium für wirtschaftliche Zusammenarbeit
+2025-02-28 20:39:09,249 - WebExtractor - INFO - Added organization: German Federal Ministry for Economic Cooperation and Development
+Other development banks: Kreditanstalt für Wiederaufbau (KfW)
+2025-02-28 20:39:09,251 - WebExtractor - INFO - Added organization: German Development Bank
+2025-02-28 20:39:09,254 - WebExtractor - INFO - Extracting focus areas
+2025-02-28 20:39:09,255 - WebExtractor - INFO - Extracted 0 main topics, 5 organizations, and 0 focus areas
+2025-02-28 20:39:09,257 - WebExtractor - INFO - organizations: German development cooperation agencies: GIZ, BMZ, KfW
+Government ministries: Bundesministerium für wirtschaftliche Zusammenarbeit, German Federal Ministry for Economic Cooperation and Development
+Other development banks: Kreditanstalt für Wiederaufbau (KfW), German Development Bank
+2025-02-28 20:39:09,259 - WebExtractor - INFO - Generating search queries
+2025-02-28 20:39:09,261 - WebExtractor - INFO - Main topic for queries: 
+2025-02-28 20:39:09,264 - WebExtractor - INFO - Added organization query: German development cooperation agencies: GIZ environmental sustainability cooperation
+2025-02-28 20:39:09,266 - WebExtractor - INFO - Added organization query: BMZ environmental sustainability cooperation
+2025-02-28 20:39:09,268 - WebExtractor - INFO - Added organization query: KfW
+Government ministries: Bundesministerium für wirtschaftliche Zusammenarbeit environmental sustainability cooperation
+2025-02-28 20:39:09,270 - WebExtractor - INFO - Added organization query: German Federal Ministry for Economic Cooperation and Development
+Other development banks: Kreditanstalt für Wiederaufbau (KfW) environmental sustainability cooperation
+2025-02-28 20:39:09,272 - WebExtractor - INFO - Added organization query: German Development Bank environmental sustainability cooperation
+2025-02-28 20:39:09,274 - WebExtractor - INFO - Generated 5 search queries: 0 focus-based, 5 organization-based, 0 combined
+2025-02-28 20:39:09,276 - WebExtractor - INFO - Processing 5 queries out of 5 generated
+2025-02-28 20:39:09,282 - WebExtractor - INFO - Processing query 1/5: 'German development cooperation agencies: GIZ envir...'
+2025-02-28 20:39:09,285 - WebExtractor - INFO - Searching web for: 'German development cooperation agencies: GIZ envir...' (limit: 3 results)
+2025-02-28 20:39:09,287 - WebExtractor - INFO - Initializing GoogleSerperAPIWrapper with API key
+2025-02-28 20:39:09,290 - WebExtractor - INFO - Sending search request to Serper API
+2025-02-28 20:39:10,325 - WebExtractor - INFO - Received 3 results in 1.04 seconds
+2025-02-28 20:39:10,326 - WebExtractor - INFO - Result 1: Climate, environment, management of natural resources - giz.de - https://www.giz.de/en/ourservices/environment_and_climate_change.html
+2025-02-28 20:39:10,327 - WebExtractor - INFO - Result 2: Home - giz.de - https://www.giz.de/en/html/
+2025-02-28 20:39:10,327 - WebExtractor - INFO - Result 3: Corporate Sustainability - giz.de - https://www.giz.de/en/aboutgiz/corporate_responsibility.html
+2025-02-28 20:39:10,329 - WebExtractor - INFO - Query 1 returned 3 results
+2025-02-28 20:39:10,330 - WebExtractor - INFO - Processing result 1/3 from query 1: https://www.giz.de/en/ourservices/environment_and_climate_change.html
+2025-02-28 20:39:10,331 - WebExtractor - INFO - URL contains relevant terms: giz
+2025-02-28 20:39:10,332 - WebExtractor - INFO - Scraping webpage: https://www.giz.de/en/ourservices/environment_and_climate_change.html
+2025-02-28 20:39:10,332 - WebExtractor - INFO - Sending HTTP request to https://www.giz.de/en/ourservices/environment_and_climate_change.html
+2025-02-28 20:39:11,044 - WebExtractor - INFO - Received response in 0.71 seconds. Status code: 200
+2025-02-28 20:39:11,045 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:11,108 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:11,125 - WebExtractor - INFO - Removed 15 elements from DOM
+2025-02-28 20:39:11,128 - WebExtractor - INFO - Successfully scraped 5298 chars from https://www.giz.de/en/ourservices/environment_and_climate_change.html in 0.80 seconds (cleaned from 6232 to 5298 chars)
+2025-02-28 20:39:11,130 - WebExtractor - INFO - Added result 1: Climate, environment, management of natural resources - giz.de (5298 chars)
+2025-02-28 20:39:11,132 - WebExtractor - INFO - Processing result 2/3 from query 1: https://www.giz.de/en/html/
+2025-02-28 20:39:11,133 - WebExtractor - INFO - URL contains relevant terms: giz
+2025-02-28 20:39:11,145 - WebExtractor - INFO - Scraping webpage: https://www.giz.de/en/html/
+2025-02-28 20:39:11,146 - WebExtractor - INFO - Sending HTTP request to https://www.giz.de/en/html/
+2025-02-28 20:39:11,962 - WebExtractor - INFO - Received response in 0.82 seconds. Status code: 200
+2025-02-28 20:39:11,963 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:12,047 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:12,079 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:12,086 - WebExtractor - INFO - Successfully scraped 7999 chars from https://www.giz.de/en/html/ in 0.94 seconds (cleaned from 10477 to 7999 chars)
+2025-02-28 20:39:12,090 - WebExtractor - INFO - Added result 2: Home - giz.de (7999 chars)
+2025-02-28 20:39:12,095 - WebExtractor - INFO - Processing result 3/3 from query 1: https://www.giz.de/en/aboutgiz/corporate_responsibility.html
+2025-02-28 20:39:12,098 - WebExtractor - INFO - URL contains relevant terms: giz
+2025-02-28 20:39:12,107 - WebExtractor - INFO - Scraping webpage: https://www.giz.de/en/aboutgiz/corporate_responsibility.html
+2025-02-28 20:39:12,109 - WebExtractor - INFO - Sending HTTP request to https://www.giz.de/en/aboutgiz/corporate_responsibility.html
+2025-02-28 20:39:12,969 - WebExtractor - INFO - Received response in 0.86 seconds. Status code: 200
+2025-02-28 20:39:12,971 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:13,004 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:13,018 - WebExtractor - INFO - Removed 14 elements from DOM
+2025-02-28 20:39:13,020 - WebExtractor - INFO - Successfully scraped 2944 chars from https://www.giz.de/en/aboutgiz/corporate_responsibility.html in 0.91 seconds (cleaned from 3639 to 2944 chars)
+2025-02-28 20:39:13,022 - WebExtractor - INFO - Added result 3: Corporate Sustainability - giz.de (2944 chars)
+2025-02-28 20:39:13,025 - WebExtractor - INFO - Adding delay between queries (2 seconds)
+2025-02-28 20:39:15,025 - WebExtractor - INFO - Processing query 2/5: 'BMZ environmental sustainability cooperation'
+2025-02-28 20:39:15,028 - WebExtractor - INFO - Searching web for: 'BMZ environmental sustainability cooperation' (limit: 3 results)
+2025-02-28 20:39:15,029 - WebExtractor - INFO - Initializing GoogleSerperAPIWrapper with API key
+2025-02-28 20:39:15,030 - WebExtractor - INFO - Sending search request to Serper API
+2025-02-28 20:39:16,060 - WebExtractor - INFO - Received 3 results in 1.03 seconds
+2025-02-28 20:39:16,062 - WebExtractor - INFO - Result 1: Climate and development partnerships | BMZ - https://www.bmz.de/en/issues/climate-change-and-development/climate-and-development-partnerships
+2025-02-28 20:39:16,064 - WebExtractor - INFO - Result 2: Climate change and development | BMZ - https://www.bmz.de/en/issues/climate-change-and-development
+2025-02-28 20:39:16,065 - WebExtractor - INFO - Result 3: German Federal Ministry for Economic Cooperation and ... - https://www.enterprise-development.org/agency-strategies-and-coordination/german-federal-ministry-for-economic-cooperation-and-development-bmz/
+2025-02-28 20:39:16,068 - WebExtractor - INFO - Query 2 returned 3 results
+2025-02-28 20:39:16,071 - WebExtractor - INFO - Processing result 1/3 from query 2: https://www.bmz.de/en/issues/climate-change-and-development/climate-and-development-partnerships
+2025-02-28 20:39:16,077 - WebExtractor - INFO - URL from organization domain: BMZ
+2025-02-28 20:39:16,083 - WebExtractor - INFO - Scraping webpage: https://www.bmz.de/en/issues/climate-change-and-development/climate-and-development-partnerships
+2025-02-28 20:39:16,085 - WebExtractor - INFO - Sending HTTP request to https://www.bmz.de/en/issues/climate-change-and-development/climate-and-development-partnerships
+2025-02-28 20:39:17,294 - WebExtractor - INFO - Received response in 1.21 seconds. Status code: 200
+2025-02-28 20:39:17,295 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:17,390 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:17,429 - WebExtractor - INFO - Removed 37 elements from DOM
+2025-02-28 20:39:17,433 - WebExtractor - INFO - Successfully scraped 9820 chars from https://www.bmz.de/en/issues/climate-change-and-development/climate-and-development-partnerships in 1.35 seconds (cleaned from 11573 to 9820 chars)
+2025-02-28 20:39:17,435 - WebExtractor - INFO - Added result 4: Climate and development partnerships | BMZ (9820 chars)
+2025-02-28 20:39:17,438 - WebExtractor - INFO - Processing result 2/3 from query 2: https://www.bmz.de/en/issues/climate-change-and-development
+2025-02-28 20:39:17,439 - WebExtractor - INFO - URL from organization domain: BMZ
+2025-02-28 20:39:17,441 - WebExtractor - INFO - Scraping webpage: https://www.bmz.de/en/issues/climate-change-and-development
+2025-02-28 20:39:17,442 - WebExtractor - INFO - Sending HTTP request to https://www.bmz.de/en/issues/climate-change-and-development
+2025-02-28 20:39:18,620 - WebExtractor - INFO - Received response in 1.18 seconds. Status code: 200
+2025-02-28 20:39:18,623 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:18,802 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:18,869 - WebExtractor - INFO - Removed 31 elements from DOM
+2025-02-28 20:39:18,880 - WebExtractor - INFO - Successfully scraped 21089 chars from https://www.bmz.de/en/issues/climate-change-and-development in 1.44 seconds (cleaned from 25611 to 21089 chars)
+2025-02-28 20:39:18,883 - WebExtractor - INFO - Added result 5: Climate change and development | BMZ (21089 chars)
+2025-02-28 20:39:18,886 - WebExtractor - INFO - Processing result 3/3 from query 2: https://www.enterprise-development.org/agency-strategies-and-coordination/german-federal-ministry-for-economic-cooperation-and-development-bmz/
+2025-02-28 20:39:18,888 - WebExtractor - INFO - URL from organization domain: BMZ
+2025-02-28 20:39:18,889 - WebExtractor - INFO - Scraping webpage: https://www.enterprise-development.org/agency-strategies-and-coordination/german-federal-ministry-for-economic-cooperation-and-development-bmz/
+2025-02-28 20:39:18,890 - WebExtractor - INFO - Sending HTTP request to https://www.enterprise-development.org/agency-strategies-and-coordination/german-federal-ministry-for-economic-cooperation-and-development-bmz/
+2025-02-28 20:39:20,702 - WebExtractor - INFO - Received response in 1.81 seconds. Status code: 200
+2025-02-28 20:39:20,703 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:20,754 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:20,776 - WebExtractor - INFO - Removed 34 elements from DOM
+2025-02-28 20:39:20,780 - WebExtractor - INFO - Successfully scraped 11223 chars from https://www.enterprise-development.org/agency-strategies-and-coordination/german-federal-ministry-for-economic-cooperation-and-development-bmz/ in 1.89 seconds (cleaned from 11924 to 11223 chars)
+2025-02-28 20:39:20,783 - WebExtractor - INFO - Added result 6: German Federal Ministry for Economic Cooperation and ... (11223 chars)
+2025-02-28 20:39:20,784 - WebExtractor - INFO - Adding delay between queries (2 seconds)
+2025-02-28 20:39:22,789 - WebExtractor - INFO - Processing query 3/5: 'KfW
+Government ministries: Bundesministerium für w...'
+2025-02-28 20:39:22,790 - WebExtractor - INFO - Searching web for: 'KfW
+Government ministries: Bundesministerium für w...' (limit: 3 results)
+2025-02-28 20:39:22,790 - WebExtractor - INFO - Initializing GoogleSerperAPIWrapper with API key
+2025-02-28 20:39:22,791 - WebExtractor - INFO - Sending search request to Serper API
+2025-02-28 20:39:24,062 - WebExtractor - INFO - Received 3 results in 1.27 seconds
+2025-02-28 20:39:24,063 - WebExtractor - INFO - Result 1: German Federal Ministry for the Environment and KfW improve ... - https://www.kfw.de/About-KfW/Newsroom/Latest-News/Pressemitteilungen-Details_669440.html
+2025-02-28 20:39:24,063 - WebExtractor - INFO - Result 2: [PDF] Sustainability Guideline Assessment and management of ... - https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:24,066 - WebExtractor - INFO - Result 3: Federal Ministry for Economic Cooperation and Development - https://www.bmz.de/en
+2025-02-28 20:39:24,069 - WebExtractor - INFO - Query 3 returned 3 results
+2025-02-28 20:39:24,072 - WebExtractor - INFO - Processing result 1/3 from query 3: https://www.kfw.de/About-KfW/Newsroom/Latest-News/Pressemitteilungen-Details_669440.html
+2025-02-28 20:39:24,074 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:24,079 - WebExtractor - INFO - Scraping webpage: https://www.kfw.de/About-KfW/Newsroom/Latest-News/Pressemitteilungen-Details_669440.html
+2025-02-28 20:39:24,082 - WebExtractor - INFO - Sending HTTP request to https://www.kfw.de/About-KfW/Newsroom/Latest-News/Pressemitteilungen-Details_669440.html
+2025-02-28 20:39:24,706 - WebExtractor - INFO - Received response in 0.62 seconds. Status code: 200
+2025-02-28 20:39:24,708 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:24,734 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:24,747 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:24,750 - WebExtractor - INFO - Successfully scraped 4126 chars from https://www.kfw.de/About-KfW/Newsroom/Latest-News/Pressemitteilungen-Details_669440.html in 0.67 seconds (cleaned from 4524 to 4126 chars)
+2025-02-28 20:39:24,754 - WebExtractor - INFO - Added result 7: German Federal Ministry for the Environment and KfW improve ... (4126 chars)
+2025-02-28 20:39:24,760 - WebExtractor - INFO - Processing result 2/3 from query 3: https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:24,763 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:24,766 - WebExtractor - INFO - Scraping webpage: https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:24,770 - WebExtractor - INFO - Sending HTTP request to https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:26,294 - WebExtractor - INFO - Received response in 1.52 seconds. Status code: 200
+2025-02-28 20:39:26,295 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:26,524 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:26,530 - WebExtractor - INFO - Removed 0 elements from DOM
+2025-02-28 20:39:26,545 - WebExtractor - INFO - Successfully scraped 256383 chars from https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf in 1.77 seconds (cleaned from 260371 to 256383 chars)
+2025-02-28 20:39:26,548 - WebExtractor - INFO - Added result 8: [PDF] Sustainability Guideline Assessment and management of ... (256383 chars)
+2025-02-28 20:39:26,551 - WebExtractor - INFO - Processing result 3/3 from query 3: https://www.bmz.de/en
+2025-02-28 20:39:26,557 - WebExtractor - INFO - URL from organization domain: BMZ
+2025-02-28 20:39:26,561 - WebExtractor - INFO - Scraping webpage: https://www.bmz.de/en
+2025-02-28 20:39:26,561 - WebExtractor - INFO - Sending HTTP request to https://www.bmz.de/en
+2025-02-28 20:39:27,534 - WebExtractor - INFO - Received response in 0.97 seconds. Status code: 200
+2025-02-28 20:39:27,535 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:27,630 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:27,666 - WebExtractor - INFO - Removed 24 elements from DOM
+2025-02-28 20:39:27,672 - WebExtractor - INFO - Successfully scraped 8398 chars from https://www.bmz.de/en in 1.11 seconds (cleaned from 10626 to 8398 chars)
+2025-02-28 20:39:27,675 - WebExtractor - INFO - Added result 9: Federal Ministry for Economic Cooperation and Development (8398 chars)
+2025-02-28 20:39:27,679 - WebExtractor - INFO - Adding delay between queries (2 seconds)
+2025-02-28 20:39:29,683 - WebExtractor - INFO - Processing query 4/5: 'German Federal Ministry for Economic Cooperation a...'
+2025-02-28 20:39:29,684 - WebExtractor - INFO - Searching web for: 'German Federal Ministry for Economic Cooperation a...' (limit: 3 results)
+2025-02-28 20:39:29,684 - WebExtractor - INFO - Initializing GoogleSerperAPIWrapper with API key
+2025-02-28 20:39:29,685 - WebExtractor - INFO - Sending search request to Serper API
+2025-02-28 20:39:30,863 - WebExtractor - INFO - Received 3 results in 1.18 seconds
+2025-02-28 20:39:30,863 - WebExtractor - INFO - Result 1: KfW Development Bank - https://www.kfw-entwicklungsbank.de/International-financing/KfW-Entwicklungsbank/
+2025-02-28 20:39:30,864 - WebExtractor - INFO - Result 2: Promotional mandate and history | KfW - https://www.kfw.de/About-KfW/F%C3%B6rderauftrag-und-Geschichte/
+2025-02-28 20:39:30,865 - WebExtractor - INFO - Result 3: Our tasks and goals | KfW Development Bank - https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Tasks-and-goals/
+2025-02-28 20:39:30,868 - WebExtractor - INFO - Query 4 returned 3 results
+2025-02-28 20:39:30,868 - WebExtractor - INFO - Processing result 1/3 from query 4: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Entwicklungsbank/
+2025-02-28 20:39:30,871 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:30,872 - WebExtractor - INFO - Scraping webpage: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Entwicklungsbank/
+2025-02-28 20:39:30,872 - WebExtractor - INFO - Sending HTTP request to https://www.kfw-entwicklungsbank.de/International-financing/KfW-Entwicklungsbank/
+2025-02-28 20:39:31,470 - WebExtractor - INFO - Received response in 0.60 seconds. Status code: 200
+2025-02-28 20:39:31,471 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:31,521 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:31,544 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:31,549 - WebExtractor - INFO - Successfully scraped 2236 chars from https://www.kfw-entwicklungsbank.de/International-financing/KfW-Entwicklungsbank/ in 0.68 seconds (cleaned from 3628 to 2236 chars)
+2025-02-28 20:39:31,553 - WebExtractor - INFO - Added result 10: KfW Development Bank (2236 chars)
+2025-02-28 20:39:31,557 - WebExtractor - INFO - Processing result 2/3 from query 4: https://www.kfw.de/About-KfW/F%C3%B6rderauftrag-und-Geschichte/
+2025-02-28 20:39:31,559 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:31,560 - WebExtractor - INFO - Scraping webpage: https://www.kfw.de/About-KfW/F%C3%B6rderauftrag-und-Geschichte/
+2025-02-28 20:39:31,561 - WebExtractor - INFO - Sending HTTP request to https://www.kfw.de/About-KfW/F%C3%B6rderauftrag-und-Geschichte/
+2025-02-28 20:39:32,344 - WebExtractor - INFO - Received response in 0.78 seconds. Status code: 200
+2025-02-28 20:39:32,346 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:32,395 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:32,416 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:32,420 - WebExtractor - INFO - Successfully scraped 6576 chars from https://www.kfw.de/About-KfW/F%C3%B6rderauftrag-und-Geschichte/ in 0.86 seconds (cleaned from 7526 to 6576 chars)
+2025-02-28 20:39:32,424 - WebExtractor - INFO - Added result 11: Promotional mandate and history | KfW (6576 chars)
+2025-02-28 20:39:32,426 - WebExtractor - INFO - Processing result 3/3 from query 4: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Tasks-and-goals/
+2025-02-28 20:39:32,429 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:32,433 - WebExtractor - INFO - Scraping webpage: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Tasks-and-goals/
+2025-02-28 20:39:32,436 - WebExtractor - INFO - Sending HTTP request to https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Tasks-and-goals/
+2025-02-28 20:39:33,113 - WebExtractor - INFO - Received response in 0.68 seconds. Status code: 200
+2025-02-28 20:39:33,115 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:33,162 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:33,182 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:33,185 - WebExtractor - INFO - Successfully scraped 3104 chars from https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Tasks-and-goals/ in 0.75 seconds (cleaned from 4406 to 3104 chars)
+2025-02-28 20:39:33,188 - WebExtractor - INFO - Added result 12: Our tasks and goals | KfW Development Bank (3104 chars)
+2025-02-28 20:39:33,192 - WebExtractor - INFO - Adding delay between queries (2 seconds)
+2025-02-28 20:39:35,195 - WebExtractor - INFO - Processing query 5/5: 'German Development Bank environmental sustainabili...'
+2025-02-28 20:39:35,197 - WebExtractor - INFO - Searching web for: 'German Development Bank environmental sustainabili...' (limit: 3 results)
+2025-02-28 20:39:35,199 - WebExtractor - INFO - Initializing GoogleSerperAPIWrapper with API key
+2025-02-28 20:39:35,200 - WebExtractor - INFO - Sending search request to Serper API
+2025-02-28 20:39:36,409 - WebExtractor - INFO - Received 3 results in 1.21 seconds
+2025-02-28 20:39:36,410 - WebExtractor - INFO - Result 1: Environment and sustainability | KfW Development Bank - https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Topics/Environment-and-sustainability/
+2025-02-28 20:39:36,410 - WebExtractor - INFO - Result 2: The Sustainability Portal of KfW Group - https://www.kfw.de/nachhaltigkeit/About-KfW/Sustainability/
+2025-02-28 20:39:36,411 - WebExtractor - INFO - Result 3: [PDF] Sustainability Guideline Assessment and management of ... - https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:36,413 - WebExtractor - INFO - Query 5 returned 3 results
+2025-02-28 20:39:36,414 - WebExtractor - INFO - Processing result 1/3 from query 5: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Topics/Environment-and-sustainability/
+2025-02-28 20:39:36,416 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:36,417 - WebExtractor - INFO - Scraping webpage: https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Topics/Environment-and-sustainability/
+2025-02-28 20:39:36,418 - WebExtractor - INFO - Sending HTTP request to https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Topics/Environment-and-sustainability/
+2025-02-28 20:39:36,961 - WebExtractor - INFO - Received response in 0.54 seconds. Status code: 200
+2025-02-28 20:39:36,962 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:36,999 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:37,016 - WebExtractor - INFO - Removed 24 elements from DOM
+2025-02-28 20:39:37,021 - WebExtractor - INFO - Successfully scraped 6566 chars from https://www.kfw-entwicklungsbank.de/International-financing/KfW-Development-Bank/Topics/Environment-and-sustainability/ in 0.60 seconds (cleaned from 7166 to 6566 chars)
+2025-02-28 20:39:37,027 - WebExtractor - INFO - Added result 13: Environment and sustainability | KfW Development Bank (6566 chars)
+2025-02-28 20:39:37,030 - WebExtractor - INFO - Processing result 2/3 from query 5: https://www.kfw.de/nachhaltigkeit/About-KfW/Sustainability/
+2025-02-28 20:39:37,032 - WebExtractor - INFO - URL contains relevant terms: kfw
+2025-02-28 20:39:37,034 - WebExtractor - INFO - Scraping webpage: https://www.kfw.de/nachhaltigkeit/About-KfW/Sustainability/
+2025-02-28 20:39:37,035 - WebExtractor - INFO - Sending HTTP request to https://www.kfw.de/nachhaltigkeit/About-KfW/Sustainability/
+2025-02-28 20:39:37,709 - WebExtractor - INFO - Received response in 0.67 seconds. Status code: 200
+2025-02-28 20:39:37,711 - WebExtractor - INFO - Parsing HTML content
+2025-02-28 20:39:37,810 - WebExtractor - INFO - Removing script, style, and navigation elements
+2025-02-28 20:39:37,840 - WebExtractor - INFO - Removed 23 elements from DOM
+2025-02-28 20:39:37,846 - WebExtractor - INFO - Successfully scraped 3284 chars from https://www.kfw.de/nachhaltigkeit/About-KfW/Sustainability/ in 0.81 seconds (cleaned from 5268 to 3284 chars)
+2025-02-28 20:39:37,851 - WebExtractor - INFO - Added result 14: The Sustainability Portal of KfW Group (3284 chars)
+2025-02-28 20:39:37,857 - WebExtractor - INFO - Skipping already processed URL: https://www.kfw-entwicklungsbank.de/PDF/Download-Center/PDF-Dokumente-Richtlinien/Nachhaltigkeitsrichtlinie_EN.pdf
+2025-02-28 20:39:37,859 - WebExtractor - INFO - Sorting results by priority
+2025-02-28 20:39:37,863 - WebExtractor - INFO - Web content extraction completed in 28.64 seconds. Found 14 results.
+2025-02-28 20:39:37,874 - WebExtractor - INFO - Result 1: Climate and development partnerships | BMZ - HIGH PRIORITY - Content length: 9820 chars
+2025-02-28 20:39:37,879 - WebExtractor - INFO - Result 2: Climate change and development | BMZ - HIGH PRIORITY - Content length: 21089 chars
+2025-02-28 20:39:37,888 - WebExtractor - INFO - Result 3: German Federal Ministry for Economic Cooperation and ... - HIGH PRIORITY - Content length: 11223 chars
+2025-02-28 20:39:37,893 - WebExtractor - INFO - Result 4: Federal Ministry for Economic Cooperation and Development - HIGH PRIORITY - Content length: 8398 chars
+2025-02-28 20:39:37,898 - WebExtractor - INFO - Result 5: Climate, environment, management of natural resources - giz.de - Standard - Content length: 5298 chars
+2025-02-28 20:39:37,900 - WebExtractor - INFO - Result 6: Home - giz.de - Standard - Content length: 7999 chars
+2025-02-28 20:39:37,902 - WebExtractor - INFO - Result 7: Corporate Sustainability - giz.de - Standard - Content length: 2944 chars
+2025-02-28 20:39:37,909 - WebExtractor - INFO - Result 8: German Federal Ministry for the Environment and KfW improve ... - Standard - Content length: 4126 chars
+2025-02-28 20:39:37,916 - WebExtractor - INFO - Result 9: [PDF] Sustainability Guideline Assessment and management of ... - Standard - Content length: 256383 chars
+2025-02-28 20:39:37,918 - WebExtractor - INFO - Result 10: KfW Development Bank - Standard - Content length: 2236 chars
+2025-02-28 20:39:37,921 - WebExtractor - INFO - Result 11: Promotional mandate and history | KfW - Standard - Content length: 6576 chars
+2025-02-28 20:39:37,924 - WebExtractor - INFO - Result 12: Our tasks and goals | KfW Development Bank - Standard - Content length: 3104 chars
+2025-02-28 20:39:37,930 - WebExtractor - INFO - Result 13: Environment and sustainability | KfW Development Bank - Standard - Content length: 6566 chars
+2025-02-28 20:39:37,931 - WebExtractor - INFO - Result 14: The Sustainability Portal of KfW Group - Standard - Content length: 3284 chars
+2025-02-28 20:39:37,933 - WebExtractor - INFO - Web extractor completed in 28.71 seconds with 14 results
+2025-02-28 20:39:37,948 - __main__ - INFO - Web extraction successful. Found 14 results
+2025-02-28 20:39:37,971 - __main__ - ERROR - Error saving result 1: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468b04d590>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:37,986 - __main__ - ERROR - Error saving result 2: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468bf434d0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,010 - __main__ - ERROR - Error saving result 3: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468ada5b90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,018 - __main__ - ERROR - Error saving result 4: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abcf790>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,029 - __main__ - ERROR - Error saving result 5: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abe1110>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,040 - __main__ - ERROR - Error saving result 6: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abe31d0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,048 - __main__ - ERROR - Error saving result 7: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abed410>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,060 - __main__ - ERROR - Error saving result 8: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abe1d10>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,076 - __main__ - ERROR - Error saving result 9: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468ac13c50>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,083 - __main__ - ERROR - Error saving result 10: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abcfb10>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,091 - __main__ - ERROR - Error saving result 11: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468ab214d0>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,098 - __main__ - ERROR - Error saving result 12: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abede90>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,111 - __main__ - ERROR - Error saving result 13: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468b17a410>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,121 - __main__ - ERROR - Error saving result 14: HTTPConnectionPool(host='app', port=8000): Max retries exceeded with url: /content/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x72468abcc790>: Failed to establish a new connection: [Errno 111] Connection refused'))
+2025-02-28 20:39:38,124 - __main__ - INFO - Web extraction completed. Saved 0/14 items to database
+2025-02-28 20:39:38,128 - __main__ - INFO - Fetching data from database
+2025-02-28 20:39:38,137 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:39:38,145 - __main__ - INFO - Page rendering completed
