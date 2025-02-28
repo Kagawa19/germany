@@ -19,8 +19,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
-    
-RUN pip install --no-binary :all: psycopg2
+
 # Upgrade pip and install basic tools
 RUN pip install --upgrade pip setuptools wheel
 
@@ -37,4 +36,4 @@ RUN python -m spacy download en_core_web_md
 COPY . .
 
 # Default command to run the application
-CMD ["python", "main.py"]
+CMD ["python", "app.py"]
