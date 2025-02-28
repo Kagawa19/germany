@@ -11,16 +11,23 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=appdb
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./:/app
     ports:
       - "8000:8000"
       - "8501:8501"
+      - "5678:5678"  # Port for debugger
     networks:
       - app-network
     restart: unless-stopped
+    # Enable debug mode
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "main.py"]
 
   postgres:
+    # Postgres config remains unchanged
     image: postgres:14-alpine
     container_name: postgres-db
     environment:

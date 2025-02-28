@@ -1,6 +1,21 @@
-Find web pages that involve [General Organisation] OR [Institutions] AND the [TOPICS]
-Search query:
+Find relevant web pages about Germany’s international cooperation efforts in environmental sustainability
 
-("german development cooperation" OR "germany development cooperation" OR "german technical cooperation" OR "germany technical cooperation" OR "German international cooperations" OR "germany international cooperation" OR "german international development cooperation" OR "germany international development cooperation" OR "GIZ" OR "BMZ" OR "KfW" OR "Bundesministerium für wirtschaftliche Zusammenarbeit" OR "Deutsche Gesellschaft für Internationale Zusammenarbeit" OR "German Federal Ministry for Economic Cooperation and Development" OR "Kreditanstalt für Wiederaufbau" OR "Credit Institute for Reconstruction" OR "German Development Bank")
-AND
-("promotion of indigenous peoples" OR "promotion of protected areas" OR "national parks" OR "conservation areas" OR "forest restoration" OR "land restoration" OR "marine protection" OR "marine reserves" OR "marine protected areas" OR "marine conservation" OR "ecosystem services" OR "Amazon tropical forest" OR "Congo Basin tropical forest" OR "sustainable agriculture" OR "agroforestry" OR "sustainable forestry" OR "sustainable logging" OR "sustainable fishing" OR "sustainable fisheries" OR "sustainable fisheries management" OR "sustainable aquaculture" OR "aquaculture and biodiversity conservation")
+Search for web pages that discuss Germany’s international cooperation efforts through government institutions or development organizations in relation to environmental sustainability.
+
+Include results related to:
+
+Promotion of indigenous peoples
+Protection of national parks, conservation areas, and marine reserves
+Forest and land restoration
+Marine conservation and protection
+Ecosystem services (Amazon and Congo Basin forests)
+Sustainable agriculture and agroforestry
+Sustainable forestry and fisheries management
+Biodiversity conservation in aquaculture
+Search for relevant information from these organizations and institutions:
+
+German development cooperation agencies: GIZ, BMZ, KfW
+Government ministries: Bundesministerium für wirtschaftliche Zusammenarbeit, German Federal Ministry for Economic Cooperation and Development
+Other development banks: Kreditanstalt für Wiederaufbau (KfW), German Development Bank
+Return only high-quality sources, reports, and official publications.
+

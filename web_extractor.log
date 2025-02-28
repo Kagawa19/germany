@@ -1,0 +1,96 @@
+2025-02-28 20:19:35,756 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:19:35,759 - __main__ - INFO - Application started
+2025-02-28 20:19:35,778 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:19:35,782 - __main__ - INFO - Rendering Home page
+2025-02-28 20:19:35,790 - __main__ - INFO - Page rendering completed
+2025-02-28 20:19:46,201 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:19:46,203 - __main__ - INFO - Application started
+2025-02-28 20:19:46,208 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:19:46,209 - __main__ - INFO - Rendering Home page
+2025-02-28 20:19:46,214 - __main__ - INFO - User clicked Run Web Extraction button from Home page
+2025-02-28 20:19:46,215 - __main__ - INFO - Starting web extraction process
+2025-02-28 20:19:46,221 - __main__ - INFO - Initializing WebExtractor
+2025-02-28 20:19:46,222 - WebExtractor - INFO - Initializing WebExtractor
+2025-02-28 20:19:46,247 - WebExtractor - INFO - WebExtractor initialized successfully
+2025-02-28 20:19:46,250 - __main__ - INFO - Running web extractor
+2025-02-28 20:19:46,257 - WebExtractor - INFO - Running web extractor
+2025-02-28 20:19:46,258 - WebExtractor - INFO - Starting web content extraction process
+2025-02-28 20:19:46,259 - WebExtractor - INFO - Reading prompt file: prompts/extract.txt
+2025-02-28 20:19:46,261 - WebExtractor - INFO - Extracting search terms from prompt content
+2025-02-28 20:19:46,261 - WebExtractor - INFO - Extracted 0 main topics, 5 organizations, and 0 focus areas
+2025-02-28 20:19:46,262 - WebExtractor - INFO - Generating search queries
+2025-02-28 20:19:46,263 - WebExtractor - INFO - Generated 5 search queries: 0 focus-based, 5 organization-based, 0 combined
+2025-02-28 20:19:46,263 - WebExtractor - INFO - Processing 5 queries out of 5 generated
+2025-02-28 20:19:46,280 - WebExtractor - INFO - Processing query 1/5: 'German development cooperation agencies: GIZ envir...'
+2025-02-28 20:19:46,282 - WebExtractor - INFO - Searching web for: 'German development cooperation agencies: GIZ envir...' (limit: 3 results)
+2025-02-28 20:19:46,283 - WebExtractor - ERROR - Error searching web: name 'GoogleSerperAPIWrapper' is not defined
+Traceback (most recent call last):
+  File "/app/web_extractor.py", line 201, in search_web
+    serper = GoogleSerperAPIWrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'GoogleSerperAPIWrapper' is not defined
+2025-02-28 20:19:48,285 - WebExtractor - INFO - Processing query 2/5: 'BMZ environmental sustainability cooperation'
+2025-02-28 20:19:48,286 - WebExtractor - INFO - Searching web for: 'BMZ environmental sustainability cooperation' (limit: 3 results)
+2025-02-28 20:19:48,289 - WebExtractor - ERROR - Error searching web: name 'GoogleSerperAPIWrapper' is not defined
+Traceback (most recent call last):
+  File "/app/web_extractor.py", line 201, in search_web
+    serper = GoogleSerperAPIWrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'GoogleSerperAPIWrapper' is not defined
+2025-02-28 20:19:50,291 - WebExtractor - INFO - Processing query 3/5: 'KfW
+Government ministries: Bundesministerium für w...'
+2025-02-28 20:19:50,293 - WebExtractor - INFO - Searching web for: 'KfW
+Government ministries: Bundesministerium für w...' (limit: 3 results)
+2025-02-28 20:19:50,294 - WebExtractor - ERROR - Error searching web: name 'GoogleSerperAPIWrapper' is not defined
+Traceback (most recent call last):
+  File "/app/web_extractor.py", line 201, in search_web
+    serper = GoogleSerperAPIWrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'GoogleSerperAPIWrapper' is not defined
+2025-02-28 20:19:52,295 - WebExtractor - INFO - Processing query 4/5: 'German Federal Ministry for Economic Cooperation a...'
+2025-02-28 20:19:52,296 - WebExtractor - INFO - Searching web for: 'German Federal Ministry for Economic Cooperation a...' (limit: 3 results)
+2025-02-28 20:19:52,297 - WebExtractor - ERROR - Error searching web: name 'GoogleSerperAPIWrapper' is not defined
+Traceback (most recent call last):
+  File "/app/web_extractor.py", line 201, in search_web
+    serper = GoogleSerperAPIWrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'GoogleSerperAPIWrapper' is not defined
+2025-02-28 20:19:54,299 - WebExtractor - INFO - Processing query 5/5: 'German Development Bank environmental sustainabili...'
+2025-02-28 20:19:54,300 - WebExtractor - INFO - Searching web for: 'German Development Bank environmental sustainabili...' (limit: 3 results)
+2025-02-28 20:19:54,301 - WebExtractor - ERROR - Error searching web: name 'GoogleSerperAPIWrapper' is not defined
+Traceback (most recent call last):
+  File "/app/web_extractor.py", line 201, in search_web
+    serper = GoogleSerperAPIWrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'GoogleSerperAPIWrapper' is not defined
+2025-02-28 20:19:54,303 - WebExtractor - INFO - Web content extraction completed in 8.04 seconds. Found 0 results.
+2025-02-28 20:19:54,304 - WebExtractor - INFO - Web extractor completed in 8.05 seconds with 0 results
+2025-02-28 20:19:54,306 - __main__ - ERROR - Web extraction failed or found no results: Unknown error
+2025-02-28 20:19:54,318 - __main__ - INFO - Page rendering completed
+2025-02-28 20:19:57,833 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:19:57,834 - __main__ - INFO - Application started
+2025-02-28 20:19:57,840 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:19:57,840 - __main__ - INFO - Rendering Home page
+2025-02-28 20:19:57,844 - __main__ - INFO - User clicked Process Data button from Home page
+2025-02-28 20:19:57,851 - __main__ - INFO - Starting data processing
+2025-02-28 20:20:02,921 - __main__ - INFO - Data processing completed successfully
+2025-02-28 20:20:02,924 - __main__ - INFO - Fetching data from database
+2025-02-28 20:20:02,931 - __main__ - INFO - Creating database connection
+2025-02-28 20:20:03,046 - __main__ - INFO - Database connection created successfully
+2025-02-28 20:20:03,110 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:20:03,128 - __main__ - INFO - Page rendering completed
+2025-02-28 20:24:11,348 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:24:11,351 - __main__ - INFO - Application started
+2025-02-28 20:24:11,359 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:24:11,366 - __main__ - INFO - Rendering Home page
+2025-02-28 20:24:11,375 - __main__ - INFO - Page rendering completed
+2025-02-28 20:24:14,031 - __main__ - INFO - Using database URL: postgresql://postgres:postgres@postgres:5432/appdb
+2025-02-28 20:24:14,032 - __main__ - INFO - Application started
+2025-02-28 20:24:14,037 - __main__ - INFO - User selected app mode: Home
+2025-02-28 20:24:14,043 - __main__ - INFO - Rendering Home page
+2025-02-28 20:24:14,050 - __main__ - INFO - User clicked Process Data button from Home page
+2025-02-28 20:24:14,050 - __main__ - INFO - Starting data processing
+2025-02-28 20:24:19,126 - __main__ - INFO - Data processing completed successfully
+2025-02-28 20:24:19,129 - __main__ - INFO - Fetching data from database
+2025-02-28 20:24:19,141 - __main__ - INFO - Fetched 0 rows from database
+2025-02-28 20:24:19,149 - __main__ - INFO - Page rendering completed
