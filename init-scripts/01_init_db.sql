@@ -1,15 +1,5 @@
 -- Create the content_data table with the specified columns
-CREATE TABLE IF NOT EXISTS content_data (
-    id SERIAL PRIMARY KEY,
-    link VARCHAR(255) NOT NULL,
-    summary TEXT,
-    full_content TEXT,
-    information TEXT,
-    theme VARCHAR(100),
-    organization VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+c
 
 -- Create indexes for faster queries on content_data
 CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);

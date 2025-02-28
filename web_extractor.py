@@ -4,6 +4,8 @@ import requests
 import logging
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+# Import statement to add at the top of your file
+from content_db import store_extract_data
 from typing import Dict, List, Optional
 import traceback
 import json
@@ -395,7 +397,7 @@ class WebExtractor:
             return []
             
     def run(self) -> Dict:
-        """Run the web extraction process and return results in a structured format."""
+        """Run the web extraction process, store results in database, and return results in a structured format."""
         logger.info("Running web extractor")
         
         try:
@@ -403,6 +405,20 @@ class WebExtractor:
             
             # Run the extraction process
             results = self.extract_web_content()
+            
+            # Store results in database if available
+            stored_ids = []
+            if results:
+                logger.info("Extraction successful, proceeding to database storage")
+                try:
+                    stored_ids = store_extract_data(results)
+                    logger.info(f"Database storage completed with {len(stored_ids)} records")
+                except Exception as db_error:
+                    logger.error(f"Error storing data in database: {str(db_error)}", exc_info=True)
+                    print(f"\nWARNING: Database storage failed: {str(db_error)}")
+                    print("Continuing with extraction results only.")
+            else:
+                logger.warning("No extraction results available for database storage")
             
             # Calculate timing and prepare output
             end_time = time.time()
@@ -414,10 +430,12 @@ class WebExtractor:
                 "timestamp": timestamp,
                 "execution_time": f"{execution_time:.2f} seconds",
                 "result_count": len(results),
+                "database_stored_count": len(stored_ids),
+                "database_stored_ids": stored_ids,
                 "results": results
             }
             
-            logger.info(f"Web extractor completed in {execution_time:.2f} seconds with {len(results)} results")
+            logger.info(f"Web extractor completed in {execution_time:.2f} seconds with {len(results)} results, {len(stored_ids)} stored in database")
             
             return output
             
@@ -435,7 +453,9 @@ class WebExtractor:
                 "status": "error",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "error": str(e),
-                "results": []
+                "results": [],
+                "database_stored_count": 0,
+                "database_stored_ids": []
             }
 
 # Example usage:
