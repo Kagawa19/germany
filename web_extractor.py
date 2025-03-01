@@ -2,13 +2,14 @@ import os
 import time
 import requests
 import logging
+import re
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-# Import statement to add at the top of your file
-from content_db import store_extract_data
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Callable, Any
 import traceback
 import json
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_community.utilities import GoogleSerperAPIWrapper
 
 # Configure logging with a custom formatter that includes more details
@@ -62,14 +63,30 @@ class WebExtractor:
         # Load environment variables
         load_dotenv()
         self.serper_api_key = os.getenv('SERPER_API_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        
         if not self.serper_api_key:
             logger.warning("SERPER_API_KEY not found in environment variables")
         else:
             logger.info("Successfully loaded SERPER_API_KEY")
             
+        if not self.openai_api_key:
+            logger.warning("OPENAI_API_KEY not found in environment variables. AI-powered features will be disabled.")
+        else:
+            logger.info("Successfully loaded OPENAI_API_KEY")
+            
         # Initialize other instance variables
         self.prompt_path = os.path.join('prompts', 'extract.txt')
         logger.info(f"Default prompt path set to: {self.prompt_path}")
+        
+        # Set the maximum number of concurrent requests
+        self.max_workers = 5
+        
+        # Configure AI features
+        self.use_ai = True if self.openai_api_key else False
+        self.openai_client = None  # Will be set by main.py
+        self.generate_ai_summary = None  # Function reference will be set by main.py
+        self.extract_date_with_ai = None  # Function reference will be set by main.py
         
         logger.info("WebExtractor initialized successfully")
         
@@ -210,8 +227,156 @@ class WebExtractor:
             logger.error(f"Error searching web: {str(e)}", exc_info=True)
             return []
 
-    def scrape_webpage(self, url: str) -> str:
-        """Scrape content from a webpage."""
+    def extract_date_from_content(self, html_content: str, url: str, soup: BeautifulSoup) -> Optional[str]:
+        """Extract publication date from content using multiple strategies."""
+        logger.info(f"Extracting date from webpage: {url}")
+        
+        # Try AI-based date extraction first if enabled
+        if self.use_ai and self.extract_date_with_ai:
+            try:
+                ai_date = self.extract_date_with_ai(html_content, url)
+                if ai_date:
+                    logger.info(f"Found date using AI extraction: {ai_date}")
+                    return ai_date
+            except Exception as e:
+                logger.warning(f"AI date extraction failed: {str(e)}")
+        
+        # Strategy 1: Look for meta tags with date information
+        date_meta_tags = [
+            "article:published_time", "og:published_time", "publication_date", 
+            "date", "pubdate", "publishdate", "datePublished", "DC.date.issued",
+            "published-date", "release_date", "created", "article.published", 
+            "lastModified", "datemodified", "last-modified"
+        ]
+        
+        for tag_name in date_meta_tags:
+            meta_tag = soup.find("meta", property=tag_name) or soup.find("meta", attrs={"name": tag_name})
+            if meta_tag and meta_tag.get("content"):
+                date_str = meta_tag.get("content")
+                logger.info(f"Found date in meta tag {tag_name}: {date_str}")
+                return date_str
+        
+        # Strategy 2: Look for time elements
+        time_elements = soup.find_all("time")
+        for time_element in time_elements:
+            if time_element.get("datetime"):
+                date_str = time_element.get("datetime")
+                logger.info(f"Found date in time element: {date_str}")
+                return date_str
+            elif time_element.text.strip():
+                date_str = time_element.text.strip()
+                logger.info(f"Found date in time element text: {date_str}")
+                return date_str
+        
+        # Strategy 3: Check for data attributes
+        date_attrs = ["data-date", "data-published", "data-timestamp"]
+        for attr in date_attrs:
+            elements = soup.find_all(attrs={attr: True})
+            if elements:
+                date_str = elements[0].get(attr)
+                logger.info(f"Found date in {attr} attribute: {date_str}")
+                return date_str
+        
+        # Strategy 4: Check for JSON-LD structured data
+        script_tags = soup.find_all("script", {"type": "application/ld+json"})
+        for script in script_tags:
+            try:
+                if script.string:
+                    json_data = json.loads(script.string)
+                    if isinstance(json_data, dict):
+                        date_fields = ["datePublished", "dateCreated", "dateModified", "uploadDate"]
+                        for field in date_fields:
+                            if field in json_data:
+                                date_str = json_data[field]
+                                logger.info(f"Found date in JSON-LD data ({field}): {date_str}")
+                                return date_str
+                    elif isinstance(json_data, list):
+                        for item in json_data:
+                            if isinstance(item, dict):
+                                for field in date_fields:
+                                    if field in item:
+                                        date_str = item[field]
+                                        logger.info(f"Found date in JSON-LD data list ({field}): {date_str}")
+                                        return date_str
+            except Exception as e:
+                logger.debug(f"Error parsing JSON-LD: {str(e)}")
+                
+        # Strategy 5: Look for common date patterns in the HTML
+        date_patterns = [
+            r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})',
+            r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})',
+            r'(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})',
+            r'((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})',
+            r'Published\s*(?:on|date)?:?\s*([^<>]+\d{4})',
+            r'Posted\s*(?:on)?:?\s*([^<>]+\d{4})',
+            r'Date:?\s*([^<>]+\d{4})',
+            r'(\d{4}-\d{2}-\d{2})',
+            r'(\d{2}/\d{2}/\d{4})',
+            r'(\d{2}\.\d{2}\.\d{4})',
+            r'(\d{2}-\d{2}-\d{4})'
+        ]
+        
+        # Check in the raw HTML
+        for pattern in date_patterns:
+            matches = re.search(pattern, html_content, re.IGNORECASE)
+            if matches:
+                date_str = matches.group(1)
+                logger.info(f"Found date using regex pattern in HTML: {date_str}")
+                return date_str
+        
+        # Strategy 6: Look for date classes
+        date_classes = ["date", "published", "timestamp", "post-date", "article-date"]
+        for cls in date_classes:
+            elements = soup.find_all(class_=lambda c: c and cls in c.lower())
+            if elements:
+                for element in elements:
+                    text = element.text.strip()
+                    if text and re.search(r'\d{4}', text):  # Has a year
+                        logger.info(f"Found date in element with class '{cls}': {text}")
+                        return text
+        
+        logger.info("No date information found")
+        return None
+
+    def extract_title_from_content(self, soup: BeautifulSoup, url: str, search_result_title: str) -> str:
+        """Extract the title from the webpage content."""
+        logger.info(f"Extracting title from webpage: {url}")
+        
+        # Strategy 1: Look for title tag
+        title_tag = soup.find("title")
+        if title_tag and title_tag.text.strip():
+            title_text = title_tag.text.strip()
+            logger.info(f"Found title in title tag: {title_text}")
+            return title_text
+        
+        # Strategy 2: Look for og:title meta tag
+        og_title = soup.find("meta", property="og:title")
+        if og_title and og_title.get("content"):
+            title_text = og_title.get("content").strip()
+            logger.info(f"Found title in og:title meta tag: {title_text}")
+            return title_text
+        
+        # Strategy 3: Look for h1 tags
+        h1_tags = soup.find_all("h1")
+        if h1_tags and len(h1_tags) > 0:
+            for h1 in h1_tags:
+                if h1.text.strip():
+                    title_text = h1.text.strip()
+                    logger.info(f"Found title in h1 tag: {title_text}")
+                    return title_text
+        
+        # Strategy 4: Use the search result title
+        if search_result_title and search_result_title != "No title":
+            logger.info(f"Using search result title: {search_result_title}")
+            return search_result_title
+        
+        # Strategy 5: Use URL as last resort
+        domain = url.split("//")[-1].split("/")[0]
+        logger.info(f"Using domain as fallback title: {domain}")
+        return domain
+
+    def scrape_webpage(self, url: str, search_result_title: str) -> Tuple[str, str, str]:
+        """Scrape content, title and date from a webpage."""
         logger.info(f"Scraping webpage: {url}")
         
         headers = {
@@ -223,15 +388,31 @@ class WebExtractor:
             scrape_start_time = time.time()
             logger.info(f"Sending HTTP request to {url}")
             
-            response = requests.get(url, headers=headers, timeout=15)
+            # Set a longer timeout for PDFs and large documents
+            is_pdf = url.lower().endswith('.pdf')
+            timeout = 30 if is_pdf else 15
+            
+            response = requests.get(url, headers=headers, timeout=timeout)
             request_time = time.time() - scrape_start_time
             logger.info(f"Received response in {request_time:.2f} seconds. Status code: {response.status_code}")
             
             response.raise_for_status()  # Raise exception for 4XX/5XX status codes
             
+            # Special handling for PDF documents
+            if is_pdf:
+                logger.info("PDF document detected, using title from URL")
+                title = search_result_title or url.split('/')[-1].replace('-', ' ').replace('_', ' ')
+                return f"PDF Document: {len(response.content)} bytes", title, None
+            
             # Parse HTML
             logger.info("Parsing HTML content")
             soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Extract title first before removing elements
+            title = self.extract_title_from_content(soup, url, search_result_title)
+            
+            # Extract date before removing elements - pass the full HTML text for comprehensive search
+            date = self.extract_date_from_content(response.text, url, soup)
             
             # Remove script and style elements
             logger.info("Removing script, style, and navigation elements")
@@ -251,17 +432,108 @@ class WebExtractor:
             
             scrape_time = time.time() - scrape_start_time
             logger.info(f"Successfully scraped {len(content)} chars from {url} in {scrape_time:.2f} seconds (cleaned from {original_length} to {cleaned_length} chars)")
+            logger.info(f"Extracted title: {title}")
+            logger.info(f"Extracted date: {date}")
             
-            return content
+            return content, title, date
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error scraping {url}: {str(e)}")
-            return ""
+            return "", "", None
         except Exception as e:
             logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
-            return ""
+            return "", "", None
 
-    def extract_web_content(self) -> List[Dict]:
-        """Main method to extract web content based on the prompt file."""
+    def process_search_result(self, result, query_index, result_index, search_terms, processed_urls):
+        """Process a single search result in a thread-safe manner."""
+        url = result.get("link")
+        if not url or url in processed_urls:
+            logger.info(f"Skipping already processed URL: {url}")
+            return None
+        
+        # Skip certain file types
+        if url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.svg', '.zip', '.exe', '.mp3', '.mp4')):
+            logger.info(f"Skipping unsupported file type: {url}")
+            return None
+        
+        processed_urls.add(url)
+        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {url}")
+        
+        print(f"\n  URL {len(processed_urls)}: {url}")
+        
+        # Check if URL is from a relevant domain
+        is_org_domain = any(org.lower() in url.lower() for org in search_terms["organizations"])
+        if is_org_domain:
+            # Higher priority for organization websites
+            matching_orgs = [org for org in search_terms["organizations"] if org.lower() in url.lower()]
+            logger.info(f"URL from organization domain: {', '.join(matching_orgs)}")
+            print(f"  [HIGH PRIORITY] Organization domain: {matching_orgs[0]}")
+            scrape_priority = True
+            organization = matching_orgs[0] if matching_orgs else None
+        else:
+            # Skip if not directly related to Germany or development cooperation
+            relevant_terms = ["german", "germany", "deutsch", "giz", "bmz", "kfw", "cooperation"]
+            if not any(term.lower() in url.lower() for term in relevant_terms):
+                logger.info(f"Skipping less relevant URL: {url}")
+                print(f"  [SKIPPED] URL not relevant to search criteria")
+                return None
+            matching_terms = [term for term in relevant_terms if term.lower() in url.lower()]
+            logger.info(f"URL contains relevant terms: {', '.join(matching_terms)}")
+            print(f"  [RELEVANT] Contains terms: {', '.join(matching_terms)}")
+            scrape_priority = False
+            organization = None
+        
+        # Scrape the webpage
+        print(f"  Scraping content... ", end="", flush=True)
+        content, title, date = self.scrape_webpage(url, result.get("title", "No title"))
+        
+        if content:
+            # Use AI to generate summary if enabled
+            summary = None
+            if self.use_ai and self.generate_ai_summary and len(content) > 100:
+                try:
+                    summary = self.generate_ai_summary(content)
+                    if summary:
+                        logger.info(f"Generated AI summary ({len(summary)} chars)")
+                except Exception as e:
+                    logger.warning(f"Failed to generate AI summary: {str(e)}")
+            
+            # Use snippet as summary if no AI summary
+            if not summary:
+                summary = result.get("snippet", "")
+            
+            # Set a default theme
+            theme = "Environmental Sustainability"
+            
+            result_data = {
+                "title": title,
+                "link": url,
+                "date": date,
+                "summary": summary,
+                "snippet": result.get("snippet", ""),
+                "source": result.get("source", ""),
+                "content": content,
+                "theme": theme,
+                "organization": organization,
+                "priority": scrape_priority
+            }
+            
+            logger.info(f"Added result for {result_data['title']} ({len(content)} chars)")
+            print(f"SUCCESS ({len(content)} chars)")
+            print(f"  Title: {result_data['title']}")
+            print(f"  Date: {result_data['date'] if result_data['date'] else 'Not found'}")
+            return result_data
+        else:
+            logger.warning(f"No content extracted from {url}")
+            print(f"FAILED (No content extracted)")
+            return None
+
+    def extract_web_content(self, max_queries=None, max_results_per_query=None) -> List[Dict]:
+        """Main method to extract web content based on the prompt file.
+        
+        Args:
+            max_queries: Maximum number of queries to process (None for all)
+            max_results_per_query: Maximum results to extract per query (None for default)
+        """
         logger.info("Starting web content extraction process")
         print("\n" + "="*50)
         print("STARTING WEB CONTENT EXTRACTION PROCESS")
@@ -280,82 +552,55 @@ class WebExtractor:
             # Generate search queries
             queries = self.generate_search_queries(search_terms)
             
+            # Limit number of queries if specified
+            if max_queries is not None:
+                queries = queries[:max_queries]
+            
             # Search the web and collect results
             all_results = []
             processed_urls = set()  # Track URLs to avoid duplicates
-            logger.info(f"Processing {min(5, len(queries))} queries out of {len(queries)} generated")
+            logger.info(f"Processing {len(queries)} queries")
             
             print("\n" + "-"*50)
-            print(f"PROCESSING {min(5, len(queries))} SEARCH QUERIES")
+            print(f"PROCESSING {len(queries)} SEARCH QUERIES")
             print("-"*50 + "\n")
             
-            for i, query in enumerate(queries[:5]):  # Limit to first 5 queries for efficiency
-                query_preview = query[:50] + "..." if len(query) > 50 else query
-                logger.info(f"Processing query {i+1}/5: '{query_preview}'")
-                
-                print(f"\nQUERY {i+1}/5: '{query_preview}'")
-                
-                results = self.search_web(query, num_results=3)  # Limit to top 3 results per query
-                logger.info(f"Query {i+1} returned {len(results)} results")
-                
-                for j, result in enumerate(results):
-                    url = result.get("link")
-                    if not url or url in processed_urls:
-                        logger.info(f"Skipping already processed URL: {url}")
-                        continue
+            results_per_query = 3 if max_results_per_query is None else max_results_per_query
+            
+            # Use ThreadPoolExecutor for parallel processing of search results
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                for i, query in enumerate(queries):
+                    query_preview = query[:50] + "..." if len(query) > 50 else query
+                    logger.info(f"Processing query {i+1}/{len(queries)}: '{query_preview}'")
                     
-                    processed_urls.add(url)
-                    logger.info(f"Processing result {j+1}/{len(results)} from query {i+1}: {url}")
+                    print(f"\nQUERY {i+1}/{len(queries)}: '{query_preview}'")
                     
-                    print(f"\n  URL {len(processed_urls)}: {url}")
+                    results = self.search_web(query, num_results=results_per_query)
+                    logger.info(f"Query {i+1} returned {len(results)} results")
                     
-                    # Check if URL is from a relevant domain
-                    is_org_domain = any(org.lower() in url.lower() for org in search_terms["organizations"])
-                    if is_org_domain:
-                        # Higher priority for organization websites
-                        matching_orgs = [org for org in search_terms["organizations"] if org.lower() in url.lower()]
-                        logger.info(f"URL from organization domain: {', '.join(matching_orgs)}")
-                        print(f"  [HIGH PRIORITY] Organization domain: {matching_orgs[0]}")
-                        scrape_priority = True
-                    else:
-                        # Skip if not directly related to Germany or development cooperation
-                        relevant_terms = ["german", "germany", "deutsch", "giz", "bmz", "kfw", "cooperation"]
-                        if not any(term.lower() in url.lower() for term in relevant_terms):
-                            logger.info(f"Skipping less relevant URL: {url}")
-                            print(f"  [SKIPPED] URL not relevant to search criteria")
-                            continue
-                        matching_terms = [term for term in relevant_terms if term.lower() in url.lower()]
-                        logger.info(f"URL contains relevant terms: {', '.join(matching_terms)}")
-                        print(f"  [RELEVANT] Contains terms: {', '.join(matching_terms)}")
-                        scrape_priority = False
+                    # Submit all results for parallel processing
+                    future_to_result = {}
+                    for j, result in enumerate(results):
+                        # Clone the processed_urls set to avoid race conditions
+                        # Each thread will check against the current state but only the main thread will update it
+                        if result.get("link") not in processed_urls:
+                            future = executor.submit(
+                                self.process_search_result, 
+                                result, i, j, search_terms, processed_urls
+                            )
+                            future_to_result[future] = result
                     
-                    # Scrape the webpage
-                    print(f"  Scraping content... ", end="", flush=True)
-                    content = self.scrape_webpage(url)
+                    # Collect results as they complete
+                    for future in as_completed(future_to_result):
+                        result_data = future.result()
+                        if result_data:
+                            all_results.append(result_data)
                     
-                    if content:
-                        result_data = {
-                            "title": result.get("title", "No title"),
-                            "link": url,
-                            "snippet": result.get("snippet", ""),
-                            "source": result.get("source", ""),
-                            "content": content,
-                            "priority": scrape_priority
-                        }
-                        
-                        all_results.append(result_data)
-                        logger.info(f"Added result {len(all_results)}: {result_data['title']} ({len(content)} chars)")
-                        print(f"SUCCESS ({len(content)} chars)")
-                        print(f"  Title: {result_data['title']}")
-                    else:
-                        logger.warning(f"No content extracted from {url}")
-                        print(f"FAILED (No content extracted)")
-                
-                # Add small delay between queries to be respectful
-                if i < len(queries[:5]) - 1:  # Don't delay after the last query
-                    logger.info("Adding delay between queries (2 seconds)")
-                    print("\n  Waiting 2 seconds before next query...")
-                    time.sleep(2)
+                    # Add small delay between queries to be respectful
+                    if i < len(queries) - 1:  # Don't delay after the last query
+                        logger.info("Adding delay between queries (1 second)")
+                        print("\n  Waiting 1 second before next query...")
+                        time.sleep(1)
             
             # Sort results by priority
             logger.info("Sorting results by priority")
@@ -377,6 +622,7 @@ class WebExtractor:
                     logger.info(f"Result {i+1}: {result['title']} - {priority_status} - Content length: {len(result['content'])} chars")
                     print(f"{i+1}. [{priority_status}] {result['title']}")
                     print(f"   URL: {result['link']}")
+                    print(f"   Date: {result['date'] if result['date'] else 'Not found'}")
                     print(f"   Length: {len(result['content'])} chars")
                     print()
             
@@ -395,19 +641,28 @@ class WebExtractor:
             print("!"*50 + "\n")
             
             return []
-            
-    def run(self) -> Dict:
-        """Run the web extraction process, store results in database, and return results in a structured format."""
+
+    def run(self, max_queries=None, max_results_per_query=None) -> Dict:
+        """
+        Run the web extraction process, store results in database, and return results in a structured format.
+        
+        Args:
+            max_queries: Maximum number of queries to process (None for all)
+            max_results_per_query: Maximum results to extract per query (None for default)
+        """
         logger.info("Running web extractor")
         
         try:
             start_time = time.time()
             
-            # Run the extraction process
-            results = self.extract_web_content()
-            
+            # Run the extraction process with the parameters
+            results = self.extract_web_content(max_queries, max_results_per_query)
+        
             # Store results in database if available
             stored_ids = []
+            
+            from content_db import store_extract_data
+            
             if results:
                 logger.info("Extraction successful, proceeding to database storage")
                 try:

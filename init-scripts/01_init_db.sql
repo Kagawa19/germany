@@ -2,6 +2,8 @@
 CREATE TABLE IF NOT EXISTS content_data (
     id SERIAL PRIMARY KEY,
     link VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
+    date DATE,
     summary TEXT,
     full_content TEXT,
     information TEXT,
@@ -15,6 +17,7 @@ CREATE TABLE IF NOT EXISTS content_data (
 CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);
 CREATE INDEX IF NOT EXISTS idx_content_data_theme ON content_data (theme);
 CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization);
+CREATE INDEX IF NOT EXISTS idx_content_data_date ON content_data (date);
 
 -- Create the benefits table
 CREATE TABLE IF NOT EXISTS benefits (

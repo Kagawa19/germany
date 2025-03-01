@@ -1,638 +1,645 @@
-import psycopg2
-import logging
-from typing import List, Dict, Tuple
 import os
+import logging
+import psycopg2
+from psycopg2.extras import execute_values
+from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
 import json
-import requests
 from datetime import datetime
-import re
 
-# Using the logger from the main application
-logger = logging.getLogger("WebExtractor")
+# Configure logging
+logger = logging.getLogger("ContentDB")
 
-# Define environmental themes
-ENVIRONMENTAL_THEMES = [
-    "Promotion of indigenous peoples",
-    "Protection of national parks",
-    "conservation areas",
-    "marine reserves",
-    "Forest and land restoration",
-    "Marine conservation",
-    "Ecosystem services",
-    "Amazon Basin",
-    "Congo Basin",
-    "Sustainable agriculture",
-    "agroforestry",
-    "Sustainable forestry",
-    "fisheries management",
-    "Biodiversity conservation",
-    "aquaculture"
-]
-
-# Define German organizations
-GERMAN_ORGANIZATIONS = [
-    "Bundesministerium für wirtschaftliche Zusammenarbeit",
-    "German Federal Ministry for Economic Cooperation and Development",
-    "BMZ",
-    "Kreditanstalt für Wiederaufbau",
-    "KfW",
-    "German Development Bank",
-    "GIZ",
-    "Deutsche Gesellschaft für Internationale Zusammenarbeit"
-]
-
-def clean_text_for_database(text: str) -> str:
-    """
-    Clean text to remove NUL characters and ensure database compatibility.
-    
-    Args:
-        text (str): Input text to clean
-        
-    Returns:
-        str: Cleaned text safe for database insertion
-    """
-    if not isinstance(text, str):
-        return ""
-        
-    # Remove NUL characters
-    cleaned_text = text.replace('\x00', '')
-    
-    # Optional: Truncate extremely long text if needed
-    max_length = 1_000_000  # Adjust based on your database column size
-    if len(cleaned_text) > max_length:
-        cleaned_text = cleaned_text[:max_length]
-    
-    return cleaned_text
-
-def detect_theme_and_organization_with_openai(content: str, url: str) -> Tuple[str, str]:
-    """
-    Use OpenAI to intelligently detect theme and organization from content.
-    
-    Args:
-        content (str): The text content to analyze
-        url (str): The URL of the content
-        
-    Returns:
-        tuple: (theme, organization)
-    """
-    # Get OpenAI API key from environment
-    openai_api_key = os.getenv('OPENAI_API_KEY')
-    
-    if not openai_api_key:
-        logger.warning("OPENAI_API_KEY not found in environment. Using fallback detection method.")
-        return detect_theme_and_organization_fallback(content, url)
-    
-    # Define environmental themes for OpenAI
-    themes = [
-        "Promotion of indigenous peoples",
-        "Protection of national parks, conservation areas, and marine reserves",
-        "Forest and land restoration",
-        "Marine conservation and protection",
-        "Ecosystem services (Amazon and Congo Basin forests)",
-        "Sustainable agriculture and agroforestry",
-        "Sustainable forestry and fisheries management",
-        "Biodiversity conservation in aquaculture"
-    ]
-    
-    # Define German organizations for OpenAI
-    organizations = [
-        "Bundesministerium für wirtschaftliche Zusammenarbeit (BMZ)",
-        "German Federal Ministry for Economic Cooperation and Development",
-        "Kreditanstalt für Wiederaufbau (KfW)",
-        "German Development Bank",
-        "Deutsche Gesellschaft für Internationale Zusammenarbeit (GIZ)",
-        "Other"
-    ]
-    
-    # Prepare a sample of the content (truncate to avoid excessive tokens)
-    content_sample = content[:4000] if len(content) > 4000 else content
-    
-    # Create prompt for OpenAI
-    prompt = f"""
-Analyze the following content from a webpage about Germany's international environmental cooperation.
-URL: {url}
-
-Content sample:
-{content_sample}
-
-Based on this content, determine:
-1. Which of these environmental themes is most prominently discussed (choose exactly one):
-{', '.join(themes)}
-
-2. Which of these German organizations is most prominently involved (choose exactly one):
-{', '.join(organizations)}
-
-Respond in JSON format with two fields:
-- "theme": the most relevant environmental theme from the list
-- "organization": the most relevant German organization from the list
-
-If you cannot determine a specific theme, use "Environmental Sustainability".
-If you cannot determine a specific organization, use "Other".
-"""
-    
+def get_db_connection():
+    """Create a connection to the PostgreSQL database."""
     try:
-        # Make API request to OpenAI
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {openai_api_key}"
-        }
+        # Load environment variables
+        load_dotenv()
         
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "system", "content": "You are a helpful assistant that analyzes text and extracts specific information."},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.3,
-            "max_tokens": 150
-        }
+        # Get database connection parameters from environment variables
+        db_host = os.getenv("DB_HOST", "postgres")  # Use service name in Docker
+        db_port = os.getenv("DB_PORT", "5432")
+        db_name = os.getenv("DB_NAME", "appdb")
+        db_user = os.getenv("DB_USER", "postgres")
+        db_password = os.getenv("DB_PASSWORD", "postgres")
         
-        logger.info(f"Sending request to OpenAI API for theme/organization detection for URL: {url[:50]}...")
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            data=json.dumps(data),
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            response_data = response.json()
-            result_text = response_data['choices'][0]['message']['content'].strip()
-            
-            try:
-                # Parse the JSON response
-                result = json.loads(result_text)
-                theme = result.get('theme', 'Environmental Sustainability')
-                organization = result.get('organization', 'Other')
-                
-                logger.info(f"OpenAI identified - Theme: {theme}, Organization: {organization}")
-                return theme, organization
-                
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse OpenAI response as JSON: {result_text}")
-                return detect_theme_and_organization_fallback(content, url)
-        else:
-            logger.error(f"OpenAI API request failed with status {response.status_code}: {response.text}")
-            return detect_theme_and_organization_fallback(content, url)
-            
-    except Exception as e:
-        logger.error(f"Error using OpenAI for theme/organization detection: {str(e)}")
-        return detect_theme_and_organization_fallback(content, url)
-
-def detect_theme_and_organization_fallback(content: str, url: str) -> Tuple[str, str]:
-    """
-    Fallback method to detect theme and organization using keyword matching.
-    
-    Args:
-        content (str): The text content to analyze
-        url (str): The URL of the content
-        
-    Returns:
-        tuple: (theme, organization)
-    """
-    logger.info("Using fallback method for theme and organization detection")
-    
-    # Identify theme based on content
-    content_lower = content.lower()
-    identified_theme = "Environmental Sustainability"  # Default
-    
-    for theme in ENVIRONMENTAL_THEMES:
-        if theme.lower() in content_lower:
-            identified_theme = theme
-            logger.info(f"Fallback identified theme: {theme}")
-            break
-    
-    # Identify organization based on content and URL
-    identified_org = "Other"  # Default
-    url_lower = url.lower()
-    
-    for org in GERMAN_ORGANIZATIONS:
-        org_lower = org.lower()
-        # Check URL (more reliable for org identification)
-        if org_lower in url_lower:
-            identified_org = org
-            logger.info(f"Fallback identified organization from URL: {org}")
-            break
-        # Check content
-        elif org_lower in content_lower:
-            identified_org = org
-            logger.info(f"Fallback identified organization from content: {org}")
-            break
-    
-    return identified_theme, identified_org
-
-def store_extract_data(extract_results: List[Dict]) -> List[int]:
-    """
-    Store extraction results in the database with OpenAI-enhanced theme and organization detection
-    """
-    logger.info(f"Storing {len(extract_results)} extraction results in database")
-    
-    conn = None
-    stored_ids = []
-    
-    try:
         # Connect to the database
         conn = psycopg2.connect(
-            host='postgres',
-            port='5432',
-            dbname='appdb',
-            user='postgres',
-            password='postgres'
+            host=db_host,
+            port=db_port,
+            dbname=db_name,
+            user=db_user,
+            password=db_password
         )
         
+        logger.info(f"Successfully connected to database: {db_name} on {db_host}")
+        return conn
+    except Exception as e:
+        logger.error(f"Error connecting to database: {str(e)}")
+        raise
+
+def format_date(date_str: Optional[str]) -> Optional[str]:
+    """
+    Format date string into ISO format (YYYY-MM-DD).
+    Handles various date formats.
+    
+    Args:
+        date_str: Date string in various formats
+        
+    Returns:
+        ISO formatted date string or None if invalid
+    """
+    if not date_str:
+        return None
+        
+    # Already in ISO format
+    if isinstance(date_str, str) and re.match(r'^\d{4}-\d{2}-\d{2}', date_str):
+        return date_str.split('T')[0]  # Remove time component if present
+    
+    # Try different date formats
+    formats = [
+        '%Y-%m-%d',  # 2023-01-15
+        '%Y/%m/%d',  # 2023/01/15
+        '%d-%m-%Y',  # 15-01-2023
+        '%d/%m/%Y',  # 15/01/2023
+        '%m-%d-%Y',  # 01-15-2023
+        '%m/%d/%Y',  # 01/15/2023
+        '%B %d, %Y',  # January 15, 2023
+        '%d %B %Y',   # 15 January 2023
+        '%b %d, %Y',  # Jan 15, 2023
+        '%d %b %Y',   # 15 Jan 2023
+        '%Y-%m-%dT%H:%M:%S',  # 2023-01-15T14:30:00
+        '%Y-%m-%dT%H:%M:%SZ'  # 2023-01-15T14:30:00Z
+    ]
+    
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(date_str, fmt)
+            return dt.strftime('%Y-%m-%d')
+        except ValueError:
+            continue
+            
+    # If all formats fail, try to extract a date with regex
+    date_patterns = [
+        r'(\d{4}-\d{2}-\d{2})',  # YYYY-MM-DD
+        r'(\d{2}/\d{2}/\d{4})',  # DD/MM/YYYY or MM/DD/YYYY
+        r'(\d{2}\.\d{2}\.\d{4})'  # DD.MM.YYYY
+    ]
+    
+    for pattern in date_patterns:
+        match = re.search(pattern, date_str)
+        if match:
+            extracted_date = match.group(1)
+            # Try to parse the extracted date
+            for fmt in formats:
+                try:
+                    dt = datetime.strptime(extracted_date, fmt)
+                    return dt.strftime('%Y-%m-%d')
+                except ValueError:
+                    continue
+    
+    # If we reach here, we couldn't parse the date
+    logger.warning(f"Could not parse date string: {date_str}")
+    return None
+
+def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
+    """
+    Store extracted data into the database.
+    
+    Args:
+        extracted_data: List of dictionaries containing extracted web content
+        
+    Returns:
+        List of database IDs for the stored records
+    """
+    if not extracted_data:
+        logger.warning("No data to store")
+        return []
+    
+    logger.info(f"Storing {len(extracted_data)} results in database")
+    
+    try:
+        conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Ensure tables exist
-        ensure_tables_exist(cursor)
+        # Import re module for date validation
+        import re
         
-        # Insert query for content_data table
-        insert_query = """
-        INSERT INTO content_data 
-        (link, summary, full_content, information, theme, organization)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        RETURNING id;
-        """
+        # List to store inserted record IDs
+        inserted_ids = []
         
-        # Process each result with text cleaning
-        for result in extract_results:
-            # Clean text fields
-            link = clean_text_for_database(result.get('link', ''))
-            full_content = clean_text_for_database(result.get('content', ''))
+        for item in extracted_data:
+            try:
+                # Extract item data
+                title = item.get("title", "")
+                link = item.get("link", "")
+                date_str = item.get("date")
+                content = item.get("content", "")
+                snippet = item.get("snippet", "")
+                summary = item.get("summary", snippet)
+                theme = item.get("theme", "Environmental Sustainability")
+                organization = item.get("organization")
+                
+                # Format and validate date
+                date_value = None
+                if date_str:
+                    try:
+                        date_value = format_date(date_str)
+                    except Exception as date_error:
+                        logger.warning(f"Error processing date '{date_str}' for URL {link}: {str(date_error)}")
+                
+                # Insert into content_data table
+                query = """
+                INSERT INTO content_data 
+                (link, title, date, summary, full_content, information, theme, organization)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """
+                
+                cursor.execute(
+                    query, 
+                    (link, title, date_value, summary, content, summary, theme, organization)
+                )
+                
+                # Get the ID of the inserted record
+                record_id = cursor.fetchone()[0]
+                inserted_ids.append(record_id)
+                
+                logger.info(f"Inserted record with ID {record_id} for URL: {link}")
             
-            # Simple extraction for other fields
-            summary = clean_text_for_database(
-                result.get('snippet', '')[:255] if result.get('snippet') else result.get('title', '')[:255]
-            )
-            information = clean_text_for_database(
-                full_content[:500] if len(full_content) > 500 else full_content
-            )
-            
-            # Use OpenAI to detect theme and organization
-            theme, organization = detect_theme_and_organization_with_openai(full_content, link)
-            
-            # Execute insert with identified theme and organization
-            cursor.execute(insert_query, (
-                link, 
-                summary, 
-                full_content, 
-                information, 
-                theme, 
-                organization
-            ))
-            record_id = cursor.fetchone()[0]
-            stored_ids.append(record_id)
-            
-            logger.info(f"Stored content with ID {record_id} for URL: {link}")
-            logger.info(f"Theme: {theme}, Organization: {organization}")
+            except Exception as item_error:
+                logger.error(f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}")
+                # Continue with next item
+                continue
         
         # Commit the transaction
         conn.commit()
-        logger.info(f"Successfully stored {len(stored_ids)} results in database")
+        logger.info(f"Successfully stored {len(inserted_ids)} records in database")
+        
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        
+        return inserted_ids
         
     except Exception as e:
         logger.error(f"Error storing data in database: {str(e)}")
-        if conn:
+        if 'conn' in locals() and conn:
             conn.rollback()
-    finally:
-        if conn:
-            cursor.close()
             conn.close()
+        raise
+
+def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Retrieve content data by ID.
     
-    return stored_ids
-
-def ensure_tables_exist(cursor):
-    """Ensure all necessary tables exist in the database"""
-    create_tables_query = """
-    -- Create the content_data table with the specified columns
-    CREATE TABLE IF NOT EXISTS content_data (
-        id SERIAL PRIMARY KEY,
-        link VARCHAR(255) NOT NULL,
-        summary TEXT,
-        full_content TEXT,
-        information TEXT,
-        theme VARCHAR(100),
-        organization VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Create indexes for faster queries on content_data
-    CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);
-    CREATE INDEX IF NOT EXISTS idx_content_data_theme ON content_data (theme);
-    CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization);
-
-    -- Create the benefits table
-    CREATE TABLE IF NOT EXISTS benefits (
-        id SERIAL PRIMARY KEY,
-        links TEXT[], -- Array to store multiple links
-        benefits_to_germany TEXT,
-        insights TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Create indexes for better performance on benefits
-    CREATE INDEX IF NOT EXISTS idx_benefits_links ON benefits USING GIN(links);
-
-    -- Create a relationship table (for many-to-many relationships)
-    CREATE TABLE IF NOT EXISTS content_benefits (
-        content_id INTEGER REFERENCES content_data(id) ON DELETE CASCADE,
-        benefit_id INTEGER REFERENCES benefits(id) ON DELETE CASCADE,
-        PRIMARY KEY (content_id, benefit_id)
-    );
+    Args:
+        content_id: The ID of the content to retrieve
+        
+    Returns:
+        Dictionary containing the content data or None if not found
     """
-    cursor.execute(create_tables_query)
-
-def analyze_content_for_benefits():
-    """
-    Analyze the content in the database and extract benefits and insights.
-    Uses OpenAI to process the content and update the benefits table.
-    """
-    logger.info("Starting content analysis for benefits and insights")
-    
-    conn = None
-    processed_count = 0
+    logger.info(f"Retrieving content with ID: {content_id}")
     
     try:
-        # Connect to the database
-        conn = psycopg2.connect(
-            host='postgres',
-            port='5432',
-            dbname='appdb',
-            user='postgres',
-            password='postgres'
-        )
-        
+        conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Ensure tables exist
-        ensure_tables_exist(cursor)
-        
-        # Get content that hasn't been analyzed yet
-        get_unanalyzed_content_query = """
-        SELECT id, link, full_content, theme, organization
+        query = """
+        SELECT id, link, title, date, summary, full_content, information, theme, organization,
+               created_at, updated_at
         FROM content_data
-        WHERE id NOT IN (
-            SELECT content_id FROM content_benefits
-        )
-        LIMIT 10;  -- Process in batches of 10
+        WHERE id = %s;
         """
-        cursor.execute(get_unanalyzed_content_query)
-        records = cursor.fetchall()
         
-        if not records:
-            logger.info("No new content to analyze for benefits")
-            return 0
+        cursor.execute(query, (content_id,))
+        record = cursor.fetchone()
         
-        logger.info(f"Found {len(records)} items to analyze")
-        
-        # Get the prompt for analysis
-        prompt_content = read_prompt_file(os.path.join('prompts', 'filter.txt'))
-        logger.info(f"Read analysis prompt ({len(prompt_content)} chars)")
-        
-        # Group content by theme/organization for batch processing
-        content_groups = {}
-        
-        for record in records:
-            record_id, link, full_content, theme, organization = record
+        if record:
+            # Convert record to dictionary
+            content = {
+                "id": record[0],
+                "link": record[1],
+                "title": record[2],
+                "date": record[3].isoformat() if record[3] else None,
+                "summary": record[4],
+                "full_content": record[5],
+                "information": record[6],
+                "theme": record[7],
+                "organization": record[8],
+                "created_at": record[9].isoformat() if record[9] else None,
+                "updated_at": record[10].isoformat() if record[10] else None
+            }
+            logger.info(f"Found content: {content['title']}")
             
-            # Skip empty content
-            if not full_content:
-                continue
-                
-            # Truncate very long content
-            content_sample = full_content[:2000] if len(full_content) > 2000 else full_content
-            
-            # Group key based on theme and organization
-            group_key = f"{theme}_{organization}"
-            
-            if group_key not in content_groups:
-                content_groups[group_key] = []
-                
-            content_groups[group_key].append((record_id, link, content_sample, theme, organization))
-        
-        logger.info(f"Created {len(content_groups)} content groups for analysis")
-        
-        # Process each group
-        group_index = 0
-        for group_key, group in content_groups.items():
-            group_index += 1
-            logger.info(f"Processing group {group_index}/{len(content_groups)} with {len(group)} items")
-            
-            # Prepare content for analysis
-            group_content = "\n\n---\n\n".join([
-                f"URL: {link}\nTHEME: {theme}\nORGANIZATION: {organization}\n\nCONTENT:\n{content}" 
-                for _, link, content, theme, organization in group
-            ])
-            
-            # Extract insights using the prompt
-            try:
-                # Get theme and organization for the group
-                group_theme = group[0][3]
-                group_organization = group[0][4]
-                
-                benefits, insights = extract_benefits_and_insights(
-                    group_content, prompt_content, group_theme, group_organization
-                )
-                
-                if benefits and insights:
-                    # Store the results in the benefits table
-                    links = [link for _, link, _, _, _ in group]
-                    content_ids = [record_id for record_id, _, _, _, _ in group]
-                    
-                    insert_benefits_query = """
-                    INSERT INTO benefits (links, benefits_to_germany, insights, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING id;
-                    """
-                    
-                    now = datetime.now()
-                    cursor.execute(insert_benefits_query, (
-                        links, 
-                        benefits, 
-                        insights, 
-                        now, 
-                        now
-                    ))
-                    
-                    benefit_id = cursor.fetchone()[0]
-                    
-                    # Create relationships in the content_benefits table
-                    for content_id in content_ids:
-                        cursor.execute("""
-                        INSERT INTO content_benefits (content_id, benefit_id)
-                        VALUES (%s, %s);
-                        """, (content_id, benefit_id))
-                    
-                    processed_count += len(group)
-                    logger.info(f"Stored benefits and insights for group {group_index}, affecting {len(group)} content items")
-                else:
-                    logger.warning(f"No benefits or insights extracted for group {group_index}")
-            except Exception as e:
-                logger.error(f"Error processing group {group_index}: {str(e)}")
-        
-        # Commit all changes
-        conn.commit()
-        logger.info(f"Content analysis completed. Processed {processed_count} items.")
-        
-    except Exception as e:
-        logger.error(f"Error analyzing content for benefits: {str(e)}")
-        if conn:
-            conn.rollback()
-    finally:
-        if conn:
+            # Close cursor and connection
             cursor.close()
             conn.close()
-    
-    return processed_count
-
-def read_prompt_file(file_path: str) -> str:
-    """Read the content of a prompt file."""
-    logger.info(f"Reading prompt file: {file_path}")
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
-        logger.info(f"Successfully read prompt file ({len(content)} chars)")
-        return content
-    except FileNotFoundError:
-        error_msg = f"Prompt file not found at path: {file_path}"
-        logger.error(error_msg)
-        return "Extract benefits to Germany and insights from the following content."
-    except Exception as e:
-        error_msg = f"Error reading prompt file: {str(e)}"
-        logger.error(error_msg)
-        return "Extract benefits to Germany and insights from the following content."
-
-def extract_benefits_and_insights(content: str, prompt: str, theme: str, organization: str) -> Tuple[str, str]:
-    """
-    Extract benefits and insights using OpenAI API.
-    
-    Args:
-        content (str): The content to analyze
-        prompt (str): The prompt for the analysis
-        theme (str): Content theme for targeted analysis
-        organization (str): Content organization for targeted analysis
-        
-    Returns:
-        tuple: (benefits, insights)
-    """
-    logger.info(f"Extracting benefits and insights from content ({len(content)} chars)")
-    logger.info(f"Content theme: {theme}, organization: {organization}")
-    
-    # Get OpenAI API key from environment
-    openai_api_key = os.getenv('OPENAI_API_KEY')
-    
-    if not openai_api_key:
-        logger.warning("OPENAI_API_KEY not found in environment. Using fallback method.")
-        return extract_benefits_and_insights_fallback(theme, organization)
-    
-    try:
-        # Prepare content sample (truncate to avoid excessive tokens)
-        content_sample = content[:8000] if len(content) > 8000 else content
-        
-        # Create full prompt by combining the template with the content
-        full_prompt = f"{prompt}\n\nTHEME: {theme}\nORGANIZATION: {organization}\n\n{content_sample}"
-        
-        # Make API request to OpenAI
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {openai_api_key}"
-        }
-        
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [
-                {"role": "system", "content": "You are a helpful assistant that analyzes content about Germany's international environmental cooperation and extracts benefits to Germany."},
-                {"role": "user", "content": full_prompt}
-            ],
-            "temperature": 0.5,
-            "max_tokens": 1000
-        }
-        
-        logger.info("Sending request to OpenAI API for benefits analysis...")
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            data=json.dumps(data),
-            timeout=60
-        )
-        
-        if response.status_code == 200:
-            response_data = response.json()
-            result_text = response_data['choices'][0]['message']['content'].strip()
             
-            # Extract benefits and insights from the response
-            benefits = ""
-            insights = ""
-            
-            if "BENEFITS_TO_GERMANY:" in result_text:
-                benefits_section = result_text.split("BENEFITS_TO_GERMANY:")[1].split("INSIGHTS:")[0].strip()
-                benefits = benefits_section
-            
-            if "INSIGHTS:" in result_text:
-                insights_section = result_text.split("INSIGHTS:")[1].strip()
-                insights = insights_section
-            
-            if not benefits and not insights:
-                # If sections aren't clearly marked, just split the content
-                parts = result_text.split("\n\n", 1)
-                if len(parts) >= 2:
-                    benefits = parts[0]
-                    insights = parts[1]
-                else:
-                    benefits = result_text
-                    insights = "Analysis suggests potential for German businesses to leverage environmental cooperation for economic benefits."
-            
-            logger.info("Successfully extracted benefits and insights using OpenAI")
-            return benefits, insights
-            
+            return content
         else:
-            logger.error(f"OpenAI API request failed with status {response.status_code}: {response.text}")
-            return extract_benefits_and_insights_fallback(theme, organization)
+            logger.warning(f"No content found with ID: {content_id}")
+            
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+            
+            return None
             
     except Exception as e:
-        logger.error(f"Error using OpenAI for benefits analysis: {str(e)}")
-        return extract_benefits_and_insights_fallback(theme, organization)
+        logger.error(f"Error retrieving content: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.close()
+        raise
 
-def extract_benefits_and_insights_fallback(theme: str, organization: str) -> Tuple[str, str]:
+def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
-    Fallback method to generate benefits and insights based on theme and organization.
+    Retrieve multiple content entries with pagination.
     
     Args:
-        theme (str): The content theme
-        organization (str): The organization
+        limit: Maximum number of records to retrieve
+        offset: Number of records to skip
         
     Returns:
-        tuple: (benefits, insights)
+        List of dictionaries containing content data
     """
-    logger.info("Using fallback method for benefits and insights generation")
+    logger.info(f"Retrieving content (limit: {limit}, offset: {offset})")
     
-    # Generate benefits based on theme
-    benefits = ""
-    if "indigenous" in theme.lower():
-        benefits = "Benefits to Germany: Strengthened diplomatic relations with countries having large indigenous populations. Development of expertise in inclusive governance models that can be applied domestically."
-    elif "national parks" in theme.lower() or "conservation" in theme.lower():
-        benefits = "Benefits to Germany: German companies have gained valuable contracts for protected area management technology. Knowledge transfer from conservation efforts has strengthened Germany's own ecosystem restoration programs."
-    elif "forest" in theme.lower() or "restoration" in theme.lower():
-        benefits = "Benefits to Germany: Expertise developed in forest restoration has created 2,200 specialized jobs in German environmental consulting firms. German technology exports for restoration increased by €17.5 million in 2024."
-    elif "marine" in theme.lower():
-        benefits = "Benefits to Germany: German marine technology exports increased by 12% through partnerships in marine conservation. Supply chain security for seafood imports improved through sustainable fisheries management."
-    elif "sustainable agriculture" in theme.lower() or "agroforestry" in theme.lower():
-        benefits = "Benefits to Germany: Strengthened food security through diversified supply chains. German agricultural technology exports increased by €23 million through demonstration projects."
-    else:
-        benefits = "Benefits to Germany: Environmental cooperation has strengthened Germany's diplomatic position and increased technology exports. 1,500+ new jobs created in German environmental technology sector linked to international cooperation projects."
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        query = """
+        SELECT id, link, title, date, summary, theme, organization
+        FROM content_data
+        ORDER BY id DESC
+        LIMIT %s OFFSET %s;
+        """
+        
+        cursor.execute(query, (limit, offset))
+        records = cursor.fetchall()
+        
+        content_list = []
+        for record in records:
+            content = {
+                "id": record[0],
+                "link": record[1],
+                "title": record[2],
+                "date": record[3].isoformat() if record[3] else None,
+                "summary": record[4],
+                "theme": record[5],
+                "organization": record[6]
+            }
+            content_list.append(content)
+        
+        logger.info(f"Retrieved {len(content_list)} content records")
+        
+        # Close cursor and connection
+        cursor.close()
+        conn.close()
+        
+        return content_list
+            
+    except Exception as e:
+        logger.error(f"Error retrieving content list: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.close()
+        raise
+
+def update_content(content_id: int, data: Dict[str, Any]) -> bool:
+    """
+    Update content data by ID.
     
-    # Generate insights based on organization
-    insights = ""
-    if "KfW" in organization or "Kreditanstalt" in organization:
-        insights = "KfW funding has created a positive return on investment for Germany, with every €1 invested generating approximately €1.60 in economic activity through contracts to German firms and increased exports. The bank's environmental portfolio has become a model for sustainable finance globally."
-    elif "BMZ" in organization or "Federal Ministry" in organization:
-        insights = "The Federal Ministry's environmental cooperation has strengthened Germany's position in international climate negotiations. Projects focused on climate adaptation have created new markets for German engineering and consulting services valued at approximately €85 million annually."
-    elif "GIZ" in organization or "Gesellschaft für Internationale Zusammenarbeit" in organization:
-        insights = "GIZ's technical assistance approach has been particularly effective at opening new markets for German SMEs. Their environmental programming has facilitated approximately €120 million in German technology exports and created an estimated 850 jobs within Germany."
-    else:
-        insights = "Germany's environmental cooperation is increasingly aligned with economic objectives, creating win-win scenarios where diplomatic, environmental and economic benefits reinforce each other. The strategic focus on environmental technologies has strengthened Germany's export position while addressing global sustainability challenges."
+    Args:
+        content_id: The ID of the content to update
+        data: Dictionary containing the fields to update
+        
+    Returns:
+        True if update was successful, False otherwise
+    """
+    logger.info(f"Updating content with ID: {content_id}")
     
-    logger.info("Generated fallback benefits and insights")
-    return benefits, insights
+    # Fields that can be updated
+    allowed_fields = [
+        "title", "date", "summary", "full_content", 
+        "information", "theme", "organization"
+    ]
+    
+    # Filter out any fields that are not allowed
+    update_data = {k: v for k, v in data.items() if k in allowed_fields}
+    
+    if not update_data:
+        logger.warning("No valid fields to update")
+        return False
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Format date if present
+        if "date" in update_data and update_data["date"]:
+            try:
+                update_data["date"] = format_date(update_data["date"])
+            except Exception as e:
+                logger.warning(f"Error formatting date for update: {str(e)}")
+        
+        # Build the SET part of the query dynamically
+        set_clause = ", ".join([f"{field} = %s" for field in update_data.keys()])
+        set_clause += ", updated_at = CURRENT_TIMESTAMP"
+        
+        query = f"""
+        UPDATE content_data
+        SET {set_clause}
+        WHERE id = %s
+        RETURNING id;
+        """
+        
+        # Build parameters list
+        params = list(update_data.values())
+        params.append(content_id)
+        
+        cursor.execute(query, params)
+        
+        # Check if a row was affected
+        updated = cursor.fetchone() is not None
+        
+        # Commit the transaction
+        conn.commit()
+        
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        
+        if updated:
+            logger.info(f"Successfully updated content with ID: {content_id}")
+        else:
+            logger.warning(f"No content found with ID: {content_id}")
+        
+        return updated
+        
+    except Exception as e:
+        logger.error(f"Error updating content: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.rollback()
+            conn.close()
+        raise
+
+def delete_content(content_id: int) -> bool:
+    """
+    Delete content data by ID.
+    
+    Args:
+        content_id: The ID of the content to delete
+        
+    Returns:
+        True if deletion was successful, False otherwise
+    """
+    logger.info(f"Deleting content with ID: {content_id}")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        query = """
+        DELETE FROM content_data
+        WHERE id = %s
+        RETURNING id;
+        """
+        
+        cursor.execute(query, (content_id,))
+        
+        # Check if a row was affected
+        deleted = cursor.fetchone() is not None
+        
+        # Commit the transaction
+        conn.commit()
+        
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        
+        if deleted:
+            logger.info(f"Successfully deleted content with ID: {content_id}")
+        else:
+            logger.warning(f"No content found with ID: {content_id}")
+        
+        return deleted
+        
+    except Exception as e:
+        logger.error(f"Error deleting content: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.rollback()
+            conn.close()
+        raise
+
+def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Search for content matching the given query terms.
+    
+    Args:
+        query_terms: String containing search terms
+        limit: Maximum number of records to retrieve
+        
+    Returns:
+        List of dictionaries containing matching content
+    """
+    logger.info(f"Searching for content with terms: {query_terms}")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Simple search query across multiple fields
+        query = """
+        SELECT id, link, title, date, summary, theme, organization
+        FROM content_data
+        WHERE 
+            to_tsvector('english', COALESCE(title, '')) @@ plainto_tsquery('english', %s) OR
+            to_tsvector('english', COALESCE(summary, '')) @@ plainto_tsquery('english', %s) OR
+            to_tsvector('english', COALESCE(full_content, '')) @@ plainto_tsquery('english', %s)
+        ORDER BY 
+            ts_rank(to_tsvector('english', COALESCE(title, '')), plainto_tsquery('english', %s)) +
+            ts_rank(to_tsvector('english', COALESCE(summary, '')), plainto_tsquery('english', %s)) DESC
+        LIMIT %s;
+        """
+        
+        cursor.execute(query, (query_terms, query_terms, query_terms, query_terms, query_terms, limit))
+        records = cursor.fetchall()
+        
+        content_list = []
+        for record in records:
+            content = {
+                "id": record[0],
+                "link": record[1],
+                "title": record[2],
+                "date": record[3].isoformat() if record[3] else None,
+                "summary": record[4],
+                "theme": record[5],
+                "organization": record[6]
+            }
+            content_list.append(content)
+        
+        logger.info(f"Found {len(content_list)} content records matching the search terms")
+        
+        # Close cursor and connection
+        cursor.close()
+        conn.close()
+        
+        return content_list
+            
+    except Exception as e:
+        logger.error(f"Error searching content: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.close()
+        raise
+
+def analyze_content_for_benefits(limit=1000):
+    """
+    Analyze content data to extract benefits and insights.
+    This is a legacy function that uses keyword-based analysis.
+    For AI-powered analysis, use the function in main.py.
+    
+    Args:
+        limit: Maximum number of content items to analyze (default: 1000)
+        
+    Returns:
+        Number of content items processed
+    """
+    logger.info(f"Starting content analysis with limit: {limit}")
+    
+    try:
+        # Get database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get content items that haven't been analyzed yet
+        # We'll do this by finding content that doesn't exist in the content_benefits relationship table
+        query = """
+        SELECT cd.id, cd.link, cd.title, cd.full_content
+        FROM content_data cd
+        LEFT JOIN content_benefits cb ON cd.id = cb.content_id
+        WHERE cb.content_id IS NULL
+        LIMIT %s;
+        """
+        
+        cursor.execute(query, (limit,))
+        content_items = cursor.fetchall()
+        
+        processed_count = 0
+        
+        logger.info(f"Found {len(content_items)} content items to analyze")
+        
+        for item in content_items:
+            content_id, link, title, content = item
+            
+            # Skip if content is missing
+            if not content:
+                logger.warning(f"Skipping content ID {content_id}: No content available")
+                continue
+                
+            logger.info(f"Analyzing content ID {content_id}: {title}")
+            
+            # Extract benefits from content
+            # This could be done with a more sophisticated approach like using an LLM
+            # For now, we'll use a simple keyword-based approach
+            
+            benefits_to_germany = []
+            insights = []
+            
+            # Example keywords for benefits (replace with actual logic)
+            benefit_keywords = [
+                "benefit", "advantage", "gain", "profit", "value", 
+                "impact", "sustainable development", "cooperation",
+                "economic", "trade", "partnership", "collaboration",
+                "technology transfer", "innovation", "expertise"
+            ]
+            
+            # Example keywords for insights (replace with actual logic)
+            insight_keywords = [
+                "insight", "lesson", "finding", "discovery", "conclusion",
+                "learn", "knowledge", "understand", "approach",
+                "strategy", "method", "success", "challenge", "solution"
+            ]
+            
+            content_paragraphs = content.split('\n\n')
+            
+            # Process paragraphs to extract benefits and insights
+            for paragraph in content_paragraphs:
+                paragraph = paragraph.strip()
+                if not paragraph or len(paragraph) < 40:  # Skip short paragraphs
+                    continue
+                    
+                # Check for benefits
+                if any(keyword in paragraph.lower() for keyword in benefit_keywords):
+                    benefits_to_germany.append(paragraph)
+                        
+                # Check for insights
+                if any(keyword in paragraph.lower() for keyword in insight_keywords):
+                    insights.append(paragraph)
+            
+            # Only proceed if we found something
+            if benefits_to_germany or insights:
+                # Insert into benefits table
+                benefit_query = """
+                INSERT INTO benefits (links, benefits_to_germany, insights)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+                """
+                
+                links_array = "{" + link + "}"
+                benefits_text = "\n\n".join(benefits_to_germany) if benefits_to_germany else None
+                insights_text = "\n\n".join(insights) if insights else None
+                
+                cursor.execute(benefit_query, (links_array, benefits_text, insights_text))
+                benefit_id = cursor.fetchone()[0]
+                
+                # Create relationship in content_benefits table
+                relation_query = """
+                INSERT INTO content_benefits (content_id, benefit_id)
+                VALUES (%s, %s);
+                """
+                
+                cursor.execute(relation_query, (content_id, benefit_id))
+                
+                logger.info(f"Created benefit entry for content ID {content_id} with {len(benefits_to_germany)} benefits and {len(insights)} insights")
+                processed_count += 1
+            else:
+                # Even if we didn't find benefits, mark as processed
+                # Create an empty entry to avoid reprocessing this content
+                benefit_query = """
+                INSERT INTO benefits (links, benefits_to_germany, insights)
+                VALUES (%s, %s, %s)
+                RETURNING id;
+                """
+                
+                links_array = "{" + link + "}"
+                cursor.execute(benefit_query, (links_array, None, None))
+                benefit_id = cursor.fetchone()[0]
+                
+                # Create relationship in content_benefits table
+                relation_query = """
+                INSERT INTO content_benefits (content_id, benefit_id)
+                VALUES (%s, %s);
+                """
+                
+                cursor.execute(relation_query, (content_id, benefit_id))
+                
+                logger.info(f"Created empty benefit entry for content ID {content_id} (no benefits/insights found)")
+                processed_count += 1
+        
+        # Commit the transaction
+        conn.commit()
+        logger.info(f"Content analysis completed. Processed {processed_count} items")
+        
+        # Close cursor and connection
+        cursor.close()
+        conn.close()
+        
+        return processed_count
+        
+    except Exception as e:
+        logger.error(f"Error in content analysis: {str(e)}")
+        if 'conn' in locals() and conn:
+            conn.rollback()
+            conn.close()
+        raise
