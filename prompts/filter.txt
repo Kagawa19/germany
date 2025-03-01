@@ -1,6 +1,40 @@
 Using the search results from the Google Serper API, extract insights on:
 
-The benefits of Germany’s support for GERMANY in terms of job creation and value creation within Germany.
-How Germany's international cooperation contributes to security of supply for Germany.
-Provide quantitative data where possible (e.g., number of jobs created, trade volume, investment figures).
-Include specific examples of projects, partnerships, or case studies demonstrating these 
+The benefits of Germany's support for international environmental cooperation in terms of economic value creation within Germany, including:
+- Job creation in German companies
+- Increased exports of German environmental technologies
+- Development of new markets for German businesses
+- Strengthened supply chains that benefit German industry
+
+How Germany's international cooperation contributes to security of supply for Germany, including:
+- Access to critical resources
+- Diversification of supply sources
+- Securing energy resources
+- Sustainable supply of raw materials
+
+Provide quantitative data where possible (e.g., number of jobs created, trade volume, investment figures). 
+
+Include specific examples of projects, partnerships, or case studies demonstrating these benefits to Germany.
+
+Focus on environmental cooperation in these areas:
+* Promotion of indigenous peoples
+* Protection of national parks, conservation areas, and marine reserves
+* Forest and land restoration
+* Marine conservation and protection
+* Ecosystem services (Amazon and Congo Basin forests)
+* Sustainable agriculture and agroforestry
+* Sustainable forestry and fisheries management
+* Biodiversity conservation in aquaculture
+
+Pay particular attention to initiatives by:
+* Bundesministerium für wirtschaftliche Zusammenarbeit (BMZ)
+* German Federal Ministry for Economic Cooperation and Development
+* Kreditanstalt für Wiederaufbau (KfW)
+* German Development Bank
+* Deutsche Gesellschaft für Internationale Zusammenarbeit (GIZ)
+
+Format your response in two sections:
+- BENEFITS_TO_GERMANY: A structured summary of economic and security benefits
+- INSIGHTS: Analysis of the most significant findings with supporting evidence
+
+Analyze the following content:

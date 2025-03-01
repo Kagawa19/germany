@@ -36,4 +36,4 @@ RUN python -m spacy download en_core_web_md
 COPY . .
 
 # Default command to run the application
-CMD ["python", "app.py"]
+CMD ["python", "main.py"]

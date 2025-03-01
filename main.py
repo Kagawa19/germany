@@ -69,18 +69,49 @@ def fetch_data():
         raise
 
 # Function to process data
+# Function to process data
 def process_data():
     logger.info("Starting data processing")
     print("Beginning data processing routine")
     with st.spinner("Processing data..."):
         # Simulate processing with a progress bar
         progress_bar = st.progress(0)
-        for i in range(100):
+        for i in range(40):
             time.sleep(0.05)
             progress_bar.progress(i + 1)
             if i % 25 == 0:
                 logger.debug(f"Processing progress: {i+1}%")
                 print(f"Processing data: {i+1}% complete")
+        
+        # Call the content analysis function to extract benefits and insights
+        status_placeholder = st.empty()
+        status_placeholder.info("Analyzing content for benefits and insights...")
+        
+        # Import the analyze function from content_db
+        from content_db import analyze_content_for_benefits
+        
+        try:
+            processed_count = analyze_content_for_benefits()
+            
+            # Update progress bar
+            for i in range(40, 100):
+                time.sleep(0.05)
+                progress_bar.progress(i + 1)
+                if i % 25 == 0:
+                    logger.debug(f"Processing progress: {i+1}%")
+                    print(f"Processing data: {i+1}% complete")
+            
+            if processed_count > 0:
+                status_placeholder.success(f"Successfully analyzed {processed_count} content items for benefits and insights.")
+            else:
+                status_placeholder.info("No new content to analyze.")
+                
+            logger.info(f"Content analysis completed with {processed_count} items processed")
+            print(f"Content analysis completed with {processed_count} items processed")
+        except Exception as e:
+            logger.error(f"Error in content analysis: {str(e)}")
+            print(f"ERROR: Content analysis failed: {str(e)}")
+            status_placeholder.error(f"Error in content analysis: {str(e)}")
         
         # Show success message after processing
         logger.info("Data processing completed successfully")
@@ -90,102 +121,141 @@ def process_data():
         # Display the latest data
         st.subheader("Latest Content Data")
         st.dataframe(fetch_data())
+        
+        # Display Benefits Data if available
+        try:
+            engine = get_db_connection()
+            benefits_query = text("""
+            SELECT id, links, benefits_to_germany, insights 
+            FROM benefits 
+            ORDER BY created_at DESC 
+            LIMIT 10
+            """)
+            benefits_df = pd.read_sql(benefits_query, engine)
+            
+            if not benefits_df.empty:
+                st.subheader("Latest Benefits Analysis")
+                st.dataframe(benefits_df)
+                logger.info(f"Displayed {len(benefits_df)} benefits records")
+            else:
+                st.info("No benefits analysis available yet.")
+                logger.info("No benefits records found to display")
+        except Exception as e:
+            logger.error(f"Error fetching benefits data: {str(e)}")
+            print(f"ERROR: Could not fetch benefits data: {str(e)}")
 
 # Function to run web extraction and save results to database
 def run_web_extraction():
     logger.info("Starting web extraction process")
     print("Starting web content extraction")
+
     with st.spinner("Extracting web content... This may take a few minutes."):
         # Create progress bar
         progress_bar = st.progress(0)
-        
+
         # Initialize WebExtractor
         logger.info("Initializing WebExtractor")
         extractor = WebExtractor()
-        
+
         # Set up a placeholder for status updates
         status_placeholder = st.empty()
         status_placeholder.info("Initializing web extraction...")
-        
+
         # Run the extractor
         logger.info("Running web extractor")
         print("Searching for relevant web content...")
         status_placeholder.info("Searching the web for relevant content...")
         progress_bar.progress(25)
-        
+
         try:
             results = extractor.run()
             logger.debug(f"Web extraction results: {json.dumps(results, default=str)[:1000]}...")
             progress_bar.progress(75)
-            
+
             # Check if we got results
             if results["status"] == "success" and results["results"]:
                 result_count = len(results["results"])
                 logger.info(f"Web extraction successful. Found {result_count} results")
                 print(f"Found {result_count} relevant web pages")
                 status_placeholder.info(f"Found {result_count} relevant web pages. Saving to database...")
-                
-                # Save results to database
-                engine = get_db_connection()
-                saved_count = 0
-                
-                for i, result in enumerate(results["results"]):
-                    try:
-                        # Extract a summary (first 500 chars of content)
-                        summary = result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"]
-                        
-                        # Determine theme and organization from the result
-                        # This is a simplified approach - you might want to implement a more sophisticated categorization
-                        theme = "Environmental Sustainability"
-                        organization = result.get("source", "")
-                        
-                        logger.debug(f"Saving result {i+1}/{result_count}: {result['link']}")
-                        
-                        # Insert into database using API call
-                        api_url = "http://app:8000/content/"
-                        payload = {
-                            "link": result["link"],
-                            "summary": summary,
-                            "theme": theme,
-                            "organization": organization,
-                            "content": result["content"]  # Add full content if your API/DB supports it
-                        }
-                        
-                        logger.debug(f"Sending API request to {api_url}")
-                        print(f"Saving content from: {result['link']}")
-                        response = requests.post(api_url, json=payload)
-                        if response.status_code == 200:
-                            saved_count += 1
-                            logger.info(f"Successfully saved content: {result['link']}")
-                        else:
-                            logger.warning(f"Failed to save content: {response.status_code} - {response.text}")
-                            print(f"WARNING: Failed to save content from {result['link']}: {response.status_code}")
-                            
-                    except Exception as e:
-                        logger.error(f"Error saving result {i+1}: {str(e)}")
-                        print(f"ERROR: Failed to save result {i+1}: {str(e)}")
-                        st.error(f"Error saving result: {str(e)}")
-                        continue
-                
-                progress_bar.progress(100)
-                logger.info(f"Web extraction completed. Saved {saved_count}/{result_count} items to database")
-                print(f"Web extraction completed! Saved {saved_count}/{result_count} items")
-                status_placeholder.success(f"Web extraction completed! Saved {saved_count} items to database.")
-                
+
+                try:
+                    # Save results using the enhanced method
+                    stored_ids = store_extract_data(results["results"])
+                    saved_count = len(stored_ids)
+
+                    progress_bar.progress(100)
+                    logger.info(f"Web extraction completed. Saved {saved_count}/{result_count} items to database")
+                    print(f"Web extraction completed! Saved {saved_count}/{result_count} items")
+                    status_placeholder.success(f"Web extraction completed! Saved {saved_count} items to database.")
+
+                except Exception as e:
+                    logger.error(f"Error saving extraction results: {str(e)}")
+                    print(f"ERROR: Failed to save extraction results: {str(e)}")
+                    status_placeholder.error(f"Error saving extraction results: {str(e)}")
+
+                    # Fallback to original database storage method
+                    logger.info("Falling back to original database storage method")
+                    saved_count = 0
+                    engine = get_db_connection()
+
+                    for i, result in enumerate(results["results"]):
+                        try:
+                            summary = result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"]
+                            theme = "Environmental Sustainability"
+                            organization = result.get("source", "")
+
+                            logger.debug(f"Saving result {i+1}/{result_count}: {result['link']}")
+
+                            # Insert into database using API call
+                            api_url = "http://app:8000/content/"
+                            payload = {
+                                "link": result["link"],
+                                "summary": summary,
+                                "theme": theme,
+                                "organization": organization,
+                                "content": result["content"]
+                            }
+
+                            logger.debug(f"Sending API request to {api_url}")
+                            print(f"Saving content from: {result['link']}")
+                            response = requests.post(api_url, json=payload)
+
+                            if response.status_code == 200:
+                                saved_count += 1
+                                logger.info(f"Successfully saved content: {result['link']}")
+                            else:
+                                logger.warning(f"Failed to save content: {response.status_code} - {response.text}")
+                                print(f"WARNING: Failed to save content from {result['link']}: {response.status_code}")
+
+                        except Exception as e:
+                            logger.error(f"Error saving result {i+1}: {str(e)}")
+                            print(f"ERROR: Failed to save result {i+1}: {str(e)}")
+                            st.error(f"Error saving result: {str(e)}")
+                            continue
+
+                    progress_bar.progress(100)
+                    logger.info(f"Web extraction completed (fallback method). Saved {saved_count}/{result_count} items to database")
+                    print(f"Web extraction completed! Saved {saved_count}/{result_count} items (fallback method)")
+                    status_placeholder.success(f"Web extraction completed! Saved {saved_count} items to database.")
+
                 # Display the latest data
                 st.subheader("Latest Content Data")
                 st.dataframe(fetch_data())
+
             else:
                 error_msg = results.get('error', 'Unknown error')
                 logger.error(f"Web extraction failed or found no results: {error_msg}")
                 print(f"ERROR: Web extraction failed: {error_msg}")
                 progress_bar.progress(100)
                 status_placeholder.error(f"Web extraction failed or found no results: {error_msg}")
+
         except Exception as e:
             logger.exception(f"Exception during web extraction: {str(e)}")
             print(f"CRITICAL ERROR: Web extraction process failed: {str(e)}")
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed with exception: {str(e)}")
+
 
 # Sidebar for application navigation
 st.sidebar.title("Navigation")
