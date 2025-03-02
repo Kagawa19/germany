@@ -56,39 +56,42 @@ logger.addHandler(console_handler)
 class WebExtractor:
     """Class for extracting web content based on prompt files."""
     
-    def __init__(self):
-        """Initialize the WebExtractor with API keys from environment variables."""
-        logger.info("Initializing WebExtractor")
+    def __init__(self, 
+                use_ai=True, 
+                openai_client=None, 
+                generate_ai_summary_func=None, 
+                extract_date_with_ai_func=None,
+                prompt_path=None,
+                max_workers=5,
+                serper_api_key=None):
+        """
+        Initialize WebExtractor with optional AI capabilities.
         
+        Args:
+            use_ai: Whether to use AI features
+            openai_client: OpenAI client instance
+            generate_ai_summary_func: Function to generate AI summaries
+            extract_date_with_ai_func: Function to extract dates with AI
+            prompt_path: Path to the prompt file
+            max_workers: Number of workers for ThreadPoolExecutor
+            serper_api_key: API key for Serper web search
+        """
         # Load environment variables
         load_dotenv()
-        self.serper_api_key = os.getenv('SERPER_API_KEY')
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         
-        if not self.serper_api_key:
-            logger.warning("SERPER_API_KEY not found in environment variables")
-        else:
-            logger.info("Successfully loaded SERPER_API_KEY")
-            
-        if not self.openai_api_key:
-            logger.warning("OPENAI_API_KEY not found in environment variables. AI-powered features will be disabled.")
-        else:
-            logger.info("Successfully loaded OPENAI_API_KEY")
-            
-        # Initialize other instance variables
-        self.prompt_path = os.path.join('prompts', 'extract.txt')
-        logger.info(f"Default prompt path set to: {self.prompt_path}")
+        self.use_ai = use_ai and openai_client is not None
+        self.openai_client = openai_client
+        self.generate_ai_summary = generate_ai_summary_func
+        self.extract_date_with_ai = extract_date_with_ai_func
         
-        # Set the maximum number of concurrent requests
-        self.max_workers = 5
+        # Set prompt path, with a default if not provided
+        self.prompt_path = prompt_path or os.path.join('prompts', 'extract.txt')
         
-        # Configure AI features
-        self.use_ai = True if self.openai_api_key else False
-        self.openai_client = None  # Will be set by main.py
-        self.generate_ai_summary = None  # Function reference will be set by main.py
-        self.extract_date_with_ai = None  # Function reference will be set by main.py
+        # Set max_workers
+        self.max_workers = max_workers
         
-        logger.info("WebExtractor initialized successfully")
+        # Set Serper API key
+        self.serper_api_key = serper_api_key or os.getenv('SERPER_API_KEY') 
         
     def read_prompt_file(self, file_path: Optional[str] = None) -> str:
         """Read the content of a prompt file."""

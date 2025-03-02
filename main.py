@@ -93,20 +93,20 @@ def fetch_data(limit=100):
         return pd.DataFrame()
 
 # Function to generate AI summary using OpenAI
-def generate_ai_summary(content, max_tokens=250):
-    """Generate a concise summary of content using OpenAI."""
+def generate_ai_summary(content, max_tokens=750):  # Significantly longer
+    """Generate an extensive summary of content using OpenAI."""
     if not openai_client or not content:
         return None
     
     try:
-        # Truncate long content to avoid token limits
-        content_preview = content[:10000] if len(content) > 10000 else content
+        # Truncate very long content 
+        content_preview = content[:15000] if len(content) > 15000 else content
         
         response = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes text about environmental sustainability and international cooperation. Create concise, factual summaries."},
-                {"role": "user", "content": f"Summarize this content in 2-3 sentences focusing on the key information about international cooperation and environmental sustainability efforts: {content_preview}"}
+                {"role": "system", "content": "You are a detailed research assistant specializing in summarizing complex texts about international cooperation and environmental sustainability."},
+                {"role": "user", "content": f"Create a detailed, informative summary of this content. Provide 6-7 sentences that comprehensively capture the key points, main arguments, and significant insights. Highlight specific initiatives, outcomes, and the broader context of international cooperation in environmental sustainability: {content_preview}"}
             ],
             max_tokens=max_tokens,
             temperature=0.3
@@ -157,38 +157,275 @@ def extract_date_with_ai(content, url):
         return None
 
 # Function to analyze content with AI for benefits and insights
-def analyze_content_with_ai(content_id, title, content, limit=10):
-    """Analyze content for benefits and insights using OpenAI."""
-    if not openai_client or not content:
+def analyze_content_with_ai(content_id, title, content, summary=None, information=None, theme=None, organization=None, date=None, link=None, limit=10):
+    """
+    Analyze content for benefits and insights using OpenAI.
+    
+    Uses all available data fields to provide more context for analysis.
+    """
+    if not openai_client:
+        logger.warning(f"Cannot analyze content ID {content_id}: Missing OpenAI client")
+        print(f"SKIP AI analysis for ID {content_id}: Missing OpenAI client")
+        return None, None
+    
+    if not content and not summary and not information:
+        logger.warning(f"Cannot analyze content ID {content_id}: No content available")
+        print(f"SKIP AI analysis for ID {content_id}: No content available")
         return None, None
     
     try:
-        # Truncate long content
-        content_preview = content[:8000] if len(content) > 8000 else content
+        # Prepare all available content fields
+        content_preview = content[:15000] if content and len(content) > 15000 else content
         
+        # Build a comprehensive context with all available fields
+        context_parts = []
+        
+        if title:
+            context_parts.append(f"TITLE: {title}")
+        
+        if organization:
+            context_parts.append(f"ORGANIZATION: {organization}")
+            
+        if theme:
+            context_parts.append(f"THEME: {theme}")
+            
+        if date:
+            context_parts.append(f"DATE: {date}")
+            
+        if link:
+            context_parts.append(f"SOURCE: {link}")
+            
+        if summary:
+            context_parts.append(f"SUMMARY: {summary}")
+            
+        if information:
+            context_parts.append(f"ADDITIONAL INFORMATION: {information}")
+            
+        if content_preview:
+            context_parts.append(f"FULL CONTENT: {content_preview}")
+            
+        combined_context = "\n\n".join(context_parts)
+        
+        # Log content information
+        print(f"Analyzing content ID {content_id} with {len(combined_context)} chars of combined context")
+        logger.info(f"Analyzing content ID {content_id}: title='{title}', organization='{organization}', theme='{theme}'")
+        
+        # More specific prompt with detailed examples - including request for JSON in the prompt itself
+        system_prompt = """
+        You are an expert analyst specializing in German international cooperation and environmental sustainability projects.
+        
+        Your task is to extract TWO types of information:
+        
+        1. BENEFITS TO GERMANY - These are specific advantages, gains, or positive outcomes that Germany receives from the cooperation or project described. Examples include:
+           - Economic benefits (trade opportunities, market access, job creation)
+           - Knowledge/technology transfer to German institutions
+           - Diplomatic influence and soft power
+           - Climate protection that benefits German interests
+           - New partnerships that benefit German organizations
+           - Enhanced security or resource stability
+           - Fulfillment of Germany's international commitments
+        
+        2. INSIGHTS - These are key learnings, observations, or conclusions about international cooperation or sustainability. Examples include:
+           - Effective approaches to partnership
+           - Challenges in international projects
+           - Success factors in sustainability initiatives
+           - Innovative methods or technologies
+           - Policy implications
+        
+        BE INFERENTIAL - Even if benefits are not explicitly stated, you should infer reasonable benefits based on the nature of the cooperation or project.
+        
+        Format your response EXACTLY as JSON with these two keys:
+        {
+          "benefits_to_germany": ["benefit 1", "benefit 2", ...],
+          "insights": ["insight 1", "insight 2", ...]
+        }
+        
+        If you find NO benefits or insights, use empty arrays but maintain the JSON structure.
+        Be specific and concrete with your findings. Don't make up false information.
+        """
+        
+        user_prompt = f"""
+        Analyze this content about German international cooperation in environmental sustainability.
+        
+        Your goal is to extract:
+        1) SPECIFIC benefits to Germany from this cooperation/project 
+        2) Key insights about international cooperation and environmental sustainability
+        
+        If benefits aren't explicitly stated, make reasonable inferences based on the nature of the project.
+        
+        INPUT CONTENT:
+        {combined_context}
+        
+        Return your analysis in ONLY this JSON format:
+        {{
+          "benefits_to_germany": ["benefit 1", "benefit 2", ...],
+          "insights": ["insight 1", "insight 2", ...]
+        }}
+        
+        Keep the JSON structure even if one or both sections are empty.
+        """
+        
+        # Add debug timing
+        start_time = time.time()
+        
+        # Remove the response_format parameter since it's not supported by some models
         response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo-16k",
+            model="gpt-3.5-turbo",  # Change to a model you're using
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that analyzes content about German international cooperation and environmental sustainability projects. Extract concrete benefits to Germany and key insights."},
-                {"role": "user", "content": f"Analyze this content titled '{title}' and extract: 1) Specific benefits to Germany from this cooperation or project, and 2) Key insights about international cooperation and environmental sustainability. Format your response as JSON with two keys: 'benefits_to_germany' and 'insights'. Each should be an array of strings with 1-5 items.\n\nContent: {content_preview}"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
             ],
             max_tokens=1000,
-            temperature=0.5,
-            response_format={"type": "json_object"}
+            temperature=0.3
         )
         
-        result = json.loads(response.choices[0].message.content)
+        elapsed_time = time.time() - start_time
+        response_content = response.choices[0].message.content.strip()
         
-        benefits = result.get("benefits_to_germany", [])
-        insights = result.get("insights", [])
+        # Log the raw response for debugging
+        print(f"OpenAI response received in {elapsed_time:.2f}s for ID {content_id}")
+        logger.debug(f"Raw OpenAI response for ID {content_id}: {response_content[:500]}...")
+        print(f"Response sample: {response_content[:100]}...")
         
-        # Format as text for database storage
-        benefits_text = "\n\n".join(benefits) if benefits else None
-        insights_text = "\n\n".join(insights) if insights else None
-        
-        return benefits_text, insights_text
+        # Try to extract JSON from the response
+        # First, try direct JSON parsing
+        try:
+            result = json.loads(response_content)
+            
+            # Extract benefits and insights
+            benefits = result.get("benefits_to_germany", [])
+            insights = result.get("insights", [])
+            
+            # Log what was found
+            print(f"Found {len(benefits)} benefits and {len(insights)} insights for content ID {content_id}")
+            logger.info(f"AI analysis results for ID {content_id}: {len(benefits)} benefits, {len(insights)} insights")
+            
+            if len(benefits) > 0:
+                print(f"First benefit: {benefits[0]}")
+            if len(insights) > 0:
+                print(f"First insight: {insights[0]}")
+            
+            # Filter out empty or very short items
+            benefits = [b for b in benefits if b and len(b) > 10]
+            insights = [i for i in insights if i and len(i) > 10]
+            
+            # Format as text for database storage
+            benefits_text = "\n\n".join(benefits) if benefits else None
+            insights_text = "\n\n".join(insights) if insights else None
+            
+            return benefits_text, insights_text
+            
+        except json.JSONDecodeError:
+            # If direct parsing fails, try to extract JSON from text using regex
+            logger.warning(f"Failed to parse direct JSON from OpenAI for ID {content_id}, trying to extract JSON block")
+            print(f"Attempting to extract JSON from response for ID {content_id}")
+            
+            import re
+            json_pattern = r'```json\s*(.*?)\s*```|{[\s\S]*?}'
+            matches = re.findall(json_pattern, response_content, re.DOTALL)
+            
+            for match in matches:
+                if isinstance(match, tuple):
+                    for submatch in match:
+                        if submatch and '{' in submatch and '}' in submatch:
+                            try:
+                                # Try parsing this as JSON
+                                extracted_json = json.loads(submatch)
+                                if isinstance(extracted_json, dict) and ('benefits_to_germany' in extracted_json or 'insights' in extracted_json):
+                                    # Extract benefits and insights
+                                    benefits = extracted_json.get("benefits_to_germany", [])
+                                    insights = extracted_json.get("insights", [])
+                                    
+                                    # Log what was found
+                                    print(f"Extracted JSON found {len(benefits)} benefits and {len(insights)} insights for content ID {content_id}")
+                                    
+                                    # Filter out empty or very short items
+                                    benefits = [b for b in benefits if b and len(b) > 10]
+                                    insights = [i for i in insights if i and len(i) > 10]
+                                    
+                                    # Format as text for database storage
+                                    benefits_text = "\n\n".join(benefits) if benefits else None
+                                    insights_text = "\n\n".join(insights) if insights else None
+                                    
+                                    return benefits_text, insights_text
+                            except:
+                                continue
+                else:
+                    if match and '{' in match and '}' in match:
+                        try:
+                            # Try parsing this as JSON
+                            extracted_json = json.loads(match)
+                            if isinstance(extracted_json, dict) and ('benefits_to_germany' in extracted_json or 'insights' in extracted_json):
+                                # Extract benefits and insights
+                                benefits = extracted_json.get("benefits_to_germany", [])
+                                insights = extracted_json.get("insights", [])
+                                
+                                # Log what was found
+                                print(f"Extracted JSON found {len(benefits)} benefits and {len(insights)} insights for content ID {content_id}")
+                                
+                                # Filter out empty or very short items
+                                benefits = [b for b in benefits if b and len(b) > 10]
+                                insights = [i for i in insights if i and len(i) > 10]
+                                
+                                # Format as text for database storage
+                                benefits_text = "\n\n".join(benefits) if benefits else None
+                                insights_text = "\n\n".join(insights) if insights else None
+                                
+                                return benefits_text, insights_text
+                        except:
+                            continue
+            
+            # If no valid JSON found, try manual parsing as a last resort
+            logger.warning(f"No valid JSON found in response for ID {content_id}, attempting manual extraction")
+            print(f"Attempting manual extraction for ID {content_id}")
+            
+            # Try to extract benefits and insights from the text manually
+            benefits = []
+            insights = []
+            
+            # Look for benefits section
+            benefits_section = re.search(r'benefits[^:]*:(.+?)(?:insights|\Z)', response_content, re.IGNORECASE | re.DOTALL)
+            if benefits_section:
+                benefits_text = benefits_section.group(1).strip()
+                # Extract items (assuming they're in list format with dashes, numbers, etc.)
+                benefit_items = re.findall(r'[•\-\*\d+\.]\s*([^\n]+)', benefits_text)
+                if benefit_items:
+                    benefits = [item.strip() for item in benefit_items if len(item.strip()) > 10]
+                else:
+                    # If no list markers found, treat paragraphs as separate items
+                    benefit_items = [p.strip() for p in benefits_text.split('\n\n') if p.strip()]
+                    benefits = [item for item in benefit_items if len(item) > 10]
+            
+            # Look for insights section
+            insights_section = re.search(r'insights[^:]*:(.+?)(?:\Z)', response_content, re.IGNORECASE | re.DOTALL)
+            if insights_section:
+                insights_text = insights_section.group(1).strip()
+                # Extract items (assuming they're in list format with dashes, numbers, etc.)
+                insight_items = re.findall(r'[•\-\*\d+\.]\s*([^\n]+)', insights_text)
+                if insight_items:
+                    insights = [item.strip() for item in insight_items if len(item.strip()) > 10]
+                else:
+                    # If no list markers found, treat paragraphs as separate items
+                    insight_items = [p.strip() for p in insights_text.split('\n\n') if p.strip()]
+                    insights = [item for item in insight_items if len(item) > 10]
+            
+            if benefits or insights:
+                print(f"Manual extraction found {len(benefits)} benefits and {len(insights)} insights for content ID {content_id}")
+                
+                # Format as text for database storage
+                benefits_text = "\n\n".join(benefits) if benefits else None
+                insights_text = "\n\n".join(insights) if insights else None
+                
+                return benefits_text, insights_text
+            
+            # If all parsing attempts fail
+            logger.error(f"All parsing attempts failed for ID {content_id}")
+            print(f"Could not extract structured data from response for ID {content_id}")
+            return None, None
+            
     except Exception as e:
-        logger.error(f"Error analyzing content with AI: {str(e)}")
+        logger.error(f"Error analyzing content with AI for ID {content_id}: {str(e)}")
+        print(f"ERROR in AI analysis for ID {content_id}: {str(e)}")
         return None, None
 
 # Enhanced process_data function with AI capabilities
@@ -211,12 +448,19 @@ def process_data(limit=1000, use_ai=True):
         
         try:
             # Get database connection
+            logger.info("Establishing database connection")
+            print("Connecting to database...")
             conn = get_db_connection()
             cursor = conn.cursor()
+            logger.info("Database connection established successfully")
+            print("Database connection successful")
             
-            # Get content items that haven't been analyzed yet
+            # Get content items that haven't been analyzed yet - including all relevant fields
+            logger.info(f"Querying for unanalyzed content items (limit: {limit})")
+            print(f"Fetching up to {limit} unanalyzed content items from database")
             query = """
-            SELECT cd.id, cd.link, cd.title, cd.full_content
+            SELECT cd.id, cd.link, cd.title, cd.date, cd.summary, cd.full_content, 
+                   cd.information, cd.theme, cd.organization
             FROM content_data cd
             LEFT JOIN content_benefits cb ON cd.id = cb.content_id
             WHERE cb.content_id IS NULL
@@ -230,8 +474,11 @@ def process_data(limit=1000, use_ai=True):
             total_items = len(content_items)
             
             logger.info(f"Found {total_items} content items to analyze")
+            print(f"Found {total_items} unanalyzed content items")
             
             if total_items == 0:
+                logger.info("No new content to analyze, exiting early")
+                print("No new content found to analyze")
                 status_placeholder.info("No new content to analyze.")
                 progress_bar.progress(100)
                 return 0
@@ -240,27 +487,67 @@ def process_data(limit=1000, use_ai=True):
             status_placeholder.info(f"Analyzing {total_items} content items...")
             
             # Process items
+            logger.info(f"Beginning processing loop for {total_items} items")
+            print(f"Starting analysis of {total_items} content items")
+            
             for idx, item in enumerate(content_items):
-                content_id, link, title, content = item
+                content_id, link, title, date, summary, content, information, theme, organization = item
                 
-                # Skip if content is missing
-                if not content:
+                # Skip if all content fields are missing
+                if not content and not summary and not information:
                     logger.warning(f"Skipping content ID {content_id}: No content available")
+                    print(f"SKIP: Content ID {content_id} ({title}) has no usable content")
                     continue
                     
                 logger.info(f"Analyzing content ID {content_id}: {title}")
+                print(f"Processing item {idx+1}/{total_items}: ID {content_id} - '{title}'")
                 
                 # Extract benefits and insights
                 if use_ai and openai_client:
-                    # Use AI for analysis
-                    benefits_text, insights_text = analyze_content_with_ai(content_id, title, content)
+                    # Use AI for analysis with all available fields
+                    logger.info(f"Using AI analysis for content ID {content_id}")
+                    print(f"Using OpenAI to analyze content ID {content_id}")
+                    
+                    # Format date to string if it's a date object
+                    date_str = date.isoformat() if date and hasattr(date, 'isoformat') else date
+                    
+                    benefits_text, insights_text = analyze_content_with_ai(
+                        content_id=content_id,
+                        title=title,
+                        content=content,
+                        summary=summary,
+                        information=information,
+                        theme=theme,
+                        organization=organization,
+                        date=date_str,
+                        link=link
+                    )
+                    
+                    logger.debug(f"AI analysis results for ID {content_id}: Benefits: {benefits_text is not None}, Insights: {insights_text is not None}")
+                    print(f"AI analysis complete for ID {content_id}")
                 else:
                     # Fallback to keyword-based analysis
-                    benefits_text, insights_text = analyze_content_for_benefits_keyword(content)
+                    logger.info(f"Using keyword analysis for content ID {content_id}")
+                    print(f"Using keyword-based analysis for content ID {content_id}")
+                    
+                    # Combine all text fields for keyword analysis
+                    combined_text = ""
+                    if content:
+                        combined_text += content + "\n\n"
+                    if summary:
+                        combined_text += summary + "\n\n"
+                    if information:
+                        combined_text += information + "\n\n"
+                        
+                    benefits_text, insights_text = analyze_content_for_benefits_keyword(combined_text)
+                    logger.debug(f"Keyword analysis results for ID {content_id}: Benefits: {benefits_text is not None}, Insights: {insights_text is not None}")
+                    print(f"Keyword analysis complete for ID {content_id}")
                 
                 # Store results
                 if benefits_text or insights_text:
                     # Insert into benefits table
+                    logger.info(f"Storing analysis results for content ID {content_id}")
+                    print(f"Writing benefits and insights to database for ID {content_id}")
                     benefit_query = """
                     INSERT INTO benefits (links, benefits_to_germany, insights)
                     VALUES (%s, %s, %s)
@@ -270,6 +557,8 @@ def process_data(limit=1000, use_ai=True):
                     links_array = "{" + link + "}"
                     cursor.execute(benefit_query, (links_array, benefits_text, insights_text))
                     benefit_id = cursor.fetchone()[0]
+                    logger.debug(f"Created benefit ID {benefit_id} for content ID {content_id}")
+                    print(f"Created new benefit entry (ID: {benefit_id}) in benefits table")
                     
                     # Create relationship in content_benefits table
                     relation_query = """
@@ -278,9 +567,12 @@ def process_data(limit=1000, use_ai=True):
                     """
                     
                     cursor.execute(relation_query, (content_id, benefit_id))
-                    logger.info(f"Created benefit entry for content ID {content_id}")
+                    logger.info(f"Created benefit relationship for content ID {content_id} and benefit ID {benefit_id}")
+                    print(f"Linked content ID {content_id} with benefit ID {benefit_id} in content_benefits table")
                 else:
                     # Create empty entry to mark as processed
+                    logger.info(f"No benefits or insights found for content ID {content_id}, creating empty entry")
+                    print(f"No benefits/insights found for ID {content_id}, creating placeholder record")
                     benefit_query = """
                     INSERT INTO benefits (links, benefits_to_germany, insights)
                     VALUES (%s, %s, %s)
@@ -290,6 +582,8 @@ def process_data(limit=1000, use_ai=True):
                     links_array = "{" + link + "}"
                     cursor.execute(benefit_query, (links_array, None, None))
                     benefit_id = cursor.fetchone()[0]
+                    logger.debug(f"Created empty benefit ID {benefit_id} for content ID {content_id}")
+                    print(f"Created empty benefit entry (ID: {benefit_id}) in benefits table")
                     
                     # Create relationship in content_benefits table
                     relation_query = """
@@ -298,7 +592,8 @@ def process_data(limit=1000, use_ai=True):
                     """
                     
                     cursor.execute(relation_query, (content_id, benefit_id))
-                    logger.info(f"Created empty benefit entry for content ID {content_id}")
+                    logger.info(f"Created empty benefit relationship for content ID {content_id} and benefit ID {benefit_id}")
+                    print(f"Linked content ID {content_id} with empty benefit ID {benefit_id} in content_benefits table")
                 
                 processed_count += 1
                 # Update progress
@@ -306,9 +601,16 @@ def process_data(limit=1000, use_ai=True):
                 progress_bar.progress(progress)
                 if idx % 5 == 0 or idx == total_items - 1:
                     status_placeholder.info(f"Analyzed {idx + 1} of {total_items} items ({int(progress * 100)}%)...")
+                    logger.info(f"Progress update: {idx + 1}/{total_items} items processed ({int(progress * 100)}%)")
+                    print(f"PROGRESS: {idx + 1}/{total_items} items processed ({int(progress * 100)}%)")
             
             # Commit the transaction
+            logger.info("Committing database transaction")
+            print("Committing all changes to database")
             conn.commit()
+            
+            logger.info("Closing database connection")
+            print("Closing database connection")
             cursor.close()
             conn.close()
             
@@ -316,17 +618,23 @@ def process_data(limit=1000, use_ai=True):
             progress_bar.progress(1.0)
             if processed_count > 0:
                 status_placeholder.success(f"Successfully analyzed {processed_count} content items for benefits and insights.")
+                logger.info(f"Content analysis completed successfully with {processed_count} items processed")
+                print(f"SUCCESS: Content analysis completed, processed {processed_count} items")
             else:
                 status_placeholder.info("No content was analyzed.")
+                logger.info("Content analysis completed with no items processed")
+                print("NOTICE: Content analysis completed but no items were processed")
                 
-            logger.info(f"Content analysis completed with {processed_count} items processed")
-            print(f"Content analysis completed with {processed_count} items processed")
+            logger.info(f"Content analysis process finished, returning processed count: {processed_count}")
+            print(f"Data processing complete, returning count: {processed_count}")
             
             return processed_count
             
         except Exception as e:
             logger.error(f"Error in content analysis: {str(e)}")
+            logger.exception("Full exception details:")
             print(f"ERROR: Content analysis failed: {str(e)}")
+            print(f"Exception type: {type(e).__name__}")
             status_placeholder.error(f"Error in content analysis: {str(e)}")
             return 0
 
@@ -384,15 +692,17 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, use_ai=True
         # Create progress bar
         progress_bar = st.progress(0)
 
-        # Initialize WebExtractor
+        # Initialize WebExtractor with explicit method passing
         logger.info("Initializing WebExtractor")
-        extractor = WebExtractor()
-        
-        # Configure AI capabilities
-        extractor.use_ai = use_ai
-        extractor.openai_client = openai_client
-        extractor.generate_ai_summary = generate_ai_summary
-        extractor.extract_date_with_ai = extract_date_with_ai
+        extractor = WebExtractor(
+            use_ai=use_ai,
+            openai_client=openai_client,
+            generate_ai_summary_func=generate_ai_summary,
+            extract_date_with_ai_func=extract_date_with_ai,
+            prompt_path=os.path.join('prompts', 'extract.txt'),
+            max_workers=10,
+            serper_api_key=os.getenv('SERPER_API_KEY')
+        )
 
         # Set up a placeholder for status updates
         status_placeholder = st.empty()
@@ -485,7 +795,6 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, use_ai=True
             print(f"CRITICAL ERROR: Web extraction process failed: {str(e)}")
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed with exception: {str(e)}")
-
 # Function to add new content manually
 def add_new_content(link, title, date, summary, theme, organization, content):
     logger.info(f"Adding new content manually: {link}")
@@ -610,7 +919,7 @@ elif app_mode == "View Data":
     st.subheader("Content Data")
     
     # Add data display options
-    display_limit = st.slider("Number of records to display", 10, 1000, 100)
+    display_limit = st.slider("Number of records to display", 700, 11000, 1200)
     
     try:
         data = fetch_data(limit=display_limit)
@@ -875,8 +1184,8 @@ elif app_mode == "Web Extraction":
     st.subheader("Extraction Options")
     col1, col2 = st.columns(2)
     with col1:
-        max_queries = st.slider("Number of search queries to process", 5, 100, 25)
-        max_results_per_query = st.slider("Results per query", 3, 20, 10)
+        max_queries = st.slider("Number of search queries to process", 20, 300, 75)
+        max_results_per_query = st.slider("Results per query", 7, 40, 35)
         logger.debug(f"User set max_queries to: {max_queries}, max_results_per_query to: {max_results_per_query}")
         print(f"User set extraction parameters: {max_queries} queries with {max_results_per_query} results per query")
     with col2:

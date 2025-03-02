@@ -5,6 +5,7 @@ from psycopg2.extras import execute_values
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 import json
+import re
 from datetime import datetime
 
 # Configure logging
@@ -40,65 +41,97 @@ def get_db_connection():
 
 def format_date(date_str: Optional[str]) -> Optional[str]:
     """
-    Format date string into ISO format (YYYY-MM-DD).
-    Handles various date formats.
+    Robustly parse and validate dates from various sources.
     
     Args:
         date_str: Date string in various formats
         
     Returns:
-        ISO formatted date string or None if invalid
+        Standardized ISO date string (YYYY-MM-DD) or None if invalid
     """
-    if not date_str:
+    if not date_str or not isinstance(date_str, str):
         return None
-        
-    # Already in ISO format
-    if isinstance(date_str, str) and re.match(r'^\d{4}-\d{2}-\d{2}', date_str):
-        return date_str.split('T')[0]  # Remove time component if present
     
-    # Try different date formats
-    formats = [
-        '%Y-%m-%d',  # 2023-01-15
-        '%Y/%m/%d',  # 2023/01/15
-        '%d-%m-%Y',  # 15-01-2023
-        '%d/%m/%Y',  # 15/01/2023
-        '%m-%d-%Y',  # 01-15-2023
-        '%m/%d/%Y',  # 01/15/2023
-        '%B %d, %Y',  # January 15, 2023
-        '%d %B %Y',   # 15 January 2023
-        '%b %d, %Y',  # Jan 15, 2023
-        '%d %b %Y',   # 15 Jan 2023
-        '%Y-%m-%dT%H:%M:%S',  # 2023-01-15T14:30:00
-        '%Y-%m-%dT%H:%M:%SZ'  # 2023-01-15T14:30:00Z
+    # Remove any leading/trailing whitespace and common prefixes
+    date_str = date_str.strip()
+    date_str = re.sub(r'^.*?(?:date|on):\s*', '', date_str, flags=re.IGNORECASE)
+    
+    # Clean up malformed strings
+    date_str = re.sub(r'[{}();"]', '', date_str)
+    
+    # Extensive date parsing patterns
+    date_patterns = [
+        # ISO and standard formats
+        r'(\d{4}-\d{2}-\d{2})',  # YYYY-MM-DD
+        r'(\d{4}/\d{2}/\d{2})',  # YYYY/MM/DD
+        r'(\d{2}-\d{2}-\d{4})',  # DD-MM-YYYY
+        r'(\d{2}/\d{2}/\d{4})',  # DD/MM/YYYY
+        
+        # Verbose date formats
+        r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})',
+        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(\d{4})',
+        
+        # ISO 8601 with time
+        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})',
+        
+        # Localized formats
+        r'(\d{2}\.\d{2}\.\d{4})',  # German format DD.MM.YYYY
     ]
     
-    for fmt in formats:
+    # Preferred date parsing formats
+    parse_formats = [
+        '%Y-%m-%d',
+        '%Y/%m/%d', 
+        '%d-%m-%Y', 
+        '%d/%m/%Y',
+        '%d.%m.%Y',
+        '%Y-%m-%dT%H:%M:%S',
+        '%B %d, %Y',
+        '%d %B %Y',
+        '%b %d, %Y',
+        '%d %b %Y'
+    ]
+    
+    # First, try regex extraction
+    for pattern in date_patterns:
+        match = re.search(pattern, date_str, re.IGNORECASE)
+        if match:
+            date_str = match.group(1)
+            break
+    
+    # Try parsing with different formats
+    for fmt in parse_formats:
         try:
-            dt = datetime.strptime(date_str, fmt)
-            return dt.strftime('%Y-%m-%d')
+            parsed_date = datetime.strptime(date_str, fmt)
+            
+            # Additional validation
+            current_year = datetime.now().year
+            if parsed_date.year < 1900 or parsed_date.year > (current_year + 10):
+                continue
+            
+            return parsed_date.strftime('%Y-%m-%d')
         except ValueError:
             continue
+    
+    # Fallback: attempt to extract year, month, day
+    year_match = re.search(r'\b(19\d{2}|20\d{2})\b', date_str)
+    if year_match:
+        year = int(year_match.group(1))
+        if 1900 <= year <= (datetime.now().year + 10):
+            # Try to find month and day
+            month_match = re.search(r'\b(0?[1-9]|1[0-2])\b', date_str)
+            day_match = re.search(r'\b(0?[1-9]|[12]\d|3[01])\b', date_str)
             
-    # If all formats fail, try to extract a date with regex
-    date_patterns = [
-        r'(\d{4}-\d{2}-\d{2})',  # YYYY-MM-DD
-        r'(\d{2}/\d{2}/\d{4})',  # DD/MM/YYYY or MM/DD/YYYY
-        r'(\d{2}\.\d{2}\.\d{4})'  # DD.MM.YYYY
-    ]
-    
-    for pattern in date_patterns:
-        match = re.search(pattern, date_str)
-        if match:
-            extracted_date = match.group(1)
-            # Try to parse the extracted date
-            for fmt in formats:
+            if month_match and day_match:
+                month = int(month_match.group(1))
+                day = int(day_match.group(1))
+                
                 try:
-                    dt = datetime.strptime(extracted_date, fmt)
-                    return dt.strftime('%Y-%m-%d')
+                    return datetime(year, month, day).strftime('%Y-%m-%d')
                 except ValueError:
-                    continue
+                    pass
     
-    # If we reach here, we couldn't parse the date
+    # Final fallback: log and return None
     logger.warning(f"Could not parse date string: {date_str}")
     return None
 
