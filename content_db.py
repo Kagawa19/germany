@@ -137,7 +137,7 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
 
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
-    Store extracted data into the database.
+    Store extracted data into the database using the new consolidated schema.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -181,17 +181,21 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     except Exception as date_error:
                         logger.warning(f"Error processing date '{date_str}' for URL {link}: {str(date_error)}")
                 
-                # Insert into content_data table
+                # Insert into content_data table with the new structure
+                # Note: Initial insertion sets benefits_to_germany and insights to NULL
                 query = """
                 INSERT INTO content_data 
-                (link, title, date, summary, full_content, information, theme, organization)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                (link, title, date, summary, full_content, information, theme, organization, sentiment, benefits_to_germany, insights)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
                 """
                 
+                # Set default sentiment to neutral
+                sentiment = "Neutral"
+                
                 cursor.execute(
                     query, 
-                    (link, title, date_value, summary, content, summary, theme, organization)
+                    (link, title, date_value, summary, content, summary, theme, organization, sentiment, None, None)
                 )
                 
                 # Get the ID of the inserted record
@@ -199,7 +203,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 inserted_ids.append(record_id)
                 
                 logger.info(f"Inserted record with ID {record_id} for URL: {link}")
-            
+                
             except Exception as item_error:
                 logger.error(f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}")
                 # Continue with next item
@@ -214,7 +218,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         conn.close()
         
         return inserted_ids
-        
+    
     except Exception as e:
         logger.error(f"Error storing data in database: {str(e)}")
         if 'conn' in locals() and conn:

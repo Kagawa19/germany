@@ -647,11 +647,8 @@ class WebExtractor:
 
     def run(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
-        Run the web extraction process, store results in database, and return results in a structured format.
-        
-        Args:
-            max_queries: Maximum number of queries to process (None for all)
-            max_results_per_query: Maximum results to extract per query (None for default)
+        Run the web extraction process and return results in a structured format.
+        Database storage should be handled by the calling function.
         """
         logger.info("Running web extractor")
         
@@ -661,23 +658,6 @@ class WebExtractor:
             # Run the extraction process with the parameters
             results = self.extract_web_content(max_queries, max_results_per_query)
         
-            # Store results in database if available
-            stored_ids = []
-            
-            from content_db import store_extract_data
-            
-            if results:
-                logger.info("Extraction successful, proceeding to database storage")
-                try:
-                    stored_ids = store_extract_data(results)
-                    logger.info(f"Database storage completed with {len(stored_ids)} records")
-                except Exception as db_error:
-                    logger.error(f"Error storing data in database: {str(db_error)}", exc_info=True)
-                    print(f"\nWARNING: Database storage failed: {str(db_error)}")
-                    print("Continuing with extraction results only.")
-            else:
-                logger.warning("No extraction results available for database storage")
-            
             # Calculate timing and prepare output
             end_time = time.time()
             execution_time = end_time - start_time
@@ -688,12 +668,10 @@ class WebExtractor:
                 "timestamp": timestamp,
                 "execution_time": f"{execution_time:.2f} seconds",
                 "result_count": len(results),
-                "database_stored_count": len(stored_ids),
-                "database_stored_ids": stored_ids,
                 "results": results
             }
             
-            logger.info(f"Web extractor completed in {execution_time:.2f} seconds with {len(results)} results, {len(stored_ids)} stored in database")
+            logger.info(f"Web extractor completed in {execution_time:.2f} seconds with {len(results)} results")
             
             return output
             

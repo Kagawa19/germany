@@ -1,7 +1,7 @@
--- Create the content_data table with the specified columns
+-- Create the content_data table with all columns in one place
 CREATE TABLE IF NOT EXISTS content_data (
     id SERIAL PRIMARY KEY,
-    link VARCHAR(255) NOT NULL,
+    link VARCHAR(255) NOT NULL UNIQUE,
     title VARCHAR(255),
     date DATE,
     summary TEXT,
@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS content_data (
     information TEXT,
     theme VARCHAR(100),
     organization VARCHAR(100),
+    sentiment VARCHAR(50),
+    benefits_to_germany TEXT,
+    insights TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -18,23 +21,18 @@ CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);
 CREATE INDEX IF NOT EXISTS idx_content_data_theme ON content_data (theme);
 CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization);
 CREATE INDEX IF NOT EXISTS idx_content_data_date ON content_data (date);
+CREATE INDEX IF NOT EXISTS idx_content_data_sentiment ON content_data (sentiment);
 
--- Create the benefits table
-CREATE TABLE IF NOT EXISTS benefits (
-    id SERIAL PRIMARY KEY,
-    links TEXT[], -- Array to store multiple links
-    benefits_to_germany TEXT,
-    insights TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Create a trigger to automatically update the updated_at timestamp
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE 'plpgsql';
 
--- Create indexes for better performance on benefits
-CREATE INDEX IF NOT EXISTS idx_benefits_links ON benefits USING GIN(links);
-
--- Create a relationship table (for many-to-many relationships)
-CREATE TABLE IF NOT EXISTS content_benefits (
-    content_id INTEGER REFERENCES content_data(id) ON DELETE CASCADE,
-    benefit_id INTEGER REFERENCES benefits(id) ON DELETE CASCADE,
-    PRIMARY KEY (content_id, benefit_id)
-);
+CREATE TRIGGER update_content_timestamp
+BEFORE UPDATE ON content_data
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
