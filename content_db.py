@@ -5,40 +5,35 @@ from psycopg2.extras import execute_values
 from typing import List, Dict, Any, Optional, Tuple
 from dotenv import load_dotenv
 import json
-import numpy as np
 from openai import OpenAI
-
+import os
+from typing import Optional, List, Dict, Any
+import nltk
+from nltk.tokenize import sent_tokenize
+import re
 import re
 from datetime import datetime
-import os
-from dotenv import load_dotenv
-from openai import OpenAI
-
-# Load environment variables and set up OpenAI client
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
-openai_client = OpenAI(api_key=openai_api_key)
+import nltk
+from nltk.tokenize import sent_tokenize
+from urllib.parse import urlparse
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("content_db.log"),
+        logging.StreamHandler()
+    ]
+)
+
 logger = logging.getLogger("ContentDB")
 
-def load_prompt(prompt_file):
-    """
-    Load a prompt template from the prompts folder
-    
-    Args:
-        prompt_file: The name of the prompt file to load
-        
-    Returns:
-        The content of the prompt file as a string
-    """
-    try:
-        prompt_path = os.path.join("prompts", prompt_file)
-        with open(prompt_path, "r", encoding="utf-8") as file:
-            return file.read().strip()
-    except Exception as e:
-        logger.error(f"Error loading prompt from {prompt_file}: {str(e)}")
-        return ""
+# Download NLTK data if needed (uncomment this if you want to use NLTK)
+# try:
+#     nltk.download('punkt', quiet=True)
+# except:
+#     logger.warning("Failed to download NLTK data, sentence tokenization may be less accurate")
 
 def get_db_connection():
     """Create a connection to the PostgreSQL database."""
@@ -47,7 +42,7 @@ def get_db_connection():
         load_dotenv()
         
         # Get database connection parameters from environment variables
-        db_host = os.getenv("DB_HOST", "postgres")  # Use service name in Docker
+        db_host = os.getenv("DB_HOST", "postgres")
         db_port = os.getenv("DB_PORT", "5432")
         db_name = os.getenv("DB_NAME", "appdb")
         db_user = os.getenv("DB_USER", "postgres")
@@ -68,141 +63,525 @@ def get_db_connection():
         logger.error(f"Error connecting to database: {str(e)}")
         raise
 
-def create_embedding(text: str) -> List[float]:
+# Initialize OpenAI client
+def get_openai_client():
+    """Get or initialize OpenAI client."""
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        return None
+    
+    try:
+        return OpenAI(api_key=openai_api_key)
+    except Exception as e:
+        logger.error(f"Error initializing OpenAI client: {str(e)}")
+        return None
+
+def load_prompt_file(filename):
     """
-    Generate an embedding vector for the provided text using OpenAI's API.
+    Load prompt from file in the prompts directory.
     
     Args:
-        text: The text to create an embedding for
+        filename: Name of the prompt file
         
     Returns:
-        List of floats representing the embedding vector
+        Content of the prompt file or empty string if file not found
     """
+    prompt_path = os.path.join("prompts", filename)
     try:
-        # Truncate text if needed to meet API limits
-        max_text_length = 8000
-        if len(text) > max_text_length:
-            text = text[:max_text_length]
-            
-        logger.debug(f"Creating embedding for text (length: {len(text)})")
-        
-        # Call OpenAI's embedding API
-        response = openai_client.embeddings.create(
-            model="text-embedding-ada-002",  # Or the latest embedding model
-            input=text
-        )
-        
-        # Extract the embedding from the response
-        embedding = response.data[0].embedding
-        
-        logger.debug(f"Successfully created embedding with dimensions: {len(embedding)}")
-        return embedding
-        
+        with open(prompt_path, 'r', encoding='utf-8') as file:
+            return file.read().strip()
     except Exception as e:
-        logger.error(f"Error creating embedding: {str(e)}")
-        # Return empty vector in case of failure
+        logger.warning(f"Could not load prompt file {prompt_path}: {str(e)}")
+        return ""
+
+def is_high_quality_content(content, title, url):
+    """
+    Determine if content is high quality enough for AI processing.
+    
+    Args:
+        content: The full content text
+        title: The content title
+        url: The source URL
+        
+    Returns:
+        Boolean indicating if content is high quality
+    """
+    # Skip if content is too short
+    if len(content) < 500:
+        logger.info(f"Content too short for quality AI processing: {len(content)} chars")
+        return False
+    
+    # Skip if content doesn't mention Germany (for relevance)
+    if "germany" not in content.lower() and "german" not in content.lower():
+        logger.info(f"Content doesn't mention Germany, skipping AI processing")
+        return False
+    
+    # Check if the content is from a reliable domain
+    reliable_domains = ["giz.de", "bmz.de", "kfw.de", "europa.eu", "un.org", "worldbank.org"]
+    is_reliable_source = any(domain in url.lower() for domain in reliable_domains)
+    
+    # Look for quality indicators in the content
+    quality_keywords = [
+        "cooperation", "sustainable", "development", "partnership", "initiative",
+        "project", "bilateral", "agreement", "funding", "investment", 
+        "climate", "conservation", "biodiversity", "renewable", "forest"
+    ]
+    
+    # Calculate a quality score based on keyword presence and other factors
+    quality_score = 0
+    
+    # Add points for keywords
+    for keyword in quality_keywords:
+        if keyword in content.lower():
+            quality_score += 1
+    
+    # Add points for longer content which tends to be more substantive
+    if len(content) > 1000:
+        quality_score += 2
+    if len(content) > 3000:
+        quality_score += 2
+    
+    # Add points for reliable sources
+    if is_reliable_source:
+        quality_score += 5
+    
+    # Add points for structured content (likely more organized information)
+    if content.count('\n\n') > 5:
+        quality_score += 2
+        
+    # Calculate ratio of keywords to content length (density of relevant info)
+    keyword_density = quality_score / (len(content) / 500)  # Normalize for content length
+    
+    # Log quality assessment
+    logger.info(f"Content quality assessment - Score: {quality_score}, Keyword density: {keyword_density:.2f}")
+    
+    # Return True if content meets quality thresholds
+    return quality_score >= 5 or (is_reliable_source and quality_score >= 3) or keyword_density > 0.5
+
+def generate_summary(content, max_sentences=5):
+    """
+    Generate a summary from content using OpenAI.
+    Only processes high-quality content.
+    
+    Args:
+        content: Content text to summarize
+        max_sentences: Maximum number of sentences (not used)
+        
+    Returns:
+        Summarized text
+    """
+    if not content or len(content) < 100:
+        return content
+    
+    # Check title and URL if available from context
+    title = ""
+    url = ""
+    # These could be passed as additional parameters or retrieved from thread-local storage
+    
+    # Check content quality
+    if not is_high_quality_content(content, title, url):
+        logger.info("Content didn't pass quality check for summary generation")
+        return content
+    
+    client = get_openai_client()
+    if client:
+        try:
+            # Extract sections most relevant to Germany
+            germany_paragraphs = []
+            paragraphs = content.split('\n\n')
+            for para in paragraphs:
+                if "germany" in para.lower() or "german" in para.lower():
+                    germany_paragraphs.append(para)
+            
+            # Use either Germany-focused paragraphs or first part of content
+            if germany_paragraphs and len(' '.join(germany_paragraphs)) >= 300:
+                content_to_summarize = ' '.join(germany_paragraphs[:3])  # Top 3 most relevant paragraphs
+                logger.info(f"Using {len(germany_paragraphs)} Germany-specific paragraphs for summary")
+            else:
+                # Use only first 3000 chars to save on token costs
+                content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            logger.info("Generating summary using OpenAI")
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": f"Summarize this content, focusing particularly on Germany's role, contributions, and any benefits mentioned: {content_to_summarize}"}
+                ],
+                temperature=0.3,
+                max_tokens=150
+            )
+            
+            summary = response.choices[0].message.content.strip()
+            logger.info(f"Successfully generated summary with OpenAI ({len(summary)} chars)")
+            return summary
+        
+        except Exception as e:
+            logger.error(f"Error using OpenAI for summary: {str(e)}")
+    
+    return content
+
+# FIXED: Removed the 'self' parameter from this function since it's not a class method
+def analyze_sentiment(content: str) -> str:
+    """
+    Analyze sentiment using simple keyword-based approach.
+    This function replaces AI-based sentiment analysis.
+    
+    Args:
+        content: Content text to analyze
+        
+    Returns:
+        Sentiment (Positive, Negative, or Neutral)
+    """
+    content_lower = content.lower()
+    
+    # Define positive and negative keywords
+    positive_keywords = [
+        "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
+        "advantage", "effective", "efficiently", "progress", "achievement", "sustainable",
+        "solution", "opportunity", "promising", "innovative", "advanced", "partnership"
+    ]
+    
+    negative_keywords = [
+        "failure", "failed", "problem", "challenge", "difficult", "negative", "risk",
+        "threat", "damage", "harmful", "pollution", "degradation", "unsustainable",
+        "danger", "crisis", "emergency", "concern", "alarming", "devastating"
+    ]
+    
+    # Count occurrences
+    positive_count = sum(content_lower.count(keyword) for keyword in positive_keywords)
+    negative_count = sum(content_lower.count(keyword) for keyword in negative_keywords)
+    
+    # Determine sentiment
+    if positive_count > negative_count * 1.5:
+        return "Positive"
+    elif negative_count > positive_count * 1.5:
+        return "Negative"
+    else:
+        return "Neutral"
+    
+
+def extract_benefits(content: str) -> Optional[str]:
+    """
+    Extract potential benefits to Germany using OpenAI with prompt from benefits.txt file.
+    Only processes high-quality content.
+    
+    Args:
+        content: Text content to analyze
+        
+    Returns:
+        Extracted benefits text or None
+    """
+    # Skip if no mention of Germany
+    if "germany" not in content.lower() and "german" not in content.lower():
+        return None
+    
+    # Check title and URL if available from context
+    title = ""
+    url = ""
+    # These could be passed as additional parameters or retrieved from thread-local storage
+    
+    # Check content quality
+    if not is_high_quality_content(content, title, url):
+        logger.info("Content didn't pass quality check for benefits extraction")
+        return None
+    
+    client = get_openai_client()
+    if client:
+        try:
+            # Extract sections most relevant to Germany and benefits
+            benefit_keywords = [
+                "benefit", "advantage", "gain", "profit", "value", "opportunity",
+                "improvement", "enhanced", "strengthen", "contribute", "partnership",
+                "cooperation", "support", "funding", "investment", "expertise"
+            ]
+            
+            # Try to use NLTK for better sentence segmentation
+            try:
+                sentences = sent_tokenize(content)
+            except:
+                # Fallback to simple sentence splitting
+                sentences = re.split(r'(?<=[.!?])\s+', content)
+            
+            # Find sentences that mention both Germany and potential benefits
+            benefit_sentences = []
+            for sentence in sentences:
+                sentence_lower = sentence.lower()
+                if ("germany" in sentence_lower or "german" in sentence_lower):
+                    if any(keyword in sentence_lower for keyword in benefit_keywords):
+                        benefit_sentences.append(sentence.strip())
+            
+            # Combine selected sentences or use content snippet
+            if benefit_sentences and len(' '.join(benefit_sentences)) >= 200:
+                content_to_analyze = ' '.join(benefit_sentences)
+                logger.info(f"Using {len(benefit_sentences)} benefit-related sentences for analysis")
+            else:
+                # Use only first 3000 chars to save costs
+                content_to_analyze = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Load prompt from benefits.txt file
+            system_prompt = load_prompt_file("benefits.txt")
+            if not system_prompt:
+                logger.error("Benefits prompt file not found or empty")
+                return None
+            
+            logger.info("Extracting benefits to Germany using OpenAI with benefits.txt prompt")
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Extract any specific benefits to Germany from this text, focusing on concrete advantages, opportunities, or gains: {content_to_analyze}"}
+                ],
+                temperature=0.3,
+                max_tokens=200
+            )
+            
+            benefits = response.choices[0].message.content.strip()
+            
+            # Check if no benefits were found
+            if "no specific benefits" in benefits.lower() or "no benefits" in benefits.lower():
+                logger.info("OpenAI found no benefits to Germany")
+                return None
+                
+            logger.info(f"Successfully extracted benefits with OpenAI ({len(benefits)} chars)")
+            return benefits
+        
+        except Exception as e:
+            logger.error(f"Error using OpenAI for benefits extraction: {str(e)}")
+    
+    return None
+
+# Modified store_extract_data function to use the updated functions
+def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
+    """
+    Store extracted data into the database using a batch transaction.
+    Uses OpenAI for summary and benefits extraction when available.
+    Improved error handling while maintaining batch efficiency.
+    
+    Args:
+        extracted_data: List of dictionaries containing extracted web content
+        
+    Returns:
+        List of database IDs for the stored records
+    """
+    if not extracted_data:
+        logger.warning("No data to store")
+        print("WARNING: No data to store in database")
         return []
-
-def cosine_similarity(vec_a: List[float], vec_b: List[float]) -> float:
-    """
-    Calculate the cosine similarity between two vectors.
     
-    Args:
-        vec_a: First vector
-        vec_b: Second vector
-        
-    Returns:
-        Cosine similarity score (0-1)
-    """
-    if not vec_a or not vec_b:
-        return 0.0
-        
-    try:
-        vec_a = np.array(vec_a)
-        vec_b = np.array(vec_b)
-        
-        dot_product = np.dot(vec_a, vec_b)
-        norm_a = np.linalg.norm(vec_a)
-        norm_b = np.linalg.norm(vec_b)
-        
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-            
-        return dot_product / (norm_a * norm_b)
-    except Exception as e:
-        logger.error(f"Error calculating cosine similarity: {str(e)}")
-        return 0.0
-
-def find_similar_content(embedding: List[float], limit: int = 5) -> List[Dict[str, Any]]:
-    """
-    Find content similar to the given embedding.
+    logger.info(f"Storing {len(extracted_data)} results in database")
+    print(f"INFO: Attempting to store {len(extracted_data)} records in database")
     
-    Args:
-        embedding: The embedding vector to compare against
-        limit: Maximum number of similar items to return
-        
-    Returns:
-        List of dictionaries containing similar content with similarity scores
-    """
-    logger.info(f"Finding similar content (limit: {limit})")
+    # List to store inserted record IDs
+    inserted_ids = []
+    success_count = 0
+    error_count = 0
+    
+    conn = None
+    cursor = None
     
     try:
+        # Get database connection
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Query content from database
-        query = """
-        SELECT id, link, title, embedding
-        FROM content_data
-        WHERE embedding IS NOT NULL
-        LIMIT 1000;  -- Fetch a reasonable number to compare in memory
-        """
+        # Process each item in a prepared batch
+        valid_items = []
         
-        cursor.execute(query)
-        records = cursor.fetchall()
-        
-        # Calculate similarity scores in memory
-        similarities = []
-        for record in records:
-            content_id, link, title, content_embedding = record
-            
-            # Skip if no embedding
-            if not content_embedding:
-                continue
+        # Pre-process items to filter out obviously invalid ones
+        for i, item in enumerate(extracted_data):
+            try:
+                # Extract item data
+                title = item.get("title", "")
+                link = item.get("link", "")
+                date_str = item.get("date")
+                content = item.get("content", "")
+                snippet = item.get("snippet", "")
                 
-            # Convert DB array to Python list if needed
-            if isinstance(content_embedding, str):
-                content_embedding = json.loads(content_embedding)
+                # Skip items with empty/invalid URLs
+                if not link or len(link) < 5:
+                    logger.warning(f"Skipping item {i+1} with invalid URL: {link}")
+                    error_count += 1
+                    continue
+                    
+                # Use existing summary or generate one with OpenAI
+                summary = item.get("summary", snippet)
+                if content and len(content) > 200:
+                    generated_summary = generate_summary(content)
+                    if generated_summary:
+                        summary = generated_summary
                 
-            # Calculate similarity
-            similarity = cosine_similarity(embedding, content_embedding)
-            
-            similarities.append({
-                "id": content_id,
-                "link": link,
-                "title": title,
-                "similarity": similarity
-            })
+                # Get themes (either from item or identify them)
+                themes = item.get("themes", [])
+                if not themes:
+                    themes = identify_themes(content)
+                
+                # Get organization
+                organization = item.get("organization", extract_organization_from_url(link))
+                
+                # Get sentiment (either from item or analyze it)
+                sentiment = item.get("sentiment")
+                if not sentiment and content:
+                    sentiment = analyze_sentiment(content)
+                
+                # Extract benefits to Germany using OpenAI with benefits.txt prompt
+                benefits_to_germany = item.get("benefits_to_germany")
+                if content and ("germany" in content.lower() or "german" in content.lower()):
+                    extracted_benefits = extract_benefits(content)
+                    if extracted_benefits:
+                        benefits_to_germany = extracted_benefits
+                
+                # Format and validate date
+                date_value = None
+                if date_str:
+                    date_value = format_date(date_str)
+                
+                # Add to valid items list
+                valid_items.append({
+                    "link": link,
+                    "title": title,
+                    "date_value": date_value,
+                    "summary": summary, 
+                    "content": content,
+                    "themes": themes,
+                    "organization": organization,
+                    "sentiment": sentiment,
+                    "benefits_to_germany": benefits_to_germany
+                })
+                
+            except Exception as prep_error:
+                error_msg = f"Error preparing item {i+1}: {str(prep_error)}"
+                logger.error(error_msg)
+                print(f"ERROR: {error_msg}")
+                error_count += 1
         
-        # Sort by similarity (highest first)
-        similarities.sort(key=lambda x: x["similarity"], reverse=True)
+        # Now insert all valid items in a single transaction
+        for i, item in enumerate(valid_items):
+            try:
+                # Insert into content_data table
+                query = """
+                INSERT INTO content_data 
+                (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+                """
+                
+                cursor.execute(
+                    query, 
+                    (item["link"], item["title"], item["date_value"], item["summary"], 
+                     item["content"], item["summary"], item["themes"], 
+                     item["organization"], item["sentiment"], item["benefits_to_germany"], None)
+                )
+                
+                # Get the ID of the inserted record
+                record_id = cursor.fetchone()[0]
+                inserted_ids.append(record_id)
+                success_count += 1
+                
+                logger.info(f"Inserted record with ID {record_id} for URL: {item['link']}")
+                print(f"SUCCESS: Inserted record ID {record_id} | {item['title'][:50]}")
+                
+            except Exception as item_error:
+                error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
+                logger.error(error_msg)
+                print(f"ERROR: {error_msg}")
+                
+                # IMPORTANT: Individual insert failures don't abort the whole transaction
+                # We continue with the next item
+                error_count += 1
+                
+                # Check if the error is transaction-related
+                if "current transaction is aborted" in str(item_error):
+                    logger.error("Transaction is aborted, rolling back and retrying with individual transactions")
+                    raise  # This will cause a rollback and fall through to the individual insert retry
         
-        # Take top N results
-        top_results = similarities[:limit]
+        # Commit the transaction if we got here
+        conn.commit()
+        logger.info(f"Transaction committed successfully with {success_count} records")
         
-        logger.info(f"Found {len(top_results)} similar content items")
-        
-        # Close cursor and connection
-        cursor.close()
-        conn.close()
-        
-        return top_results
-            
     except Exception as e:
-        logger.error(f"Error finding similar content: {str(e)}")
-        if 'conn' in locals() and conn:
+        # If any error happens in the batch process, roll back
+        error_msg = f"Error during batch insertion: {str(e)}"
+        logger.error(error_msg)
+        print(f"BATCH ERROR: {error_msg}")
+        
+        if conn:
+            conn.rollback()
+            logger.info("Transaction rolled back due to error")
+        
+        # FALLBACK: If batch mode failed, try individual inserts as a recovery
+        if len(valid_items) > 0 and success_count == 0:
+            logger.info("Retrying with individual inserts as fallback")
+            print("Retrying failed items individually...")
+            
+            # Clear the IDs list since we're starting over
+            inserted_ids = []
+            success_count = 0
+            
+            # Try each item individually
+            for item in valid_items:
+                item_conn = None
+                item_cursor = None
+                
+                try:
+                    item_conn = get_db_connection()
+                    item_cursor = item_conn.cursor()
+                    
+                    query = """
+                    INSERT INTO content_data 
+                    (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                    """
+                    
+                    item_cursor.execute(
+                        query, 
+                        (item["link"], item["title"], item["date_value"], item["summary"], 
+                         item["content"], item["summary"], item["themes"], 
+                         item["organization"], item["sentiment"], item["benefits_to_germany"], None)
+                    )
+                    
+                    record_id = item_cursor.fetchone()[0]
+                    item_conn.commit()
+                    
+                    inserted_ids.append(record_id)
+                    success_count += 1
+                    
+                    logger.info(f"Individual insert succeeded for URL: {item['link']}")
+                    print(f"RECOVERY SUCCESS: Inserted record ID {record_id} | {item['title'][:50]}")
+                    
+                except Exception as item_error:
+                    logger.error(f"Individual insert failed for URL {item['link']}: {str(item_error)}")
+                    print(f"RECOVERY ERROR: {str(item_error)}")
+                    error_count += 1
+                    
+                    if item_conn:
+                        item_conn.rollback()
+                
+                finally:
+                    if item_cursor:
+                        item_cursor.close()
+                    if item_conn:
+                        item_conn.close()
+    
+    finally:
+        # Always close cursor and connection
+        if cursor:
+            cursor.close()
+        if conn:
             conn.close()
-        return []
+    
+    # Summary after all items are processed
+    logger.info(f"Successfully stored {success_count} records in database")
+    print(f"\nDATABASE SUMMARY:")
+    print(f"- Total records processed: {len(extracted_data)}")
+    print(f"- Successfully stored: {success_count}")
+    print(f"- Failed: {error_count}")
+    
+    if len(extracted_data) > 0:
+        success_rate = (success_count/len(extracted_data))*100
+        print(f"- Success rate: {success_rate:.1f}%")
+    
+    return inserted_ids
 
 def format_date(date_str: Optional[str]) -> Optional[str]:
     """
@@ -261,7 +640,7 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     for pattern in date_patterns:
         match = re.search(pattern, date_str, re.IGNORECASE)
         if match:
-            date_str = match.group(1)
+            date_str = match.group(0)  # Use the entire matched string
             break
     
     # Try parsing with different formats
@@ -300,452 +679,201 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     logger.warning(f"Could not parse date string: {date_str}")
     return None
 
-def generate_themes_with_openai(content: str) -> List[str]:
+def identify_themes(content: str) -> List[str]:
     """
-    Generate themes from content using OpenAI API with improved error handling.
+    Identify themes in content using keyword matching instead of AI.
     
     Args:
-        content: The content to analyze
+        content: Text content to analyze
         
     Returns:
-        List of themes
+        List of identified themes
     """
-    try:
-        # Truncate content if it's too long for API limits
-        max_content_length = 4000  # Adjust based on model token limits
-        truncated_content = content[:max_content_length] if len(content) > max_content_length else content
-        
-        logger.debug(f"Sending content to OpenAI API for theme generation (length: {len(truncated_content)})")
-        print(f"Sending content to OpenAI API for theme generation (length: {len(truncated_content)} chars)")
-        
-        # Load the themes prompt from file
-        themes_prompt = load_prompt("themes.txt")
-        
-        # Call OpenAI API using the openai_client variable
-        response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": themes_prompt},
-                {"role": "user", "content": truncated_content}
-            ],
-            temperature=0.3
-        )
-        
-        # Handle response
-        themes = []
-        
-        # Access the content from the response
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            if hasattr(response.choices[0], 'message') and hasattr(response.choices[0].message, 'content'):
-                content = response.choices[0].message.content
-            else:
-                content = str(response.choices[0])
-        else:
-            # Last resort: try to extract something useful
-            content = str(response)
-        
-        # Process content to extract themes
-        if content:
-            # Try parsing as JSON if it looks like a JSON array
-            if content.strip().startswith('[') and content.strip().endswith(']'):
-                try:
-                    import json
-                    themes = json.loads(content)
-                    logger.debug(f"Successfully parsed JSON themes: {themes}")
-                except json.JSONDecodeError as json_error:
-                    logger.warning(f"Failed to parse JSON themes: {str(json_error)}")
-                    # Fall back to simple text parsing
-                    themes = [theme.strip() for theme in content.strip('[]').split(',')]
-            else:
-                # Look for line breaks or commas
-                if '\n' in content:
-                    themes = [theme.strip() for theme in content.split('\n') if theme.strip()]
-                elif ',' in content:
-                    themes = [theme.strip() for theme in content.split(',') if theme.strip()]
-                else:
-                    themes = [content.strip()]
-        
-        # Clean up and validate themes
-        validated_themes = []
-        for theme in themes:
-            # Remove quotes if present
-            theme = theme.strip('"\'')
-            if theme and len(theme) > 2:  # Minimum length check
-                validated_themes.append(theme)
-        
-        logger.info(f"Generated {len(validated_themes)} themes")
-        print(f"Generated {len(validated_themes)} themes")
-        
-        return validated_themes
+    content_lower = content.lower()
+    themes = []
     
-    except Exception as e:
-        logger.error(f"Error in OpenAI theme generation: {str(e)}")
-        print(f"ERROR in theme generation: {str(e)}")
-        return []
+    # Define theme keywords dictionary
+    theme_keywords = {
+        "Indigenous Peoples": [
+            "indigenous", "native communities", "indigenous rights", 
+            "traditional knowledge", "aboriginal", "local communities"
+        ],
+        "Protected Areas": [
+            "national park", "conservation area", "marine reserve", "protected area",
+            "wildlife refuge", "conservation", "nature reserve"
+        ],
+        "Forest Restoration": [
+            "forest restoration", "land restoration", "reforestation", "afforestation",
+            "rewilding", "forest rehabilitation", "ecological restoration"
+        ],
+        "Marine Conservation": [
+            "marine conservation", "marine protection", "ocean conservation", 
+            "coral reef", "coastal protection", "blue economy"
+        ],
+        "Ecosystem Services": [
+            "ecosystem services", "carbon sequestration", "Amazon basin", 
+            "Congo basin", "rainforest", "biodiversity", "watershed services"
+        ],
+        "Sustainable Agriculture": [
+            "sustainable agriculture", "agroforestry", "organic farming",
+            "permaculture", "sustainable farming", "crop rotation"
+        ],
+        "Sustainable Forestry": [
+            "sustainable forestry", "sustainable timber", "forest management",
+            "reduced impact logging", "FSC certification", "sustainable logging"
+        ],
+        "Aquaculture": [
+            "aquaculture", "fish farming", "sustainable aquaculture",
+            "biodiversity in aquaculture", "responsible aquaculture"
+        ]
+    }
+    
+    # Check for each theme's keywords in the content
+    for theme, keywords in theme_keywords.items():
+        for keyword in keywords:
+            if keyword in content_lower:
+                if theme not in themes:
+                    themes.append(theme)
+                break  # Found one keyword for this theme, move to next theme
+    
+    # Add Environmental Sustainability as default theme if nothing else matched
+    if not themes:
+        themes.append("Environmental Sustainability")
+    
+    return themes
 
-def analyze_sentiment_with_openai(content: str) -> str:
+def fetch_data(limit=100, filters=None):
     """
-    Analyze sentiment of content using OpenAI API and sentiment.txt prompt.
+    Fetch data from the database with optional filtering.
     
     Args:
-        content: The content to analyze
+        limit: Maximum number of records to retrieve
+        filters: Dictionary of filter conditions
         
     Returns:
-        Sentiment as string (Positive, Negative, or Neutral)
+        Pandas DataFrame with the requested data
     """
-    try:
-        # Truncate content if it's too long
-        max_content_length = 4000
-        truncated_content = content[:max_content_length] if len(content) > max_content_length else content
-        
-        logger.debug(f"Sending content to OpenAI API for sentiment analysis (length: {len(truncated_content)})")
-        print(f"Sending content to OpenAI API for sentiment analysis (length: {len(truncated_content)} chars)")
-        
-        # Load the sentiment prompt from file
-        sentiment_prompt = load_prompt("sentiment.txt")
-        
-        # Call OpenAI API
-        response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": sentiment_prompt},
-                {"role": "user", "content": truncated_content}
-            ],
-            temperature=0.3
-        )
-        
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            sentiment = response.choices[0].message.content.strip()
-            
-            # Normalize sentiment to one of the three categories
-            sentiment_lower = sentiment.lower()
-            if "positive" in sentiment_lower:
-                return "Positive"
-            elif "negative" in sentiment_lower:
-                return "Negative"
-            else:
-                return "Neutral"
-        
-        # Default to Neutral if we couldn't get a response
-        return "Neutral"
-        
-    except Exception as e:
-        logger.error(f"Error in OpenAI sentiment analysis: {str(e)}")
-        print(f"ERROR in sentiment analysis: {str(e)}")
-        return "Neutral"
-
-def extract_benefits_with_openai(content: str) -> Optional[str]:
-    """
-    Extract benefits to Germany from content using OpenAI API and benefits.txt prompt.
-    
-    Args:
-        content: The content to analyze
-        
-    Returns:
-        Extracted benefits paragraph or None if not found
-    """
-    try:
-        # Skip if content doesn't mention Germany
-        content_lower = content.lower()
-        if "germany" not in content_lower:
-            return None
-            
-        # Truncate content if it's too long
-        max_content_length = 4000
-        truncated_content = content[:max_content_length] if len(content) > max_content_length else content
-        
-        logger.debug(f"Sending content to OpenAI API for benefits extraction (length: {len(truncated_content)})")
-        print(f"Sending content to OpenAI API for benefits extraction (length: {len(truncated_content)} chars)")
-        
-        # Load the benefits prompt from file
-        benefits_prompt = load_prompt("benefits.txt")
-        
-        # Call OpenAI API
-        response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": benefits_prompt},
-                {"role": "user", "content": truncated_content}
-            ],
-            temperature=0.3
-        )
-        
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            benefits = response.choices[0].message.content.strip()
-            
-            # Return benefits if found, otherwise None
-            if benefits and len(benefits) > 10 and not benefits.lower().startswith("no benefit"):
-                return benefits
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"Error in OpenAI benefits extraction: {str(e)}")
-        print(f"ERROR in benefits extraction: {str(e)}")
-        return None
-
-def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
-    """
-    Store extracted data into the database using the new consolidated schema.
-    Now with embedding generation for semantic search.
-    
-    Args:
-        extracted_data: List of dictionaries containing extracted web content
-        
-    Returns:
-        List of database IDs for the stored records
-    """
-    if not extracted_data:
-        logger.warning("No data to store")
-        print("WARNING: No data to store in database")
-        return []
-    
-    logger.info(f"Storing {len(extracted_data)} results in database")
-    print(f"INFO: Attempting to store {len(extracted_data)} records in database")
+    logger.info(f"Fetching data from database (limit: {limit}, filters: {filters})")
     
     try:
-        # First, check if the embedding column exists in the content_data table
-        # If not, add it
+        import pandas as pd
         conn = get_db_connection()
-        cursor = conn.cursor()
         
-        # Check if column exists
-        check_column_query = """
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='content_data' AND column_name='embedding';
+        # Prepare base query
+        query_parts = []
+        params = {}
+        
+        # Add filter conditions if provided
+        if filters:
+            if filters.get('theme'):
+                query_parts.append("%s = ANY(themes)")
+                params['theme'] = filters['theme']
+            
+            if filters.get('organization'):
+                query_parts.append("organization = %s")
+                params['organization'] = filters['organization']
+            
+            if filters.get('sentiment'):
+                query_parts.append("sentiment = %s")
+                params['sentiment'] = filters['sentiment']
+            
+            if filters.get('start_date') and filters.get('end_date'):
+                query_parts.append("date BETWEEN %s AND %s")
+                params['start_date'] = filters['start_date']
+                params['end_date'] = filters['end_date']
+        
+        # Construct WHERE clause
+        where_clause = "WHERE " + " AND ".join(query_parts) if query_parts else ""
+        
+        # Full query
+        query = f"""
+        SELECT 
+            id, link, title, date, summary, 
+            full_content, information, themes, 
+            organization, sentiment, 
+            benefits_to_germany, insights, 
+            created_at, updated_at
+        FROM content_data 
+        {where_clause}
+        ORDER BY id DESC 
+        LIMIT {limit}
         """
         
-        cursor.execute(check_column_query)
-        column_exists = cursor.fetchone() is not None
-        
-        # Add column if it doesn't exist
-        if not column_exists:
-            logger.info("Adding embedding column to content_data table")
-            print("Adding embedding column to database schema...")
+        # Create parameter list in correct order for the query
+        param_values = []
+        if filters:
+            if filters.get('theme'):
+                param_values.append(filters['theme'])
             
-            add_column_query = """
-            ALTER TABLE content_data
-            ADD COLUMN embedding FLOAT[] DEFAULT NULL;
-            """
+            if filters.get('organization'):
+                param_values.append(filters['organization'])
             
-            cursor.execute(add_column_query)
-            conn.commit()
-            logger.info("Successfully added embedding column")
-            print("Added embedding column successfully")
+            if filters.get('sentiment'):
+                param_values.append(filters['sentiment'])
+            
+            if filters.get('start_date') and filters.get('end_date'):
+                param_values.append(filters['start_date'])
+                param_values.append(filters['end_date'])
         
-        # Close connection and reconnect for main operation
-        cursor.close()
-        conn.close()
-        
-        # Now proceed with the main data insertion
-        conn = get_db_connection()
+        # Execute query
         cursor = conn.cursor()
+        cursor.execute(query, param_values)
         
-        # List to store inserted record IDs
-        inserted_ids = []
-        success_count = 0
-        error_count = 0
+        # Fetch column names
+        column_names = [desc[0] for desc in cursor.description]
         
-        logger.debug("Beginning processing of individual data items")
-        print(f"Processing {len(extracted_data)} items...")
+        # Fetch all results
+        results = cursor.fetchall()
         
-        for i, item in enumerate(extracted_data):
-            try:
-                # Log progress for larger datasets
-                if i % 10 == 0 and i > 0:
-                    logger.debug(f"Processed {i}/{len(extracted_data)} items so far")
-                    print(f"Progress: {i}/{len(extracted_data)} items processed")
-                
-                # Extract item data
-                title = item.get("title", "")
-                link = item.get("link", "")
-                date_str = item.get("date")
-                content = item.get("content", "")
-                snippet = item.get("snippet", "")
-                summary = item.get("summary", snippet)
-                
-                logger.debug(f"Processing item: {title[:50]}... | URL: {link}")
-                
-                # Extract main domain from URL for organization identification
-                from urllib.parse import urlparse
-                
-                # Parse the URL to extract domain
-                try:
-                    parsed_url = urlparse(link)
-                    domain = parsed_url.netloc
-                    
-                    # Remove 'www.' prefix if present
-                    if domain.startswith('www.'):
-                        domain = domain[4:]
-                    
-                    # Extract main part of domain (before first dot)
-                    main_domain = domain.split('.')[0]
-                    
-                    logger.debug(f"Extracted domain: {domain}, main part: {main_domain}")
-                    print(f"Domain: {domain}")
-                    
-                    # Assign organization based on specific domains
-                    if domain == "kfw.de" or main_domain == "kfw":
-                        organization = "KfW"
-                    elif domain == "giz.de" or main_domain == "giz":
-                        organization = "GIZ"
-                    elif domain == "bmz.de" or main_domain == "bmz":
-                        organization = "BMZ"
-                    else:
-                        # Use the main domain as the organization
-                        organization = main_domain.capitalize()
-                        
-                    logger.info(f"Identified organization: {organization} for domain: {domain}")
-                    print(f"Organization: {organization} | URL: {link[:50]}...")
-                    
-                except Exception as url_error:
-                    organization = None
-                    logger.warning(f"Error extracting domain from URL: {link}: {str(url_error)}")
-                    print(f"WARNING: Could not extract domain from URL: {link}")
-                
-                # Generate themes using OpenAI with themes.txt prompt
-                if openai_api_key:
-                    try:
-                        logger.info(f"Generating themes with OpenAI for: {title[:50]}...")
-                        print(f"Generating themes for item {i+1}: {title[:30]}...")
-                        item_themes = generate_themes_with_openai(content)
-                        logger.debug(f"Generated themes: {item_themes}")
-                    except Exception as openai_error:
-                        error_msg = f"Error generating themes with OpenAI for URL {link}: {str(openai_error)}"
-                        logger.warning(error_msg)
-                        print(f"WARNING: {error_msg}")
-                        item_themes = []
-                else:
-                    logger.warning("OpenAI API key not found. Skipping theme generation.")
-                    print("WARNING: OpenAI API key not found. Skipping theme generation.")
-                    item_themes = []
-                
-                # Format and validate date
-                date_value = None
-                if date_str:
-                    try:
-                        date_value = format_date(date_str)
-                        logger.debug(f"Formatted date '{date_str}' to '{date_value}'")
-                    except Exception as date_error:
-                        error_msg = f"Error processing date '{date_str}' for URL {link}: {str(date_error)}"
-                        logger.warning(error_msg)
-                        print(f"WARNING: {error_msg}")
-                else:
-                    logger.debug(f"No date provided for URL: {link}")
-                
-                # Use OpenAI for sentiment analysis with sentiment.txt prompt
-                if openai_api_key:
-                    try:
-                        logger.info(f"Analyzing sentiment with OpenAI for: {title[:50]}...")
-                        print(f"Analyzing sentiment for item {i+1}: {title[:30]}...")
-                        sentiment = analyze_sentiment_with_openai(content)
-                        logger.debug(f"Sentiment analysis result: {sentiment}")
-                        print(f"Sentiment analysis: {sentiment}")
-                    except Exception as sentiment_error:
-                        error_msg = f"Error analyzing sentiment with OpenAI for URL {link}: {str(sentiment_error)}"
-                        logger.warning(error_msg)
-                        print(f"WARNING: {error_msg}")
-                        sentiment = "Neutral"
-                else:
-                    logger.warning("OpenAI API key not found. Using Neutral as default sentiment.")
-                    print("WARNING: OpenAI API key not found. Using Neutral as default sentiment.")
-                    sentiment = "Neutral"
-                
-                # Extract potential benefits to Germany using OpenAI with benefits.txt prompt
-                benefits_to_germany = None
-                if openai_api_key and "germany" in content.lower():
-                    try:
-                        logger.info(f"Extracting benefits to Germany with OpenAI for: {title[:50]}...")
-                        print(f"Extracting benefits for item {i+1}: {title[:30]}...")
-                        benefits_to_germany = extract_benefits_with_openai(content)
-                        if benefits_to_germany:
-                            logger.info(f"Found potential benefits to Germany: {benefits_to_germany[:100]}...")
-                            print(f"Benefits to Germany: Found potential content")
-                        else:
-                            print(f"Benefits to Germany: None identified")
-                    except Exception as benefits_error:
-                        error_msg = f"Error extracting benefits with OpenAI for URL {link}: {str(benefits_error)}"
-                        logger.warning(error_msg)
-                        print(f"WARNING: {error_msg}")
-                
-                # Generate embedding for semantic search
-                embedding = None
-                if openai_api_key:
-                    try:
-                        logger.info(f"Generating embedding for: {title[:50]}...")
-                        print(f"Generating embedding for item {i+1}: {title[:30]}...")
-                        
-                        # Combine title and content for better embedding
-                        embedding_text = f"{title}\n\n{content}"
-                        embedding = create_embedding(embedding_text)
-                        
-                        logger.debug(f"Generated embedding with {len(embedding)} dimensions")
-                        print(f"Generated embedding vector with {len(embedding)} dimensions")
-                    except Exception as embedding_error:
-                        error_msg = f"Error generating embedding for URL {link}: {str(embedding_error)}"
-                        logger.warning(error_msg)
-                        print(f"WARNING: {error_msg}")
-                        embedding = None
-                
-                # Insert into content_data table with the new structure
-                # Now including embedding
-                query = """
-                INSERT INTO content_data 
-                (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights, embedding)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id;
-                """
-                
-                logger.debug(f"Executing SQL insert for URL: {link}")
-                cursor.execute(
-                    query, 
-                    (link, title, date_value, summary, content, summary, item_themes, organization, sentiment, benefits_to_germany, None, embedding)
-                )
-                
-                # Get the ID of the inserted record
-                record_id = cursor.fetchone()[0]
-                inserted_ids.append(record_id)
-                success_count += 1
-                
-                logger.info(f"Inserted record with ID {record_id} for URL: {link}")
-                print(f"SUCCESS: Inserted record ID {record_id} | {title[:50]}")
-                
-            except Exception as item_error:
-                error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
-                logger.error(error_msg)
-                print(f"ERROR: {error_msg}")
-                error_count += 1
-                # Continue with next item
-                continue
+        # Create DataFrame
+        df = pd.DataFrame(results, columns=column_names)
         
-        # Commit the transaction
-        conn.commit()
-        logger.info(f"Successfully stored {len(inserted_ids)} records in database")
-        print(f"\nDATABASE SUMMARY:")
-        print(f"- Total records processed: {len(extracted_data)}")
-        print(f"- Successfully stored: {success_count}")
-        print(f"- Failed: {error_count}")
-        print(f"- Success rate: {(success_count/len(extracted_data))*100:.1f}%")
-        
-        # Close the cursor and connection
+        # Close cursor and connection
         cursor.close()
         conn.close()
-        logger.debug("Database connection closed")
         
-        return inserted_ids
+        logger.info(f"Fetched {len(df)} rows from database")
+        return df
     
     except Exception as e:
-        error_msg = f"Error storing data in database: {str(e)}"
-        logger.error(error_msg)
-        print(f"CRITICAL ERROR: {error_msg}")
+        logger.error(f"Error fetching data: {str(e)}")
         if 'conn' in locals() and conn:
-            logger.info("Rolling back database transaction")
-            print("Rolling back database transaction...")
-            conn.rollback()
             conn.close()
-            logger.debug("Database connection closed after rollback")
-        raise
+        # Return empty DataFrame in case of error
+        import pandas as pd
+        return pd.DataFrame()
+
+def extract_organization_from_url(url):
+    """
+    Extract organization name from URL.
+    
+    Args:
+        url: The URL to extract organization from
+        
+    Returns:
+        Organization name based on domain
+    """
+    if not url:
+        return "Unknown"
+        
+    try:
+        # Parse the URL to extract domain
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc.lower()
+        
+        # Remove 'www.' prefix if present
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # Extract main domain (before first dot)
+        main_domain = domain.split('.')[0]
+        
+        # Return capitalized domain
+        return main_domain.upper()
+    except:
+        return "Unknown"
+
+# The rest of the code remains unchanged
 
 def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -764,8 +892,8 @@ def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
         cursor = conn.cursor()
         
         query = """
-        SELECT id, link, title, date, summary, full_content, information, theme, organization,
-               created_at, updated_at, embedding
+        SELECT id, link, title, date, summary, full_content, information, themes, organization,
+               sentiment, benefits_to_germany, insights, created_at, updated_at
         FROM content_data
         WHERE id = %s;
         """
@@ -774,21 +902,23 @@ def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
         record = cursor.fetchone()
         
         if record:
-            # Convert record to dictionary
-            content = {
-                "id": record[0],
-                "link": record[1],
-                "title": record[2],
-                "date": record[3].isoformat() if record[3] else None,
-                "summary": record[4],
-                "full_content": record[5],
-                "information": record[6],
-                "theme": record[7],
-                "organization": record[8],
-                "created_at": record[9].isoformat() if record[9] else None,
-                "updated_at": record[10].isoformat() if record[10] else None,
-                "has_embedding": record[11] is not None
-            }
+            # Get column names
+            column_names = [desc[0] for desc in cursor.description]
+            
+            # Create dictionary from record
+            content = dict(zip(column_names, record))
+            
+            # Convert date to string if needed
+            if content['date'] and isinstance(content['date'], datetime):
+                content['date'] = content['date'].isoformat()
+            
+            # Convert timestamps to strings
+            if content['created_at'] and isinstance(content['created_at'], datetime):
+                content['created_at'] = content['created_at'].isoformat()
+            
+            if content['updated_at'] and isinstance(content['updated_at'], datetime):
+                content['updated_at'] = content['updated_at'].isoformat()
+                
             logger.info(f"Found content: {content['title']}")
             
             # Close cursor and connection
@@ -829,8 +959,7 @@ def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         cursor = conn.cursor()
         
         query = """
-        SELECT id, link, title, date, summary, theme, organization, 
-               (embedding IS NOT NULL) as has_embedding
+        SELECT id, link, title, date, summary, themes, organization, sentiment, benefits_to_germany
         FROM content_data
         ORDER BY id DESC
         LIMIT %s OFFSET %s;
@@ -839,18 +968,18 @@ def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         cursor.execute(query, (limit, offset))
         records = cursor.fetchall()
         
+        # Get column names
+        column_names = [desc[0] for desc in cursor.description]
+        
         content_list = []
         for record in records:
-            content = {
-                "id": record[0],
-                "link": record[1],
-                "title": record[2],
-                "date": record[3].isoformat() if record[3] else None,
-                "summary": record[4],
-                "theme": record[5],
-                "organization": record[6],
-                "has_embedding": record[7]
-            }
+            # Create dictionary from record
+            content = dict(zip(column_names, record))
+            
+            # Convert date to string if needed
+            if content['date'] and isinstance(content['date'], datetime):
+                content['date'] = content['date'].isoformat()
+                
             content_list.append(content)
         
         logger.info(f"Retrieved {len(content_list)} content records")
@@ -883,7 +1012,8 @@ def update_content(content_id: int, data: Dict[str, Any]) -> bool:
     # Fields that can be updated
     allowed_fields = [
         "title", "date", "summary", "full_content", 
-        "information", "theme", "organization"
+        "information", "themes", "organization", "sentiment",
+        "benefits_to_germany", "insights"
     ]
     
     # Filter out any fields that are not allowed
@@ -904,55 +1034,15 @@ def update_content(content_id: int, data: Dict[str, Any]) -> bool:
             except Exception as e:
                 logger.warning(f"Error formatting date for update: {str(e)}")
         
-        # If content is being updated, regenerate the embedding
-        regenerate_embedding = False
-        embedding = None
-        
-        if "title" in update_data or "full_content" in update_data:
-            regenerate_embedding = True
-            
-            # Get current data if needed
-            current_title = None
-            current_content = None
-            
-            if "title" not in update_data or "full_content" not in update_data:
-                get_query = """
-                SELECT title, full_content 
-                FROM content_data 
-                WHERE id = %s;
-                """
-                
-                cursor.execute(get_query, (content_id,))
-                current_data = cursor.fetchone()
-                
-                if current_data:
-                    current_title = current_data[0]
-                    current_content = current_data[1]
-            
-            # Combine new/existing data for embedding
-            embedding_title = update_data.get("title", current_title)
-            embedding_content = update_data.get("full_content", current_content)
-            
-            if embedding_title and embedding_content and openai_api_key:
-                try:
-                    logger.info(f"Regenerating embedding for content ID {content_id}")
-                    print(f"Regenerating embedding for content ID {content_id}")
-                    
-                    embedding_text = f"{embedding_title}\n\n{embedding_content}"
-                    embedding = create_embedding(embedding_text)
-                    
-                    # Add embedding to update data
-                    update_data["embedding"] = embedding
-                    
-                    logger.debug(f"Generated embedding with {len(embedding)} dimensions")
-                    print(f"Generated embedding vector with {len(embedding)} dimensions")
-                except Exception as e:
-                    logger.error(f"Error generating embedding: {str(e)}")
-                    print(f"WARNING: Error generating embedding: {str(e)}")
-        
         # Build the SET part of the query dynamically
-        set_clause = ", ".join([f"{field} = %s" for field in update_data.keys()])
-        set_clause += ", updated_at = CURRENT_TIMESTAMP"
+        set_clauses = []
+        params = []
+        
+        for field, value in update_data.items():
+            set_clauses.append(f"{field} = %s")
+            params.append(value)
+        
+        set_clause = ", ".join(set_clauses)
         
         query = f"""
         UPDATE content_data
@@ -961,8 +1051,7 @@ def update_content(content_id: int, data: Dict[str, Any]) -> bool:
         RETURNING id;
         """
         
-        # Build parameters list
-        params = list(update_data.values())
+        # Add the content_id as the last parameter
         params.append(content_id)
         
         cursor.execute(query, params)
@@ -979,8 +1068,6 @@ def update_content(content_id: int, data: Dict[str, Any]) -> bool:
         
         if updated:
             logger.info(f"Successfully updated content with ID: {content_id}")
-            if regenerate_embedding and embedding:
-                logger.info(f"Successfully updated embedding for content ID: {content_id}")
         else:
             logger.warning(f"No content found with ID: {content_id}")
         
@@ -1044,7 +1131,7 @@ def delete_content(content_id: int) -> bool:
 def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
     Search for content matching the given query terms.
-    Now enhanced with semantic search using embeddings when available.
+    Uses PostgreSQL full-text search capabilities.
     
     Args:
         query_terms: String containing search terms
@@ -1056,39 +1143,12 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
     logger.info(f"Searching for content with terms: {query_terms}")
     
     try:
-        # First, try semantic search if OpenAI API key is available
-        semantic_results = []
-        
-        if openai_api_key and query_terms.strip():
-            try:
-                logger.info(f"Generating query embedding for semantic search")
-                print(f"Using semantic search for query: {query_terms}")
-                
-                # Generate embedding for the query
-                query_embedding = create_embedding(query_terms)
-                
-                if query_embedding:
-                    # Find similar content using embeddings
-                    semantic_results = find_similar_content(query_embedding, limit=limit)
-                    
-                    if semantic_results:
-                        logger.info(f"Found {len(semantic_results)} results using semantic search")
-                        print(f"Found {len(semantic_results)} semantic matches")
-                        return semantic_results
-                    else:
-                        logger.info("No semantic search results found, falling back to keyword search")
-                        print("No semantic matches found, using keyword search as fallback")
-            except Exception as e:
-                logger.error(f"Error in semantic search: {str(e)}")
-                print(f"Semantic search error: {str(e)}. Using keyword search instead.")
-        
-        # Fallback to traditional keyword search
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Keyword search query across multiple fields
+        # Create a tsquery from the search terms
         query = """
-        SELECT id, link, title, date, summary, theme, organization
+        SELECT id, link, title, date, summary, themes, organization, sentiment
         FROM content_data
         WHERE 
             to_tsvector('english', COALESCE(title, '')) @@ plainto_tsquery('english', %s) OR
@@ -1103,22 +1163,21 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
         cursor.execute(query, (query_terms, query_terms, query_terms, query_terms, query_terms, limit))
         records = cursor.fetchall()
         
+        # Get column names
+        column_names = [desc[0] for desc in cursor.description]
+        
         content_list = []
         for record in records:
-            content = {
-                "id": record[0],
-                "link": record[1],
-                "title": record[2],
-                "date": record[3].isoformat() if record[3] else None,
-                "summary": record[4],
-                "theme": record[5],
-                "organization": record[6],
-                "search_method": "keyword"  # Indicate search method
-            }
+            # Create dictionary from record
+            content = dict(zip(column_names, record))
+            
+            # Convert date to string if needed
+            if content['date'] and isinstance(content['date'], datetime):
+                content['date'] = content['date'].isoformat()
+                
             content_list.append(content)
         
         logger.info(f"Found {len(content_list)} content records matching the search terms")
-        print(f"Found {len(content_list)} keyword search results")
         
         # Close cursor and connection
         cursor.close()
@@ -1132,283 +1191,290 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
             conn.close()
         raise
 
-def analyze_content_for_benefits(limit=1000):
+def get_stats():
     """
-    Analyze content data to extract benefits and insights using OpenAI.
-    This function uses the OpenAI API via benefits.txt prompt to extract benefits.
+    Get statistics about the content in the database.
     
-    Args:
-        limit: Maximum number of content items to analyze (default: 1000)
-        
     Returns:
-        Number of content items processed
+        Dictionary containing statistics
     """
-    logger.info(f"Starting content analysis with limit: {limit}")
+    logger.info("Getting content statistics")
     
     try:
-        # Get database connection
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get content items that haven't been analyzed yet
-        # We'll do this by finding content that doesn't exist in the content_benefits relationship table
-        query = """
-        SELECT cd.id, cd.link, cd.title, cd.full_content
-        FROM content_data cd
-        LEFT JOIN content_benefits cb ON cd.id = cb.content_id
-        WHERE cb.content_id IS NULL
-        LIMIT %s;
-        """
+        stats = {}
         
-        cursor.execute(query, (limit,))
-        content_items = cursor.fetchall()
+        # Total content count
+        cursor.execute("SELECT COUNT(*) FROM content_data")
+        stats['total_content'] = cursor.fetchone()[0]
         
-        processed_count = 0
+        # Organization count
+        cursor.execute("SELECT COUNT(DISTINCT organization) FROM content_data WHERE organization IS NOT NULL")
+        stats['organization_count'] = cursor.fetchone()[0]
         
-        logger.info(f"Found {len(content_items)} content items to analyze")
-        print(f"Analyzing {len(content_items)} content items for benefits")
+        # Theme count (requires unnesting the array)
+        cursor.execute("SELECT COUNT(DISTINCT unnest(themes)) FROM content_data WHERE themes IS NOT NULL")
+        stats['theme_count'] = cursor.fetchone()[0]
         
-        for item in content_items:
-            content_id, link, title, content = item
-            
-            # Skip if content is missing
-            if not content:
-                logger.warning(f"Skipping content ID {content_id}: No content available")
-                print(f"Skipping content ID {content_id}: No content available")
-                continue
-                
-            logger.info(f"Analyzing content ID {content_id}: {title}")
-            print(f"Analyzing content ID {content_id}: {title[:50]}...")
-            
-            # Extract benefits using OpenAI API
-            benefits_to_germany = None
-            if openai_api_key and "germany" in content.lower():
-                try:
-                    logger.info(f"Extracting benefits to Germany with OpenAI for content ID {content_id}")
-                    print(f"Extracting benefits for content ID {content_id}")
-                    benefits_to_germany = extract_benefits_with_openai(content)
-                except Exception as benefits_error:
-                    logger.warning(f"Error extracting benefits with OpenAI: {str(benefits_error)}")
-                    print(f"WARNING: Error extracting benefits with OpenAI: {str(benefits_error)}")
-                    benefits_to_germany = None
-            
-            # Only proceed if we found something or to mark as processed
-            benefits_text = benefits_to_germany if benefits_to_germany else None
-            
-            # Insert into benefits table
-            benefit_query = """
-            INSERT INTO benefits (links, benefits_to_germany, insights)
-            VALUES (%s, %s, %s)
-            RETURNING id;
-            """
-            
-            links_array = "{" + link + "}"
-            cursor.execute(benefit_query, (links_array, benefits_text, None))
-            benefit_id = cursor.fetchone()[0]
-            
-            # Create relationship in content_benefits table
-            relation_query = """
-            INSERT INTO content_benefits (content_id, benefit_id)
-            VALUES (%s, %s);
-            """
-            
-            cursor.execute(relation_query, (content_id, benefit_id))
-            
-            if benefits_text:
-                logger.info(f"Created benefit entry for content ID {content_id} with benefits")
-                print(f"SUCCESS: Created benefit entry for content ID {content_id}")
-            else:
-                logger.info(f"Created empty benefit entry for content ID {content_id} (no benefits found)")
-                print(f"INFO: Created empty benefit entry for content ID {content_id}")
-            
-            processed_count += 1
+        # Sentiment distribution
+        cursor.execute("""
+            SELECT sentiment, COUNT(*) 
+            FROM content_data 
+            WHERE sentiment IS NOT NULL 
+            GROUP BY sentiment
+        """)
+        stats['sentiment_distribution'] = dict(cursor.fetchall())
         
-        # Commit the transaction
-        conn.commit()
-        logger.info(f"Content analysis completed. Processed {processed_count} items")
-        print(f"Content analysis completed. Processed {processed_count} items")
+        # Date range
+        cursor.execute("SELECT MIN(date), MAX(date) FROM content_data WHERE date IS NOT NULL")
+        min_date, max_date = cursor.fetchone()
+        stats['date_range'] = {
+            'min_date': min_date.isoformat() if min_date else None,
+            'max_date': max_date.isoformat() if max_date else None,
+        }
+        
+        # Top organizations
+        cursor.execute("""
+            SELECT organization, COUNT(*) as count
+            FROM content_data
+            WHERE organization IS NOT NULL
+            GROUP BY organization
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+        stats['top_organizations'] = dict(cursor.fetchall())
+        
+        # Top themes
+        cursor.execute("""
+            SELECT theme, COUNT(*) as count
+            FROM (
+                SELECT unnest(themes) as theme
+                FROM content_data
+                WHERE themes IS NOT NULL
+            ) t
+            GROUP BY theme
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+        stats['top_themes'] = dict(cursor.fetchall())
+        
+        # Content with benefits to Germany
+        cursor.execute("SELECT COUNT(*) FROM content_data WHERE benefits_to_germany IS NOT NULL")
+        stats['content_with_benefits'] = cursor.fetchone()[0]
         
         # Close cursor and connection
         cursor.close()
         conn.close()
         
-        return processed_count
+        logger.info("Successfully retrieved content statistics")
+        return stats
         
     except Exception as e:
-        logger.error(f"Error in content analysis: {str(e)}")
-        print(f"ERROR in content analysis: {str(e)}")
+        logger.error(f"Error getting content statistics: {str(e)}")
         if 'conn' in locals() and conn:
-            conn.rollback()
             conn.close()
-        raise
+        # Return empty stats in case of error
+        return {}
 
-def generate_embeddings_for_existing_content(limit=100):
+def clean_text(text):
     """
-    Generate embeddings for existing content in the database that doesn't have embeddings yet.
-    This is useful for upgrading existing databases to support semantic search.
+    Clean text by removing extra whitespace, normalizing quotes, etc.
     
     Args:
-        limit: Maximum number of content items to process (default: 100)
+        text: Text to clean
         
     Returns:
-        Number of items processed
+        Cleaned text
     """
-    logger.info(f"Generating embeddings for existing content (limit: {limit})")
-    print(f"Generating embeddings for up to {limit} existing content items")
+    if not text:
+        return ""
     
-    if not openai_api_key:
-        logger.error("OpenAI API key not found. Cannot generate embeddings.")
-        print("ERROR: OpenAI API key not found. Cannot generate embeddings.")
-        return 0
+    # Replace multiple newlines with a single newline
+    text = re.sub(r'\n\s*\n', '\n\n', text)
+    
+    # Replace multiple spaces with a single space
+    text = re.sub(r' +', ' ', text)
+    
+    # Normalize quotes
+    text = text.replace('"', '"').replace('"', '"')
+    
+    # Remove leading/trailing whitespace
+    text = text.strip()
+    
+    return text
+
+
+def extract_organization_from_url(url):
+    """
+    Extract organization name from URL.
+    
+    Args:
+        url: The URL to extract organization from
+        
+    Returns:
+        Organization name based on domain
+    """
+    if not url:
+        return "Unknown"
+        
+    try:
+        # Parse the URL to extract domain
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc.lower()
+        
+        # Remove 'www.' prefix if present
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # Extract main domain (before first dot)
+        main_domain = domain.split('.')[0]
+        
+        # Return capitalized domain
+        return main_domain.upper()
+    except:
+        return "Unknown"
+
+def create_schema():
+    """
+    Create the database schema if it doesn't exist.
+    This is useful for initializing a new database.
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    logger.info("Creating database schema")
     
     try:
-        # First, check if the embedding column exists in the content_data table
-        # If not, add it
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Check if column exists
-        check_column_query = """
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='content_data' AND column_name='embedding';
-        """
+        # Create content_data table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS content_data (
+            id SERIAL PRIMARY KEY,
+            link VARCHAR(255) NOT NULL UNIQUE,
+            title VARCHAR(255),
+            date DATE,
+            summary TEXT,
+            full_content TEXT,
+            information TEXT,
+            themes TEXT[],
+            organization VARCHAR(100),
+            sentiment VARCHAR(50),
+            benefits_to_germany TEXT,
+            insights TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         
-        cursor.execute(check_column_query)
-        column_exists = cursor.fetchone() is not None
+        # Create indexes for faster queries
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_themes ON content_data USING GIN (themes)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_date ON content_data (date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_sentiment ON content_data (sentiment)")
         
-        # Add column if it doesn't exist
-        if not column_exists:
-            logger.info("Adding embedding column to content_data table")
-            print("Adding embedding column to database schema...")
-            
-            add_column_query = """
-            ALTER TABLE content_data
-            ADD COLUMN embedding FLOAT[] DEFAULT NULL;
-            """
-            
-            cursor.execute(add_column_query)
-            conn.commit()
-            logger.info("Successfully added embedding column")
-            print("Added embedding column successfully")
+        # Create trigger for updated_at
+        cursor.execute("""
+        CREATE OR REPLACE FUNCTION update_modified_column() RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.updated_at = now();
+            RETURN NEW;
+        END;
+        $$ LANGUAGE 'plpgsql'
+        """)
         
-        # Get content that doesn't have embeddings yet
-        query = """
-        SELECT id, title, full_content
-        FROM content_data
-        WHERE embedding IS NULL
-        LIMIT %s;
-        """
+        cursor.execute("""
+        DROP TRIGGER IF EXISTS update_content_timestamp ON content_data;
+        CREATE TRIGGER update_content_timestamp
+        BEFORE UPDATE ON content_data
+        FOR EACH ROW
+        EXECUTE FUNCTION update_modified_column()
+        """)
         
-        cursor.execute(query, (limit,))
-        content_items = cursor.fetchall()
-        
-        processed_count = 0
-        success_count = 0
-        
-        logger.info(f"Found {len(content_items)} content items without embeddings")
-        print(f"Found {len(content_items)} content items without embeddings")
-        
-        for item in content_items:
-            content_id, title, content = item
-            
-            # Skip if content is missing
-            if not content or not title:
-                logger.warning(f"Skipping content ID {content_id}: Missing title or content")
-                print(f"Skipping content ID {content_id}: Missing title or content")
-                processed_count += 1
-                continue
-                
-            try:
-                logger.info(f"Generating embedding for content ID {content_id}: {title[:50]}...")
-                print(f"Generating embedding for content ID {content_id}: {title[:50]}...")
-                
-                # Combine title and content for better embedding
-                embedding_text = f"{title}\n\n{content}"
-                embedding = create_embedding(embedding_text)
-                
-                if embedding and len(embedding) > 0:
-                    # Update the content with the embedding
-                    update_query = """
-                    UPDATE content_data
-                    SET embedding = %s
-                    WHERE id = %s;
-                    """
-                    
-                    cursor.execute(update_query, (embedding, content_id))
-                    
-                    logger.info(f"Updated content ID {content_id} with embedding ({len(embedding)} dimensions)")
-                    print(f"SUCCESS: Added embedding to content ID {content_id}")
-                    success_count += 1
-                else:
-                    logger.warning(f"Failed to generate valid embedding for content ID {content_id}")
-                    print(f"WARNING: Failed to generate valid embedding for content ID {content_id}")
-            
-            except Exception as e:
-                logger.error(f"Error generating embedding for content ID {content_id}: {str(e)}")
-                print(f"ERROR: Failed to generate embedding for content ID {content_id}: {str(e)}")
-            
-            processed_count += 1
-        
-        # Commit the transaction
+        # Commit changes
         conn.commit()
-        logger.info(f"Embedding generation completed. Processed {processed_count} items, {success_count} successes")
-        print(f"\nEMBEDDING GENERATION SUMMARY:")
-        print(f"- Total processed: {processed_count}")
-        print(f"- Successfully added: {success_count}")
-        print(f"- Success rate: {(success_count/processed_count)*100:.1f}% if processed_count > 0 else 0}}%")
         
         # Close cursor and connection
         cursor.close()
         conn.close()
         
-        return processed_count
+        logger.info("Database schema created successfully")
+        return True
         
     except Exception as e:
-        logger.error(f"Error generating embeddings: {str(e)}")
-        print(f"CRITICAL ERROR in embedding generation: {str(e)}")
+        logger.error(f"Error creating database schema: {str(e)}")
         if 'conn' in locals() and conn:
             conn.rollback()
             conn.close()
-        raise
+        return False
 
-def semantic_search(query: str, limit: int = 10) -> List[Dict[str, Any]]:
+def filter_urls_by_keywords(urls, keywords):
     """
-    Perform a semantic search using embeddings.
+    Filter a list of URLs to keep only those containing keywords.
     
     Args:
-        query: The search query text
-        limit: Maximum number of results to return
+        urls: List of URLs to filter
+        keywords: List of keywords to check for
         
     Returns:
-        List of dictionaries containing matching content with similarity scores
+        Filtered list of URLs
     """
-    logger.info(f"Performing semantic search for query: {query}")
-    print(f"Performing semantic search for: {query}")
+    if not urls or not keywords:
+        return urls
+        
+    filtered_urls = []
     
-    if not openai_api_key:
-        logger.error("OpenAI API key not found. Cannot perform semantic search.")
-        print("ERROR: OpenAI API key not found. Cannot perform semantic search.")
-        return []
+    for url in urls:
+        url_lower = url.lower()
+        if any(keyword.lower() in url_lower for keyword in keywords):
+            filtered_urls.append(url)
     
+    return filtered_urls
+
+# Example usage
+if __name__ == "__main__":
+    # This is an example of how to use the module directly
     try:
-        # Generate embedding for the query
-        query_embedding = create_embedding(query)
+        print("\n" + "="*50)
+        print("CONTENT DATABASE OPERATIONS")
+        print("="*50 + "\n")
         
-        if not query_embedding:
-            logger.error("Failed to generate embedding for query")
-            print("ERROR: Failed to generate embedding for query")
-            return []
+        # Create schema if needed
+        create_schema()
         
-        # Find similar content
-        similar_content = find_similar_content(query_embedding, limit=limit)
+        # Get statistics
+        stats = get_stats()
+        print(f"Database Statistics:")
+        print(f"- Total Content: {stats.get('total_content', 0)}")
+        print(f"- Organizations: {stats.get('organization_count', 0)}")
+        print(f"- Themes: {stats.get('theme_count', 0)}")
+        print(f"- Date Range: {stats.get('date_range', {})}")
         
-        logger.info(f"Found {len(similar_content)} items matching the semantic query")
-        print(f"Found {len(similar_content)} semantic matches")
+        print("\nTesting theme identification...")
+        test_content = """
+        Germany's GIZ has been working with indigenous communities in the Amazon Basin
+        to implement sustainable forestry practices that protect biodiversity while
+        supporting local economies through carefully managed forest resources.
+        """
+        themes = identify_themes(test_content)
+        print(f"Identified themes: {themes}")
         
-        return similar_content
+        print("\nTesting sentiment analysis...")
+        sentiment = analyze_sentiment(test_content)
+        print(f"Sentiment: {sentiment}")
+        
+        print("\nTesting benefit extraction...")
+        test_benefit_content = """
+        This partnership between Germany and Brazil provides significant advantages
+        for German companies seeking to develop sustainable forestry technologies
+        while benefiting from the expertise of local communities.
+        """
+        benefits = extract_benefits(test_benefit_content)
+        print(f"Benefits to Germany: {benefits}")
         
     except Exception as e:
-        logger.error(f"Error in semantic search: {str(e)}")
-        print(f"ERROR in semantic search: {str(e)}")
-        return []
+        print(f"Error: {str(e)}")

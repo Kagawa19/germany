@@ -1,21 +1,51 @@
-Find relevant web pages about Germany’s international cooperation efforts in environmental sustainability
+Find relevant web pages about Germany’s international cooperation efforts in environmental sustainability.
 
-Search for web pages that discuss Germany’s international cooperation efforts through government institutions or development organizations in relation to environmental sustainability.
+Search Criteria:
 
-Include results related to:
+Prioritize the following official websites and organizations in this order:
+
+Deutsche Gesellschaft für Internationale Zusammenarbeit (GIZ): www.giz.de
+
+Bundesministerium für wirtschaftliche Zusammenarbeit und Entwicklung (BMZ): www.bmz.de
+
+Kreditanstalt für Wiederaufbau (KfW): www.kfw.de
+
+Only if no relevant results are found on these sites, proceed to other closely related organizations.
+
+Include only results that are closely related to the following topics:
 
 Promotion of indigenous peoples
-Protection of national parks, conservation areas, and marine reserves
-Forest and land restoration
-Marine conservation and protection
-Ecosystem services (Amazon and Congo Basin forests)
-Sustainable agriculture and agroforestry
-Sustainable forestry and fisheries management
-Biodiversity conservation in aquaculture
-Search for relevant information from these organizations and institutions:
 
-German development cooperation agencies: GIZ, BMZ, KfW
-Government ministries: Bundesministerium für wirtschaftliche Zusammenarbeit, German Federal Ministry for Economic Cooperation and Development
-Other development banks: Kreditanstalt für Wiederaufbau (KfW), German Development Bank
-Return only high-quality sources, reports, and official publications.
+Protection of national parks, conservation areas, and marine reserves
+
+Forest and land restoration
+
+Marine conservation and protection
+
+Ecosystem services (Amazon and Congo Basin forests)
+
+Sustainable agriculture and agroforestry
+
+Sustainable forestry and fisheries management
+
+Biodiversity conservation in aquaculture
+
+Return only high-quality sources, such as:
+
+Official reports
+
+Government publications
+
+Project documentation
+
+Policy briefs
+
+Case studies
+
+Exclude any sources from organizations or institutions not explicitly listed above unless no relevant results are found on the prioritized websites.
+
+Ensure all results are directly relevant to Germany’s international cooperation efforts in environmental sustainability.
+
+Output Format:
+Return a list of relevant web pages with their titles, URLs, and a brief description (3-4 sentences) of their relevance to the specified topics and organizations.
 

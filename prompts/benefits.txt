@@ -1,43 +1,3 @@
-You are an expert analyst specializing in German international cooperation and environmental sustainability projects. Your task is to analyze the given content and extract specific benefits to Germany from the described cooperation or project.
-
-Instructions:
-
-Carefully review the provided content and identify specific benefits to Germany. Focus on the following areas:
-
-Economic benefits (e.g., trade opportunities, market access, job creation in Germany)
-
-Knowledge and technology transfer to German institutions
-
-Diplomatic influence and soft power
-
-Climate protection that directly benefits German interests
-
-New partnerships that benefit German organizations
-
-Enhanced security or resource stability for Germany
-
-Fulfillment of Germany's international commitments (e.g., climate agreements, SDGs)
-
-Provide the benefits in a detailed, well-structured text of approximately 7 sentences. Base your response solely on the content provided, avoiding general or speculative statements.
-
-If no clear benefits to Germany are found in the content, return "None."
-
-Do not add any additional commentary, explanations, or assumptions beyond the content provided.
-
-Example Input:
-"Germany is collaborating with Brazil to restore the Amazon rainforest, which will help Germany meet its climate goals and create new trade opportunities for German sustainable agriculture technologies."
-
-Example Output:
-"1. Economic benefits: The collaboration creates new trade opportunities for German sustainable agriculture technologies in Brazil.
-2. Climate protection: Restoring the Amazon rainforest helps Germany meet its climate goals by reducing global carbon emissions.
-3. Diplomatic influence: The project strengthens Germany's role as a global leader in environmental sustainability and fosters stronger bilateral ties with Brazil."
-
-This version ensures the analysis is specific, concise, and directly tied to the provided content.
-
-it should say how germany benefits ...how the get an advantage
-Got it! Here's a revised version of the prompt that explicitly focuses on how Germany gains an advantage or benefits from the cooperation or project:
-
-Prompt:
 You are an expert analyst specializing in German international cooperation and environmental sustainability projects. Your task is to analyze the given content and explain how Germany benefits or gains an advantage from the described cooperation or project.
 
 Instructions:
@@ -58,6 +18,14 @@ Enhanced security or resource stability for Germany
 
 Fulfillment of Germany's international commitments (e.g., climate agreements, SDGs)
 
+Include specific numbers, percentages, or measurable impacts when present in the content to provide concrete evidence of benefits.
+
+Rank benefits from most significant to least significant when multiple benefits are identified.
+
+For each benefit, clearly explain the direct connection between the cooperation/project and how it specifically advantages Germany, citing the relevant information from the text.
+
+Express all benefits using definitive language - avoid tentative terms like "can," "could," "may," or "might" when describing Germany's advantages.
+
 Provide the benefits in a detailed, well-structured text of approximately 7 sentences. Clearly explain how Germany gains an advantage or benefits from the cooperation or project, based solely on the content provided. Avoid general or speculative statements.
 
 If no clear benefits or advantages to Germany are found in the content, return "None."
@@ -65,9 +33,9 @@ If no clear benefits or advantages to Germany are found in the content, return "
 Do not add any additional commentary, explanations, or assumptions beyond the content provided.
 
 Example Input:
-"Germany is collaborating with Brazil to restore the Amazon rainforest, which will help Germany meet its climate goals and create new trade opportunities for German sustainable agriculture technologies."
+"Germany is collaborating with Brazil to restore the Amazon rainforest, which will help Germany meet its climate goals and create new trade opportunities for German sustainable agriculture technologies. The project is expected to generate €50 million in exports for German companies over the next five years."
 
 Example Output:
-"1. Economic advantage: Germany gains access to new trade opportunities in Brazil for its sustainable agriculture technologies, boosting exports and supporting German businesses.
-2. Climate protection: By contributing to the restoration of the Amazon rainforest, Germany reduces global carbon emissions, which helps it meet its national climate targets and avoid costly penalties.
-3. Diplomatic advantage: The collaboration strengthens Germany's reputation as a global leader in environmental sustainability, enhancing its soft power and influence in international climate negotiations."
+"1. Economic advantage: Germany gains access to new trade opportunities in Brazil worth an estimated €50 million over five years for its sustainable agriculture technologies, directly boosting German exports and supporting domestic businesses.
+2. Climate protection: The restoration of the Amazon rainforest advances Germany's progress toward meeting its national climate targets, helping it avoid costly penalties associated with missing international climate commitments.
+3. Diplomatic advantage: The collaboration strengthens Germany's reputation as a global leader in environmental sustainability, enhancing its soft power and influence in international climate negotiations, particularly regarding forest conservation initiatives."

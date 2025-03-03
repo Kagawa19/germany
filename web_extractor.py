@@ -5,365 +5,206 @@ import logging
 import re
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from typing import Dict, List, Optional, Tuple, Callable, Any
+from typing import Dict, List, Optional, Tuple, Any
 import traceback
 import json
 import numpy as np
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from langchain_community.utilities import GoogleSerperAPIWrapper
-
-# Configure logging with a custom formatter that includes more details
-class CustomFormatter(logging.Formatter):
-    """Custom formatter with color support for terminal"""
-    grey = "\x1b[38;20m"
-    blue = "\x1b[34;20m"
-    yellow = "\x1b[33;20m"
-    red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format_str = "%(asctime)s - %(levelname)s - %(message)s"
-
-    FORMATS = {
-        logging.DEBUG: grey + format_str + reset,
-        logging.INFO: blue + format_str + reset,
-        logging.WARNING: yellow + format_str + reset,
-        logging.ERROR: red + format_str + reset,
-        logging.CRITICAL: bold_red + format_str + reset
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
+from urllib.parse import urlparse
+from content_db import get_db_connection
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("web_extractor.log"),
+        logging.StreamHandler()
     ]
 )
 
-# Add a separate stream handler with the custom formatter
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(CustomFormatter())
-console_handler.setLevel(logging.INFO)  # Set to DEBUG for even more verbose output
-
 logger = logging.getLogger("WebExtractor")
-logger.addHandler(console_handler)
 
 class WebExtractor:
-    """Class for extracting web content based on prompt files with embedding support."""
+    """Class for extracting web content related to environmental sustainability."""
     
     def __init__(self, 
-                use_ai=True, 
-                openai_client=None, 
-                generate_ai_summary_func=None, 
-                extract_date_with_ai_func=None,
-                create_embedding_func=None,
-                semantic_search_func=None,
-                prompt_path=None,
-                max_workers=5,
-                serper_api_key=None):
+                search_api_key=None,
+                max_workers=5):
         """
-        Initialize WebExtractor with optional AI capabilities.
+        Initialize WebExtractor with configuration options.
         
         Args:
-            use_ai: Whether to use AI features
-            openai_client: OpenAI client instance
-            generate_ai_summary_func: Function to generate AI summaries
-            extract_date_with_ai_func: Function to extract dates with AI
-            create_embedding_func: Function to create embeddings for semantic understanding
-            semantic_search_func: Function to search the database using embeddings
-            prompt_path: Path to the prompt file
+            search_api_key: API key for search engine (e.g., Serper)
             max_workers: Number of workers for ThreadPoolExecutor
-            serper_api_key: API key for Serper web search
         """
         # Load environment variables
         load_dotenv()
         
-        self.use_ai = use_ai and openai_client is not None
-        self.openai_client = openai_client
-        self.generate_ai_summary = generate_ai_summary_func
-        self.extract_date_with_ai = extract_date_with_ai_func
-        self.create_embedding = create_embedding_func
-        self.semantic_search_func = semantic_search_func
-        
-        # Set prompt path, with a default if not provided
-        self.prompt_path = prompt_path or os.path.join('prompts', 'extract.txt')
+        # Set API key
+        self.search_api_key = search_api_key or os.getenv('SERPER_API_KEY')
         
         # Set max_workers
         self.max_workers = max_workers
         
-        # Set Serper API key
-        self.serper_api_key = serper_api_key or os.getenv('SERPER_API_KEY')
+        # Target organizations to prioritize
+        self.priority_domains = [
+            "giz.de", 
+            "bmz.de", 
+            "kfw.de"
+        ]
         
-        # Check if embeddings are enabled
-        self.use_embeddings = use_ai and create_embedding_func is not None
-        
-        # Print initialization status
-        if self.use_embeddings:
-            logger.info("Embeddings are enabled for enhanced semantic understanding")
-            print("EMBEDDINGS: Enabled for enhanced semantic understanding")
-        else:
-            logger.info("Embeddings are disabled - embedding creation function not provided")
-            print("EMBEDDINGS: Disabled")
-            
-        if self.semantic_search_func is not None:
-            logger.info("Semantic search in database is enabled")
-            print("SEMANTIC SEARCH: Enabled for database content")
-        else:
-            logger.info("Semantic search in database is disabled")
-            print("SEMANTIC SEARCH: Disabled")
-            
-    def cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
-        """
-        Calculate the cosine similarity between two vectors.
-        
-        Args:
-            vec_a: First vector
-            vec_b: Second vector
-            
-        Returns:
-            Cosine similarity score (0-1)
-        """
-        if not vec_a or not vec_b:
-            return 0.0
-            
-        try:
-            vec_a = np.array(vec_a)
-            vec_b = np.array(vec_b)
-            
-            dot_product = np.dot(vec_a, vec_b)
-            norm_a = np.linalg.norm(vec_a)
-            norm_b = np.linalg.norm(vec_b)
-            
-            if norm_a == 0 or norm_b == 0:
-                return 0.0
-                
-            return dot_product / (norm_a * norm_b)
-        except Exception as e:
-            logger.error(f"Error calculating cosine similarity: {str(e)}")
-            return 0.0
-            
-    def read_prompt_file(self, file_path: Optional[str] = None) -> str:
-        """Read the content of a prompt file."""
-        path = file_path or self.prompt_path
-        logger.info(f"Reading prompt file: {path}")
-        
-        try:
-            with open(path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            logger.info(f"Successfully read prompt file ({len(content)} chars)")
-            return content
-        except FileNotFoundError:
-            error_msg = f"Prompt file not found at path: {path}"
-            logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
-        except Exception as e:
-            error_msg = f"Error reading prompt file: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            raise RuntimeError(error_msg)
+        # Configure environmental topics
+        self.configure_topics()
     
-    def extract_prompt_context(self, prompt_content: str) -> dict:
-        """
-        Extract context from prompt content and generate embedding.
-        
-        Args:
-            prompt_content: Content of the prompt file
-            
-        Returns:
-            Dictionary with prompt content and its embedding
-        """
-        logger.info("Processing prompt and generating embedding")
-        print("Processing prompt and generating embedding...")
-        
-        # Create basic context with the prompt text
-        context = {
-            "prompt_text": prompt_content,
-            "embedding": None,
+    def configure_topics(self):
+        """Configure the environmental topics and associated keywords."""
+        self.topics = {
+            "indigenous_peoples": [
+                "indigenous", "native communities", "indigenous rights", 
+                "traditional knowledge", "aboriginal", "local communities"
+            ],
+            "protected_areas": [
+                "national park", "conservation area", "marine reserve", "protected area",
+                "wildlife refuge", "conservation", "nature reserve"
+            ],
+            "forest_restoration": [
+                "forest restoration", "land restoration", "reforestation", "afforestation",
+                "rewilding", "forest rehabilitation", "ecological restoration"
+            ],
+            "marine_conservation": [
+                "marine conservation", "marine protection", "ocean conservation", 
+                "coral reef", "coastal protection", "blue economy"
+            ],
+            "ecosystem_services": [
+                "ecosystem services", "carbon sequestration", "Amazon basin", 
+                "Congo basin", "rainforest", "biodiversity", "watershed services"
+            ],
+            "sustainable_agriculture": [
+                "sustainable agriculture", "agroforestry", "organic farming",
+                "permaculture", "sustainable farming", "crop rotation"
+            ],
+            "sustainable_forestry": [
+                "sustainable forestry", "sustainable timber", "forest management",
+                "reduced impact logging", "FSC certification", "sustainable logging"
+            ],
+            "aquaculture": [
+                "aquaculture", "fish farming", "sustainable aquaculture",
+                "biodiversity in aquaculture", "responsible aquaculture"
+            ]
         }
         
-        # Generate embedding for the entire prompt if enabled
-        if self.use_embeddings and self.create_embedding:
-            try:
-                logger.info("Generating embedding for prompt")
-                
-                # Use the entire prompt text for embedding
-                context["embedding"] = self.create_embedding(prompt_content)
-                
-                logger.info(f"Generated prompt embedding with {len(context['embedding'])} dimensions")
-                print(f"Generated prompt embedding with {len(context['embedding'])} dimensions")
-            except Exception as e:
-                logger.error(f"Error generating prompt embedding: {str(e)}")
-                print(f"Error generating prompt embedding: {str(e)}")
+        # Generate search queries based on topics and organizations
+        self.search_queries = []
         
-        return context
-
-    def generate_search_queries(self, context: dict) -> List[Dict]:
+        # Base organization keywords
+        organizations = ["GIZ", "BMZ", "KfW", "Germany international cooperation"]
+        
+        # Generate combination of queries
+        for org in organizations:
+            # Add general environmental query for each organization
+            self.search_queries.append(f"{org} environmental sustainability")
+            
+            # Add specific topic queries
+            for topic_name, keywords in self.topics.items():
+                # Use the first two keywords from each topic
+                for keyword in keywords[:2]:
+                    self.search_queries.append(f"{org} {keyword}")
+                    
+        logger.info(f"Generated {len(self.search_queries)} search queries")
+    
+    def generate_search_queries(self, max_queries: Optional[int] = None) -> List[str]:
         """
-        Generate search queries from context dictionary with full embedding support.
+        Generate a list of search queries based on configured topics and organizations.
         
         Args:
-            context: Dictionary with prompt content and its embedding
+            max_queries: Maximum number of queries to generate (None for all)
             
         Returns:
-            List of query dictionaries
+            List of search query strings
         """
-        logger.info("Generating search queries with embedding support")
-        print("Using full prompt embedding for semantic search...")
-        
-        # Get the prompt text and embedding from the context
-        prompt_text = context.get("prompt_text", "")
-        prompt_embedding = context.get("embedding")
-        
-        # Create a single semantic query using the full prompt embedding
-        semantic_query = {
-            "query": "Extract environmental sustainability information",  # Human-readable query text
-            "type": "semantic_prompt",
-            "embedding": prompt_embedding  # Use the full embedding we generated
-        }
-        
-        # Get entities if available for fallback queries
-        entities = context.get("entities", [])
-        
-        # Create a list of queries with the semantic query first
-        queries = [semantic_query]
-        
-        # Add a few entity-based queries as fallback
-        if entities:
-            for entity in entities[:3]:  # Limit to 3 entities
-                entity_query = {
-                    "query": f"{entity} sustainability",
-                    "type": "entity_fallback",
-                    "embedding": None  # We won't generate separate embeddings for these
-                }
-                queries.append(entity_query)
-                logger.info(f"Added fallback query: {entity_query['query']}")
-        
-        logger.info(f"Generated {len(queries)} queries using prompt embedding")
-        print(f"Generated {len(queries)} search queries")
-        
+        queries = self.search_queries
+        if max_queries:
+            queries = queries[:max_queries]
+            
+        logger.info(f"Returning {len(queries)} search queries")
         return queries
-
-    def search_web(self, query_obj: Dict, num_results: int = 5) -> List[Dict]:
+    
+    def search_web(self, query: str, num_results: int = 5) -> List[Dict]:
         """
-        Search the web using the given query.
-        Enhanced with semantic search capabilities for improved results.
+        Search the web using the given query via Serper API.
         
         Args:
-            query_obj: Dictionary containing query string and optional embedding
+            query: Search query string
             num_results: Maximum number of results to retrieve
             
         Returns:
             List of dictionaries containing search results
         """
-        query = query_obj["query"]
-        embedding = query_obj.get("embedding")
         query_preview = query[:50] + "..." if len(query) > 50 else query
         logger.info(f"Searching web for: '{query_preview}' (limit: {num_results} results)")
+        print(f"  Searching for: '{query_preview}'...")
         
-        # Combined results will hold both semantic and web search results
-        combined_results = []
-        
-        # Try semantic search first if enabled and embedding is available
-        if self.use_embeddings and embedding and self.semantic_search_func:
-            try:
-                logger.info(f"Performing semantic search using embedding")
-                print(f"  Performing semantic search in database...")
-                semantic_results = self.semantic_search_func(embedding, limit=num_results)
-                
-                if semantic_results and len(semantic_results) > 0:
-                    logger.info(f"Found {len(semantic_results)} semantic search results")
-                    print(f"  Found {len(semantic_results)} semantic search results")
-                    
-                    # Convert semantic results to web search format for consistency
-                    for result in semantic_results:
-                        combined_results.append({
-                            "title": result.get("title", ""),
-                            "link": result.get("link", ""),
-                            "snippet": result.get("summary", ""),
-                            "source": "database",
-                            "semantic_score": result.get("similarity", 0),
-                            "has_embedding": True
-                        })
-                    
-                    # If we have enough semantic results, we can reduce web search
-                    num_web_results = max(1, num_results - len(semantic_results))
-                    logger.info(f"Will fetch {num_web_results} additional results from web search")
-                else:
-                    logger.info("No semantic search results found")
-                    print("  No semantic search results found")
-                    num_web_results = num_results
-            except Exception as e:
-                logger.error(f"Error in semantic search: {str(e)}")
-                print(f"  Error in semantic search: {str(e)}")
-                num_web_results = num_results
-        else:
-            # No semantic search possible
-            num_web_results = num_results
-            
-        # Perform web search if needed
-        if not self.serper_api_key:
-            logger.error("Cannot search web: SERPER_API_KEY not set")
-            print("  ERROR: SERPER_API_KEY not set")
-            return combined_results  # Return any semantic results we might have
+        if not self.search_api_key:
+            error_msg = "Cannot search web: API_KEY not set"
+            logger.error(error_msg)
+            print(f"  ERROR: Search API_KEY not set")
+            return []
         
         try:
             search_start_time = time.time()
-            print(f"  Searching web via Serper API...")
             
-            serper = GoogleSerperAPIWrapper(
-                serper_api_key=self.serper_api_key,
-                k=num_web_results
-            )
+            # Use Serper API for searching
+            url = "https://google.serper.dev/search"
             
-            web_results = serper.results(query)
+            payload = json.dumps({
+                "q": query,
+                "num": num_results
+            })
+            
+            headers = {
+                'X-API-KEY': self.search_api_key,
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.request("POST", url, headers=headers, data=payload, timeout=30)
+            response.raise_for_status()
+            
             search_time = time.time() - search_start_time
             
-            # Extract just the organic results
-            organic_results = web_results.get("organic", [])
-            logger.info(f"Received {len(organic_results)} web search results in {search_time:.2f} seconds")
-            print(f"  Found {len(organic_results)} web search results in {search_time:.2f} seconds")
+            # Parse response
+            search_results = response.json()
             
-            # For web results, mark them accordingly
-            for result in organic_results:
-                result["source"] = "web"
-                result["has_embedding"] = False
-                combined_results.append(result)
+            # Extract organic results
+            organic_results = search_results.get("organic", [])
+            logger.info(f"Received {len(organic_results)} search results in {search_time:.2f} seconds")
+            print(f"  Found {len(organic_results)} results in {search_time:.2f} seconds")
             
             # Log result URLs for debugging
             for i, result in enumerate(organic_results):
                 logger.info(f"Result {i+1}: {result.get('title', 'No title')} - {result.get('link', 'No link')}")
             
-            # Sort results by relevance (semantic results first, then web results)
-            combined_results.sort(key=lambda x: (
-                0 if x.get("source") == "database" else 1,  # Database results first
-                -x.get("semantic_score", 0)  # Then by semantic score (descending)
-            ))
-            
-            return combined_results[:num_results]  # Return only the top results
+            return organic_results
                 
         except Exception as e:
             logger.error(f"Error searching web: {str(e)}", exc_info=True)
             print(f"  ERROR searching web: {str(e)}")
-            return combined_results  # Return any semantic results we might have
-
+            return []
+    
     def extract_date_from_content(self, html_content: str, url: str, soup: BeautifulSoup) -> Optional[str]:
-        """Extract publication date from content using multiple strategies."""
-        logger.info(f"Extracting date from webpage: {url}")
+        """
+        Extract publication date from content using multiple strategies.
+        Uses regex patterns instead of AI to save costs.
         
-        # Try AI-based date extraction first if enabled
-        if self.use_ai and self.extract_date_with_ai:
-            try:
-                ai_date = self.extract_date_with_ai(html_content, url)
-                if ai_date:
-                    logger.info(f"Found date using AI extraction: {ai_date}")
-                    return ai_date
-            except Exception as e:
-                logger.warning(f"AI date extraction failed: {str(e)}")
+        Args:
+            html_content: Raw HTML content
+            url: Source URL
+            soup: BeautifulSoup object
+            
+        Returns:
+            Date string or None if not found
+        """
+        logger.info(f"Extracting date from webpage: {url}")
         
         # Strategy 1: Look for meta tags with date information
         date_meta_tags = [
@@ -461,9 +302,19 @@ class WebExtractor:
         
         logger.info("No date information found")
         return None
-
+    
     def extract_title_from_content(self, soup: BeautifulSoup, url: str, search_result_title: str) -> str:
-        """Extract the title from the webpage content."""
+        """
+        Extract the title from the webpage content.
+        
+        Args:
+            soup: BeautifulSoup object
+            url: URL of the webpage
+            search_result_title: Title from search results
+            
+        Returns:
+            Extracted title
+        """
         logger.info(f"Extracting title from webpage: {url}")
         
         # Strategy 1: Look for title tag
@@ -498,9 +349,18 @@ class WebExtractor:
         domain = url.split("//")[-1].split("/")[0]
         logger.info(f"Using domain as fallback title: {domain}")
         return domain
-
-    def scrape_webpage(self, url: str, search_result_title: str) -> Tuple[str, str, str]:
-        """Scrape content, title and date from a webpage."""
+    
+    def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str]:
+        """
+        Scrape content, title and date from a webpage.
+        
+        Args:
+            url: URL to scrape
+            search_result_title: Title from search results
+            
+        Returns:
+            Tuple of (content, title, date)
+        """
         logger.info(f"Scraping webpage: {url}")
         
         headers = {
@@ -566,207 +426,296 @@ class WebExtractor:
         except Exception as e:
             logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
             return "", "", None
-
-    def process_search_result(self, result, query_index, result_index, context, processed_urls):
-        """Process a single search result with embedding-based semantic relevance."""
-        url = result.get("link")
-        if not url or url in processed_urls:
-            logger.info(f"Skipping already processed URL: {url}")
-            return None
-        
-        # Skip certain file types
-        if url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.svg', '.zip', '.exe', '.mp3', '.mp4')):
-            logger.info(f"Skipping unsupported file type: {url}")
-            return None
-        
-        processed_urls.add(url)
-        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {url}")
-        
-        print(f"\n  URL {len(processed_urls)}: {url}")
-        
-        # Default values
-        relevance_score = 0.5
-        organization = None
-        
-        # Scrape the webpage
-        print(f"  Scraping content... ", end="", flush=True)
-        content, title, date = self.scrape_webpage(url, result.get("title", "No title"))
-        
-        if not content:
-            logger.warning(f"No content extracted from {url}")
-            print(f"FAILED (No content extracted)")
-            return None
-        
-        # Generate embedding for the content if enabled
-        content_embedding = None
-        semantic_relevance = None
-        
-        # Use embeddings to calculate semantic relevance if available
-        if self.use_embeddings and self.create_embedding and context.get("embedding"):
-            try:
-                logger.info(f"Generating embedding for content from {url}")
-                
-                # Create embedding from title and content
-                embedding_text = f"{title}\n\n{content[:4000]}"  # First 4000 chars for embedding
-                content_embedding = self.create_embedding(embedding_text)
-                
-                logger.info(f"Generated content embedding with {len(content_embedding)} dimensions")
-                
-                # Calculate semantic similarity to prompt context
-                semantic_relevance = self.cosine_similarity(context["embedding"], content_embedding)
-                logger.info(f"Semantic relevance to prompt: {semantic_relevance}")
-                
-                # Use semantic relevance as the main relevance score
-                relevance_score = semantic_relevance
-                
-                if semantic_relevance > 0.7:
-                    print(f"  [HIGH RELEVANCE] Semantic similarity: {semantic_relevance:.2f}")
-                elif semantic_relevance > 0.5:
-                    print(f"  [MEDIUM RELEVANCE] Semantic similarity: {semantic_relevance:.2f}")
-                else:
-                    print(f"  [LOW RELEVANCE] Semantic similarity: {semantic_relevance:.2f}")
-                    
-            except Exception as e:
-                logger.warning(f"Failed to generate content embedding: {str(e)}")
-                content_embedding = None
-                print(f"  [WARNING] Failed to generate embedding: {str(e)}")
-        else:
-            # Fallback when embeddings are disabled
-            # Check if URL is from a known organization
-            entities = context.get("entities", [])
-            is_org_domain = any(entity.lower() in url.lower() for entity in entities)
-            
-            if is_org_domain:
-                matching_orgs = [org for org in entities if org.lower() in url.lower()]
-                logger.info(f"URL from known entity domain: {', '.join(matching_orgs)}")
-                print(f"  [HIGH PRIORITY] Known entity domain: {matching_orgs[0]}")
-                relevance_score = 0.8
-                organization = matching_orgs[0] if matching_orgs else None
-            else:
-                print(f"  [STANDARD] Processing with standard relevance (embeddings disabled)")
-        
-        # Use AI to generate summary if enabled
-        summary = None
-        if self.use_ai and self.generate_ai_summary and len(content) > 100:
-            try:
-                summary = self.generate_ai_summary(content)
-                if summary:
-                    logger.info(f"Generated AI summary ({len(summary)} chars)")
-            except Exception as e:
-                logger.warning(f"Failed to generate AI summary: {str(e)}")
-        
-        # Use snippet as summary if no AI summary
-        if not summary:
-            summary = result.get("snippet", "")
-        
-        # Set a default theme
-        theme = "Environmental Sustainability"
-        
-        result_data = {
-            "title": title,
-            "link": url,
-            "date": date,
-            "summary": summary,
-            "snippet": result.get("snippet", ""),
-            "source": result.get("source", "web"),
-            "content": content,
-            "theme": theme,
-            "organization": organization,
-            "relevance_score": relevance_score,
-            "semantic_relevance": semantic_relevance,
-            "embedding": content_embedding
-        }
-        
-        logger.info(f"Added result for {result_data['title']} ({len(content)} chars, relevance: {relevance_score:.2f})")
-        print(f"SUCCESS ({len(content)} chars)")
-        print(f"  Title: {result_data['title']}")
-        print(f"  Date: {result_data['date'] if result_data['date'] else 'Not found'}")
-        if semantic_relevance:
-            print(f"  Semantic relevance: {semantic_relevance:.2f}")
-        print(f"  Overall relevance: {relevance_score:.2f}")
-        
-        return result_data
-        
-    def extract_web_content(self, max_queries=None, max_results_per_query=None) -> List[Dict]:
+    
+    def estimate_relevance(self, title: str, content: str) -> Tuple[float, Dict[str, float]]:
         """
-        Main method to extract web content based on the prompt file.
-        Enhanced with embedding-based semantic understanding.
+        Estimate relevance of content to environmental topics using keyword matching.
+        This function replaces AI-based relevance scoring with simple keyword matching.
+        
+        Args:
+            title: Title of the content
+            content: Main content text
+            
+        Returns:
+            Tuple of (overall_score, topic_scores_dict)
+        """
+        combined_text = f"{title.lower()} {content.lower()}"
+        
+        # Count keywords for each topic
+        topic_scores = {}
+        for topic, keywords in self.topics.items():
+            topic_count = 0
+            for keyword in keywords:
+                # Count occurrences of each keyword
+                count = combined_text.count(keyword.lower())
+                topic_count += count
+            
+            # Normalize score based on content length
+            content_length = len(combined_text)
+            normalized_score = min(1.0, (topic_count * 500) / max(1, content_length))
+            topic_scores[topic] = normalized_score
+        
+        # Calculate overall relevance as average of top 3 topic scores
+        top_scores = sorted(topic_scores.values(), reverse=True)[:3]
+        overall_score = sum(top_scores) / len(top_scores) if top_scores else 0
+        
+        # Boost score for priority domains
+        domain_boost = 0
+        try:
+            url_domain = urlparse(url).netloc.lower()
+            if any(domain in url_domain for domain in self.priority_domains):
+                domain_boost = 0.3
+                overall_score = min(1.0, overall_score + domain_boost)
+        except:
+            pass
+        
+        return overall_score, topic_scores
+    
+    def identify_themes(self, content: str) -> List[str]:
+        """
+        Identify themes in content using keyword matching.
+        This function replaces AI-based theme identification.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of identified themes
+        """
+        content_lower = content.lower()
+        identified_themes = []
+        
+        for topic, keywords in self.topics.items():
+            for keyword in keywords:
+                if keyword.lower() in content_lower:
+                    # Convert topic from snake_case to Title Case
+                    theme = " ".join(word.capitalize() for word in topic.split("_"))
+                    identified_themes.append(theme)
+                    break  # Only add the theme once
+        
+        return identified_themes
+    
+    def analyze_sentiment(self, content: str) -> str:
+        """
+        Analyze sentiment using simple keyword-based approach.
+        This function replaces AI-based sentiment analysis.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Sentiment (Positive, Negative, or Neutral)
+        """
+        content_lower = content.lower()
+        
+        # Define positive and negative keywords
+        positive_keywords = [
+            "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
+            "advantage", "effective", "efficiently", "progress", "achievement", "sustainable",
+            "solution", "opportunity", "promising", "innovative", "advanced", "partnership"
+        ]
+        
+        negative_keywords = [
+            "failure", "failed", "problem", "challenge", "difficult", "negative", "risk",
+            "threat", "damage", "harmful", "pollution", "degradation", "unsustainable",
+            "danger", "crisis", "emergency", "concern", "alarming", "devastating"
+        ]
+        
+        # Count occurrences
+        positive_count = sum(content_lower.count(keyword) for keyword in positive_keywords)
+        negative_count = sum(content_lower.count(keyword) for keyword in negative_keywords)
+        
+        # Determine sentiment
+        if positive_count > negative_count * 1.5:
+            return "Positive"
+        elif negative_count > positive_count * 1.5:
+            return "Negative"
+        else:
+            return "Neutral"
+    
+    def extract_benefits_to_germany(self, content: str) -> Optional[str]:
+        """
+        Extract benefits to Germany using keyword proximity.
+        This function replaces AI-based benefits extraction.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Extracted benefits or None
+        """
+        if "germany" not in content.lower() and "german" not in content.lower():
+            return None
+        
+        # Find sentences that mention Germany and benefit keywords
+        sentences = re.split(r'(?<=[.!?])\s+', content)
+        benefit_sentences = []
+        
+        benefit_keywords = [
+            "benefit", "advantage", "gain", "profit", "value", "opportunity",
+            "improvement", "enhanced", "strengthen", "contribute", "partnership",
+            "cooperation", "support", "funding", "investment", "expertise"
+        ]
+        
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+            if ("germany" in sentence_lower or "german" in sentence_lower):
+                if any(keyword in sentence_lower for keyword in benefit_keywords):
+                    benefit_sentences.append(sentence.strip())
+        
+        if benefit_sentences:
+            return " ".join(benefit_sentences)
+        
+        return None
+    
+    def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
+        """
+        Main method to extract web content based on search queries.
+        Skips URLs that are already in the database to save time.
         
         Args:
             max_queries: Maximum number of queries to process (None for all)
             max_results_per_query: Maximum results to extract per query (None for default)
             
         Returns:
-            List of dictionaries containing the extracted content
+            Dictionary with status, results, and metadata
         """
-        logger.info("Starting web content extraction process with embeddings")
-        print("\n" + "="*50)
-        print("STARTING WEB CONTENT EXTRACTION PROCESS")
-        if self.use_embeddings:
-            print("EMBEDDINGS ENABLED: Using semantic understanding")
-        print("="*50 + "\n")
+        logger = logging.getLogger(__name__)
         
+        # Create formatted header for console output
+        header = f"\n{'='*60}\n{' '*20}WEB CONTENT EXTRACTION\n{'='*60}"
+        logger.info("Starting web content extraction process")
+        print(header)
+        
+        # Track timing for performance analysis
         start_time = time.time()
         
         try:
-            # Read the prompt file
-            prompt_content = self.read_prompt_file()
-            logger.info(f"Prompt content length: {len(prompt_content)} chars")
-            
-            # Extract context from prompt with embeddings
-            context = self.extract_prompt_context(prompt_content)
+            # First, get all existing URLs from the database to avoid re-processing
+            existing_urls = set()
+            try:
+                # Get database connection
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Query all existing URLs
+                cursor.execute("SELECT link FROM content_data")
+                rows = cursor.fetchall()
+                
+                # Process all rows and add to set
+                for row in rows:
+                    existing_urls.add(row[0])
+                    
+                cursor.close()
+                conn.close()
+                
+                # CRITICAL FIX: Verify we actually have data
+                if not existing_urls:
+                    logger.warning("Database query succeeded but returned no URLs - treating all content as new")
+                    print(f"\n⚠️ Warning: No existing URLs found in database - treating all content as new")
+                else:
+                    logger.info(f"Database: Loaded {len(existing_urls)} existing URLs")
+                    print(f"\n📊 Database: Loaded {len(existing_urls)} existing URLs")
+                    
+            except Exception as e:
+                logger.error(f"Database error: Failed to fetch existing URLs - {str(e)}")
+                print(f"\n⚠️ Warning: Could not fetch existing URLs from database")
+                print(f"   Error details: {str(e)}")
+                # Continue with empty set if database query fails
             
             # Generate search queries
-            queries = self.generate_search_queries(context)
-            
-            # Limit number of queries if specified
-            if max_queries is not None:
-                queries = queries[:max_queries]
+            queries = self.generate_search_queries(max_queries)
             
             # Search the web and collect results
             all_results = []
-            processed_urls = set()  # Track URLs to avoid duplicates
-            logger.info(f"Processing {len(queries)} queries")
+            processed_urls = set()  # Track URLs to avoid duplicates within current run
+            skipped_total = 0      # Count of all skipped URLs
             
-            print("\n" + "-"*50)
-            print(f"PROCESSING {len(queries)} SEARCH QUERIES")
-            print("-"*50 + "\n")
+            logger.info(f"Search plan: Processing {len(queries)} queries with {self.max_workers} workers")
             
-            results_per_query = 3 if max_results_per_query is None else max_results_per_query
+            query_header = f"\n{'-'*60}\n🔍 SEARCH QUERIES: Processing {len(queries)} queries\n{'-'*60}"
+            print(query_header)
+            
+            results_per_query = 5 if max_results_per_query is None else max_results_per_query
             
             # Use ThreadPoolExecutor for parallel processing of search results
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                for i, query_obj in enumerate(queries):
-                    query = query_obj["query"]
+                for i, query in enumerate(queries):
                     query_preview = query[:50] + "..." if len(query) > 50 else query
-                    logger.info(f"Processing query {i+1}/{len(queries)}: '{query_preview}'")
+                    logger.info(f"Query {i+1}/{len(queries)}: '{query_preview}'")
                     
-                    print(f"\nQUERY {i+1}/{len(queries)}: '{query_preview}'")
+                    print(f"\n📝 QUERY {i+1}/{len(queries)}:")
+                    print(f"   '{query_preview}'")
                     
-                    results = self.search_web(query_obj, num_results=results_per_query)
+                    # Search the web
+                    results = self.search_web(query, num_results=results_per_query)
                     logger.info(f"Query {i+1} returned {len(results)} results")
+                    print(f"   Found {len(results)} search results")
                     
-                    # Submit all results for parallel processing
+                    # Submit all results for parallel processing, skipping already processed URLs
                     future_to_result = {}
+                    skipped_urls = 0
+                    new_urls = 0
+                    
                     for j, result in enumerate(results):
-                        # Each thread will check against the current state but only the main thread will update it
-                        if result.get("link") not in processed_urls:
-                            future = executor.submit(
-                                self.process_search_result, 
-                                result, i, j, context, processed_urls
-                            )
-                            future_to_result[future] = result
+                        url = result.get("link")
+                        
+                        # Skip if URL is invalid
+                        if not url:
+                            logger.warning(f"Result {j+1} has no URL, skipping")
+                            continue
+                            
+                        # Note: We check if URL is in processed_urls BEFORE we add it to the set
+                        if url in processed_urls:
+                            logger.info(f"Skipping URL already processed in this run: {url}")
+                            skipped_urls += 1
+                            skipped_total += 1
+                            continue
+                            
+                        if url in existing_urls:
+                            logger.info(f"Skipping URL already in database: {url}")
+                            skipped_urls += 1
+                            skipped_total += 1
+                            continue
+                        
+                        # Important: Only mark URL as processed AFTER we've decided to process it
+                        # This prevents the bug where URLs are logged as "already processed" but were never processed
+                        logger.info(f"Processing new URL: {url}")
+                        processed_urls.add(url)
+                        new_urls += 1
+                        
+                        # Submit for processing - INCLUDE the processed_urls parameter
+                        future = executor.submit(
+                            self.process_search_result, 
+                            result, i, j, processed_urls
+                        )
+                        future_to_result[future] = result
+                    
+                    logger.info(f"Query {i+1}: Processing {new_urls} new URLs, skipped {skipped_urls}")
+                    print(f"   Processing {new_urls} new URLs")
+                    if skipped_urls > 0:
+                        print(f"   Skipped {skipped_urls} already processed URLs")
                     
                     # Collect results as they complete
+                    completed = 0
                     for future in as_completed(future_to_result):
                         result_data = future.result()
+                        completed += 1
+                        
                         if result_data:
                             all_results.append(result_data)
+                            logger.info(f"Processed result: '{result_data.get('title', 'Untitled')}' with relevance {result_data.get('relevance_score', 0):.2f}")
+                        else:
+                            logger.warning("Received empty result from processing")
+                        
+                        # Show progress
+                        if completed % 5 == 0 or completed == len(future_to_result):
+                            print(f"   Progress: {completed}/{len(future_to_result)} URLs processed")
                     
                     # Add small delay between queries to be respectful
                     if i < len(queries) - 1:  # Don't delay after the last query
                         logger.info("Adding delay between queries (1 second)")
-                        print("\n  Waiting 1 second before next query...")
+                        print("\n   ⏱️ Waiting 1 second before next query...")
                         time.sleep(1)
             
             # Sort results by relevance score (descending)
@@ -774,51 +723,191 @@ class WebExtractor:
             all_results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
             
             duration = time.time() - start_time
-            logger.info(f"Web content extraction completed in {duration:.2f} seconds. Found {len(all_results)} results.")
             
-            print("\n" + "="*50)
-            print(f"EXTRACTION COMPLETED IN {duration:.2f} SECONDS")
-            print(f"FOUND {len(all_results)} RESULTS")
-            print("="*50 + "\n")
+            # Determine status based on results
+            if len(all_results) > 0:
+                status = "success"
+                status_message = f"Successfully found {len(all_results)} new results"
+            else:
+                # No results but all URLs were already processed - this is still a success
+                # But double check that the database has records if we skipped URLs
+                if skipped_total > 0:
+                    if len(existing_urls) == 0:
+                        status = "warning"
+                        status_message = f"No results found. Skipped {skipped_total} URLs but database appears empty."
+                    else:
+                        status = "success"
+                        status_message = f"No new content found. All {skipped_total} URLs were already processed."
+                else:
+                    # No results and no skipped URLs - this might indicate a problem
+                    status = "warning"
+                    status_message = f"No results found in search. Try different search queries."
+            
+            logger.info(f"Web content extraction completed in {duration:.2f} seconds. Status: {status}. {status_message}")
+            
+            # Format summary header based on status
+            if status == "success":
+                status_emoji = "✅"
+            elif status == "warning":
+                status_emoji = "⚠️"
+            else:
+                status_emoji = "❌"
+                
+            summary_header = f"\n{'='*60}\n{' '*15}EXTRACTION SUMMARY {status_emoji}\n{'='*60}"
+            print(summary_header)
+            print(f"⏱️ Time: {duration:.2f} seconds")
+            print(f"📊 Status: {status.upper()}")
+            print(f"📝 Details: {status_message}")
+            if len(all_results) > 0:
+                print(f"🔍 Found {len(all_results)} new results")
+            if skipped_total > 0:
+                print(f"⏭️ Skipped {skipped_total} already processed URLs")
+                if len(existing_urls) == 0:
+                    print(f"⚠️ WARNING: Database integrity issue - URLs were skipped but database appears empty")
+            print(f"{'-'*60}")
             
             # Log summary for each result
             if all_results:
-                print("RESULTS SUMMARY:")
+                print("\n📋 RESULTS SUMMARY:")
                 for i, result in enumerate(all_results):
                     relevance = result.get("relevance_score", 0)
-                    relevance_status = "HIGH RELEVANCE" if relevance > 0.7 else "MEDIUM RELEVANCE" if relevance > 0.4 else "LOW RELEVANCE"
-                    source = result.get("source", "web").upper()
                     
-                    logger.info(f"Result {i+1}: {result['title']} - {relevance_status} ({relevance:.2f}) - Source: {source}")
-                    print(f"{i+1}. [{relevance_status}] [{source}] {result['title']}")
-                    print(f"   URL: {result['link']}")
-                    print(f"   Date: {result['date'] if result['date'] else 'Not found'}")
-                    print(f"   Relevance: {relevance:.2f}")
-                    if result.get("semantic_relevance"):
-                        print(f"   Semantic Relevance: {result['semantic_relevance']:.2f}")
-                    print(f"   Length: {len(result['content'])} chars")
-                    print()
+                    # Determine relevance category and emoji
+                    if relevance > 0.7:
+                        relevance_status = "HIGH RELEVANCE"
+                        rel_emoji = "🌟"
+                    elif relevance > 0.4:
+                        relevance_status = "MEDIUM RELEVANCE"
+                        rel_emoji = "⭐"
+                    else:
+                        relevance_status = "LOW RELEVANCE"
+                        rel_emoji = "⚪"
+                    
+                    logger.info(f"Result {i+1}: {result['title']} - {relevance_status} ({relevance:.2f})")
+                    
+                    # Format result information with emojis and structure
+                    print(f"\n{i+1}. {rel_emoji} [{relevance_status}] {result['title']}")
+                    print(f"   🔗 URL: {result['link']}")
+                    print(f"   📅 Date: {result['date'] if result['date'] else 'Not found'}")
+                    print(f"   📊 Relevance: {relevance:.2f}")
+                    print(f"   🏷️ Themes: {', '.join(result['themes']) if result['themes'] else 'None'}")
+                    print(f"   📏 Length: {len(result['content'])} chars")
             
-            return all_results
+            # Return a dictionary with status and results
+            return {
+                "status": status,
+                "message": status_message,
+                "execution_time": f"{duration:.2f} seconds",
+                "results": all_results,
+                "skipped_urls": skipped_total,
+                "database_urls_count": len(existing_urls)  # Add this for better debugging
+            }
             
         except Exception as e:
             error_type = type(e).__name__
             error_traceback = traceback.format_exc()
-            logger.error(f"Error in extraction process: {error_type}: {str(e)}")
+            logger.error(f"Critical error in extraction process: {error_type}: {str(e)}")
             logger.error(f"Traceback: {error_traceback}")
             
-            print("\n" + "!"*50)
-            print(f"ERROR IN EXTRACTION PROCESS: {error_type}: {str(e)}")
-            print("TRACEBACK:")
+            # Format error message with visual separator
+            error_header = f"\n{'!'*60}\n{' '*15}EXTRACTION ERROR ❌\n{'!'*60}"
+            print(error_header)
+            print(f"❌ Error Type: {error_type}")
+            print(f"❌ Error Message: {str(e)}")
+            print(f"\n⚙️ Traceback:")
             print(error_traceback)
-            print("!"*50 + "\n")
+            print(f"{'!'*60}")
             
-            return []
+            # Return error information
+            return {
+                "status": "error",
+                "message": f"Error: {str(e)}",
+                "execution_time": f"{time.time() - start_time:.2f} seconds",
+                "results": [],
+                "error": str(e),
+                "error_type": error_type
+            }
 
+
+    def process_search_result(self, result, query_index, result_index, processed_urls):
+        """
+        Process a single search result to extract and analyze content.
+        
+        Args:
+            result: The search result dict with link, title, etc.
+            query_index: Index of the query that produced this result
+            result_index: Index of this result within the query results
+            processed_urls: Set of already processed URLs (passed by reference)
+            
+        Returns:
+            Dict containing processed content or None if extraction failed
+        """
+        logger = logging.getLogger(__name__)
+        url = result.get("link")
+        title = result.get("title", "Untitled")
+        
+        # Log processing start
+        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
+        
+        try:
+            # Extract content from URL using scrape_webpage method
+            content, extracted_title, date = self.scrape_webpage(url, title)
+            
+            if not content or len(content) < 100:
+                logger.warning(f"Insufficient content from {url} (length: {len(content) if content else 0})")
+                return None
+            
+            # Create a simple summary (first 500 chars)
+            summary = content[:500] + "..." if len(content) > 500 else content
+            
+            # Identify themes using the class method
+            themes = self.identify_themes(content)
+            
+            # Extract organization from URL domain
+            # Get domain from URL - simple implementation inside the class
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            organization = domain.split('.')[0].upper()
+            
+            # Analyze sentiment
+            sentiment = self.analyze_sentiment(content)
+            
+            # Calculate relevance score
+            relevance_score, topic_scores = self.estimate_relevance(extracted_title or title, content)
+            
+            # Extract benefits to Germany if the method exists
+            benefits_to_germany = None
+            if hasattr(self, 'extract_benefits_to_germany'):
+                benefits_to_germany = self.extract_benefits_to_germany(content)
+            
+            # Create result dictionary
+            result_data = {
+                "title": extracted_title or title,
+                "link": url,
+                "date": date,
+                "content": content,
+                "summary": summary,
+                "themes": themes,
+                "organization": organization,
+                "sentiment": sentiment,
+                "relevance_score": relevance_score,
+                "query_index": query_index,
+                "result_index": result_index,
+                "extraction_timestamp": datetime.now().isoformat()
+            }
+            
+            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f})")
+            return result_data
+            
+        except Exception as e:
+            logger.error(f"Error processing {url}: {str(e)}")
+            logger.debug(f"Traceback: {traceback.format_exc()}")
+            return None
     def run(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
         Run the web extraction process and return results in a structured format.
-        Enhanced with embedding support for better semantic understanding.
         
         Args:
             max_queries: Maximum number of queries to process
@@ -827,40 +916,41 @@ class WebExtractor:
         Returns:
             Dictionary with extraction results and metadata
         """
-        logger.info("Running web extractor with embedding enhancement")
+        logger.info("Running web extractor")
         
         try:
             start_time = time.time()
             
             # Run the extraction process with the parameters
-            results = self.extract_web_content(max_queries, max_results_per_query)
-        
+            extraction_result = self.extract_web_content(max_queries, max_results_per_query)
+            
             # Calculate timing and prepare output
             end_time = time.time()
             execution_time = end_time - start_time
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             
-            # Add embeddings status
-            embeddings_status = {
-                "enabled": self.use_embeddings,
-                "embedding_count": sum(1 for r in results if r.get("embedding") is not None),
-                "database_search_enabled": self.semantic_search_func is not None,
-                "database_results": sum(1 for r in results if r.get("source") == "database")
-            }
-            
+            # Build the output dictionary
             output = {
-                "status": "success" if results else "error",
+                "status": extraction_result.get("status", "error"),
+                "message": extraction_result.get("message", "Unknown result"),
                 "timestamp": timestamp,
                 "execution_time": f"{execution_time:.2f} seconds",
-                "result_count": len(results),
-                "embeddings": embeddings_status,
-                "results": results
+                "result_count": len(extraction_result.get("results", [])),
+                "skipped_urls": extraction_result.get("skipped_urls", 0),
+                "results": extraction_result.get("results", [])
             }
             
-            logger.info(f"Web extractor completed in {execution_time:.2f} seconds with {len(results)} results")
-            if self.use_embeddings:
-                logger.info(f"Generated {embeddings_status['embedding_count']} embeddings")
-                logger.info(f"Found {embeddings_status['database_results']} results from database")
+            # Log completion with appropriate message
+            if output["status"] == "success":
+                if output["result_count"] > 0:
+                    logger.info(f"Web extractor completed successfully in {execution_time:.2f} seconds with {output['result_count']} results")
+                    print(f"Web extraction completed successfully with {output['result_count']} new results")
+                else:
+                    logger.info(f"Web extractor completed successfully in {execution_time:.2f} seconds. No new content found.")
+                    print(f"Web extraction completed successfully. {output['message']}")
+            else:
+                logger.warning(f"Web extractor completed with status '{output['status']}' in {execution_time:.2f} seconds: {output['message']}")
+                print(f"Web extraction completed with status: {output['status']}. {output['message']}")
             
             return output
             
@@ -876,46 +966,40 @@ class WebExtractor:
             
             return {
                 "status": "error",
+                "message": f"Critical error: {str(e)}",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "execution_time": f"{time.time() - start_time:.2f} seconds",
                 "error": str(e),
                 "results": [],
-                "embeddings": {"enabled": self.use_embeddings, "embedding_count": 0}
+                "result_count": 0
             }
 
 # Example usage:
 if __name__ == "__main__":
-    # This is just an example of how to use the enhanced extractor
-    # You'll need to provide the actual embedding functions
+    # This is just an example of how to use the extractor directly
     try:
         print("\n" + "="*50)
-        print("STARTING WEB EXTRACTOR WITH EMBEDDINGS")
+        print("STARTING WEB EXTRACTOR")
         print("="*50 + "\n")
         
-        # Example dummy embedding function
-        def dummy_embedding(text):
-            import numpy as np
-            return list(np.random.random(384))  # Simulate a 384-dim embedding vector
+        # Load the API key from environment
+        load_dotenv()
+        api_key = os.getenv('SERPER_API_KEY')
         
-        # Example dummy semantic search function
-        def dummy_semantic_search(embedding, limit=5):
-            # This would normally query a database
-            return []
+        if not api_key:
+            print("ERROR: SERPER_API_KEY not found in environment variables.")
+            print("Please set the SERPER_API_KEY environment variable and try again.")
+            exit(1)
         
-        extractor = WebExtractor(
-            create_embedding_func=dummy_embedding,
-            semantic_search_func=dummy_semantic_search
-        )
-        
-        results = extractor.run(max_queries=3)
+        # Create and run extractor
+        extractor = WebExtractor(search_api_key=api_key)
+        results = extractor.run(max_queries=3, max_results_per_query=3)
         
         print("\n" + "="*50)
         print("WEB EXTRACTOR COMPLETED")
         print(f"Status: {results.get('status')}")
         print(f"Total results: {results.get('result_count', 0)}")
         print(f"Execution time: {results.get('execution_time')}")
-        if results.get("embeddings", {}).get("enabled"):
-            print(f"Embeddings generated: {results.get('embeddings', {}).get('embedding_count', 0)}")
-            print(f"Database results: {results.get('embeddings', {}).get('database_results', 0)}")
         print("="*50 + "\n")
         
     except Exception as e:
