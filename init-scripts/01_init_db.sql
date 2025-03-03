@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS content_data (
     summary TEXT,
     full_content TEXT,
     information TEXT,
-    theme VARCHAR(100),
+    themes TEXT[],
     organization VARCHAR(100),
     sentiment VARCHAR(50),
     benefits_to_germany TEXT,
@@ -18,14 +18,13 @@ CREATE TABLE IF NOT EXISTS content_data (
 
 -- Create indexes for faster queries on content_data
 CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link);
-CREATE INDEX IF NOT EXISTS idx_content_data_theme ON content_data (theme);
+CREATE INDEX IF NOT EXISTS idx_content_data_themes ON content_data USING GIN (themes);
 CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization);
 CREATE INDEX IF NOT EXISTS idx_content_data_date ON content_data (date);
 CREATE INDEX IF NOT EXISTS idx_content_data_sentiment ON content_data (sentiment);
 
 -- Create a trigger to automatically update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION update_modified_column() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;

@@ -4,6 +4,33 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import time
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+import time
+import os
+
+# Web Extraction and Database Imports
+from web_extractor import WebExtractor
+from content_db import store_extract_data, get_all_content
+
+# Logging and Environment
+import logging
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+
+# AI and Concurrency
+import concurrent.futures
+from openai import OpenAI
+
+# Themes and Insights Functions
+from insights_functions import (
+    generate_insights_with_openai,
+    generate_benefits_to_germany_with_openai,
+    analyze_sentiment_with_openai,load_prompt
+)
 import os
 # View Data page function
 import streamlit as st
@@ -80,7 +107,7 @@ def fetch_data(limit=100, filters=None):
         # Add filter conditions if provided
         if filters:
             if filters.get('theme'):
-                query_parts.append("theme = :theme")
+                query_parts.append(":theme = ANY(themes)")
                 params['theme'] = filters['theme']
             
             if filters.get('organization'):
@@ -103,7 +130,8 @@ def fetch_data(limit=100, filters=None):
         query = text(f"""
         SELECT 
             id, link, title, date, summary, 
-            theme, organization, sentiment, 
+            full_content, information, themes, 
+            organization, sentiment, 
             benefits_to_germany, insights, 
             created_at, updated_at
         FROM content_data 
@@ -126,6 +154,77 @@ def fetch_data(limit=100, filters=None):
         logger.error(f"Error fetching data: {str(e)}")
         st.error(f"Error fetching data: {str(e)}")
         return pd.DataFrame()
+
+def extract_benefits_with_openai(content, benefits_prompt):
+    """
+    Extract benefits using OpenAI based on the provided prompt.
+    """
+    if not openai_client or not content:
+        return None
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": benefits_prompt},
+                {"role": "user", "content": content}
+            ],
+            max_tokens=500,
+            temperature=0.3
+        )
+        
+        benefits_text = response.choices[0].message.content.strip()
+        return benefits_text
+    except Exception as e:
+        logger.error(f"Error extracting benefits with OpenAI: {str(e)}")
+        return None
+
+def classify_themes_with_openai(content, themes_prompt):
+    """
+    Classify themes using OpenAI based on the provided prompt.
+    """
+    if not openai_client or not content:
+        return []
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": themes_prompt},
+                {"role": "user", "content": content}
+            ],
+            max_tokens=100,
+            temperature=0.3
+        )
+        
+        themes_str = response.choices[0].message.content.strip()
+        themes_list = [theme.strip() for theme in themes_str.split(",")]
+        return themes_list
+    except Exception as e:
+        logger.error(f"Error classifying themes with OpenAI: {str(e)}")
+        return []
+
+def load_prompts_from_folder(folder_path="prompts"):
+    """
+    Load prompts from the specified folder.
+    """
+    prompts = {}
+    
+    if not os.path.exists(folder_path):
+        logger.error(f"Prompts folder not found: {folder_path}")
+        return prompts
+    
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".txt"):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                with open(file_path, "r", encoding="utf-8") as file:
+                    prompts[filename] = file.read()
+                logger.info(f"Loaded prompt from: {filename}")
+            except Exception as e:
+                logger.error(f"Error loading prompt from {filename}: {str(e)}")
+    
+    return prompts
 
 # Function to generate AI summary using OpenAI
 def generate_ai_summary(content, max_tokens=750):
@@ -152,6 +251,10 @@ def generate_ai_summary(content, max_tokens=750):
     except Exception as e:
         logger.error(f"Error generating AI summary: {str(e)}")
         return None
+
+
+
+
 
 # Function to extract date using OpenAI
 def extract_date_with_ai(content, url):
@@ -202,7 +305,7 @@ def view_data_page():
     engine = get_sqlalchemy_engine()
     
     # Fetch unique themes
-    themes_query = text("SELECT DISTINCT theme FROM content_data WHERE theme IS NOT NULL ORDER BY theme")
+    themes_query = text("SELECT DISTINCT unnest(themes) AS theme FROM content_data WHERE themes IS NOT NULL ORDER BY theme")
     themes = [t[0] for t in pd.read_sql(themes_query, engine)['theme']]
     themes.insert(0, "All")  # Add "All" option at the beginning
     
@@ -272,13 +375,21 @@ def view_data_page():
         st.markdown(f"**Title:** {selected_row['title']}")
         st.markdown(f"**Link:** {selected_row['link']}")
         st.markdown(f"**Date:** {selected_row['date']}")
-        st.markdown(f"**Theme:** {selected_row['theme'] if pd.notna(selected_row['theme']) else 'N/A'}")
+        st.markdown(f"**Themes:** {', '.join(selected_row['themes']) if selected_row['themes'] else 'N/A'}")
         st.markdown(f"**Organization:** {selected_row['organization'] if pd.notna(selected_row['organization']) else 'N/A'}")
         st.markdown(f"**Sentiment:** {selected_row['sentiment'] if pd.notna(selected_row['sentiment']) else 'N/A'}")
         
         # Summary section
         st.subheader("Summary")
         st.write(selected_row['summary'] if pd.notna(selected_row['summary']) else "No summary available")
+        
+        # Full Content section
+        st.subheader("Full Content")
+        st.write(selected_row['full_content'] if pd.notna(selected_row['full_content']) else "No full content available")
+        
+        # Information section
+        st.subheader("Information")
+        st.write(selected_row['information'] if pd.notna(selected_row['information']) else "No additional information available")
         
         # Benefits section
         st.subheader("Benefits to Germany")
@@ -289,17 +400,51 @@ def view_data_page():
         st.write(selected_row['insights'] if pd.notna(selected_row['insights']) else "No insights available")
 
 # Function to run web extraction
-# Function to run web extraction
 def run_web_extraction(max_queries=None, max_results_per_query=None, use_ai=True):
-    logger.info(f"Starting web extraction process with max_queries={max_queries}, max_results_per_query={max_results_per_query}, AI={use_ai}")
-    print(f"Starting web content extraction (max queries: {max_queries}, max results per query: {max_results_per_query}, AI: {use_ai})")
+    """
+    Run web extraction process with configurable parameters.
+    
+    Args:
+        max_queries (int, optional): Maximum number of queries to run. Defaults to None.
+        max_results_per_query (int, optional): Maximum results per query. Defaults to None.
+        use_ai (bool, optional): Whether to use AI for content enhancement. Defaults to True.
+    """
+    # Log the start of the extraction process with detailed parameters
+    logging.info(
+        f"Starting web extraction process | "
+        f"Max Queries: {max_queries or 'Unlimited'} | "
+        f"Max Results Per Query: {max_results_per_query or 'Unlimited'} | "
+        f"AI Enhancement: {use_ai}"
+    )
+    
+    # Print user-friendly startup message
+    print(f"🌐 Initiating web content extraction...")
+    print(f"   Configuration:")
+    print(f"   - Max Queries: {max_queries or 'Unlimited'}")
+    print(f"   - Max Results Per Query: {max_results_per_query or 'Unlimited'}")
+    print(f"   - AI Enhancement: {'Enabled' if use_ai else 'Disabled'}")
 
+    # Use Streamlit spinner for visual feedback
     with st.spinner("Extracting web content... This may take a few minutes."):
         # Create progress bar
         progress_bar = st.progress(0)
 
-        # Initialize WebExtractor with explicit method passing
-        logger.info("Initializing WebExtractor")
+        # Log extractor initialization
+        logging.info("Initializing WebExtractor")
+        print("🔍 Initializing web content extractor...")
+
+        # Dynamically load prompts
+        try:
+            prompts = load_prompts_from_folder()
+            themes_prompt = prompts.get('themes.txt', '')
+            insights_prompt = prompts.get('insights.txt', '')
+            benefits_prompt = prompts.get('benefits.txt', '')
+            sentiment_prompt = prompts.get('sentiment.txt', '')
+        except Exception as e:
+            logging.error(f"Error loading prompts: {str(e)}")
+            themes_prompt = insights_prompt = benefits_prompt = sentiment_prompt = ''
+
+        # Initialize WebExtractor
         extractor = WebExtractor(
             use_ai=use_ai,
             openai_client=openai_client,
@@ -310,117 +455,145 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, use_ai=True
             serper_api_key=os.getenv('SERPER_API_KEY')
         )
 
-        # Set up a placeholder for status updates
+        # Status placeholders
         status_placeholder = st.empty()
-        status_placeholder.info("Initializing web extraction...")
-
-        # Run the extractor
-        logger.info("Running web extractor")
-        print("Searching for relevant web content...")
         status_placeholder.info("Searching the web for relevant content...")
         progress_bar.progress(25)
 
         try:
-            results = extractor.run(max_queries=max_queries, max_results_per_query=max_results_per_query)
+            # Run web extraction
+            results = extractor.run(
+                max_queries=max_queries, 
+                max_results_per_query=max_results_per_query
+            )
             progress_bar.progress(40)
 
-            # Check if we got results
+            # Check extraction results
             if results["status"] == "success" and results["results"]:
                 result_count = len(results["results"])
-                logger.info(f"Web extraction successful. Found {result_count} results")
-                print(f"Found {result_count} relevant web pages")
-                status_placeholder.info(f"Found {result_count} relevant web pages. Saving to database...")
+                
+                # Detailed logging of extraction results
+                logging.info(f"Web extraction successful. Found {result_count} results")
+                print(f"✅ Web extraction complete. {result_count} items retrieved.")
+                
+                status_placeholder.info(f"Enhancing {result_count} items with AI processing...")
 
-                # Process content items to enhance with AI and prepare for database
+                # AI-powered content enhancement
                 if use_ai and openai_client and result_count > 0:
-                    status_placeholder.info(f"Enhancing {result_count} items with AI summaries...")
-                    
-                    # Process items with AI in parallel batches for efficiency
                     def enhance_item(item):
-                        if "content" in item and item["content"]:
-                            # Only generate AI summary if no summary exists yet or summary is empty
-                            if not item.get("summary") and (not item.get("snippet") or len(item.get("snippet", "")) < 50):
-                                logger.info(f"Generating AI summary for {item.get('link')}")
-                                item["summary"] = generate_ai_summary(item["content"])
-                            elif not item.get("summary"):  # No summary but snippet exists
-                                logger.info(f"Using snippet as summary for {item.get('link')}")
-                                item["summary"] = item.get("snippet")
-                            else:
-                                logger.info(f"Summary already exists for {item.get('link')}")
+                        try:
+                            if "content" in item and item["content"]:
+                                # Generate AI summary if needed
+                                summary = item.get("summary") or generate_ai_summary(item["content"])
                                 
-                            # Refine date with AI if not already detected
-                            if not item.get("date") and use_ai:
-                                logger.info(f"Extracting date with AI for {item.get('link')}")
-                                item["date"] = extract_date_with_ai(item["content"], item["link"])
-                        return item
-                    
-                    # Process in batches using ThreadPoolExecutor for parallel execution
+                                # Extract date if missing
+                                date = item.get("date") or extract_date_with_ai(item["content"], item["link"])
+                                
+                                # Classify themes using OpenAI
+                                themes = classify_themes_with_openai(
+                                    item["content"], 
+                                    themes_prompt
+                                )
+                                
+                                # Generate insights and benefits
+                                insights = generate_insights_with_openai(item["content"]) or None
+                                benefits_to_germany = generate_benefits_to_germany_with_openai(item["content"]) or None
+                                
+                                # Determine sentiment
+                                sentiment = analyze_sentiment_with_openai(
+                                    item["content"], 
+                                    sentiment_prompt
+                                )
+                                
+                                # Update item with enhanced information
+                                item.update({
+                                    "summary": summary,
+                                    "date": date,
+                                    "themes": themes,
+                                    "insights": insights,
+                                    "benefits_to_germany": benefits_to_germany,
+                                    "sentiment": sentiment
+                                })
+                            
+                            return item
+                        except Exception as e:
+                            logging.error(f"Error enhancing item {item.get('link', 'unknown link')}: {str(e)}")
+                            return item
+
+                    # Concurrent enhancement of items
                     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                         results["results"] = list(executor.map(enhance_item, results["results"]))
-                
+                    
+                    print("🧠 AI enhancement completed.")
+
                 progress_bar.progress(50)
-                
+
                 try:
-                    # Check for existing URLs in the database to avoid duplicates
+                    # Database operations
                     engine = get_sqlalchemy_engine()
                     existing_urls_query = text("SELECT link FROM content_data")
                     existing_urls = set(pd.read_sql(existing_urls_query, engine)['link'])
-                    
-                    # Filter out results with URLs that already exist in the database
+
+                    # Filter out duplicate URLs
                     original_count = len(results["results"])
                     results["results"] = [r for r in results["results"] if r.get("link") not in existing_urls]
                     filtered_count = original_count - len(results["results"])
-                    
-                    if filtered_count > 0:
-                        logger.info(f"Filtered out {filtered_count} results that already exist in the database")
-                        print(f"Skipping {filtered_count} results already in database")
 
-                    # Store results
+                    if filtered_count > 0:
+                        logging.info(f"Filtered out {filtered_count} duplicate results")
+                        print(f"🚫 Removed {filtered_count} duplicate entries.")
+
+                    # Store extracted data
                     from content_db import store_extract_data
                     stored_ids = store_extract_data(results["results"])
                     stored_count = len(stored_ids)
-                    
-                    progress_bar.progress(100)
-                    logger.info(f"Web extraction completed. Saved {stored_count}/{result_count} items to database")
-                    print(f"Web extraction completed! Saved {stored_count}/{result_count} items")
-                    status_placeholder.success(f"Web extraction completed! Saved {stored_count} items to database.")
 
-                    # Display the saved items
+                    # Final progress and logging
+                    progress_bar.progress(100)
+                    logging.info(f"Web extraction completed. Saved {stored_count}/{result_count} items to database")
+                    print(f"💾 Saved {stored_count} new items to database.")
+                    
+                    status_placeholder.success(f"Saved {stored_count} new items to database.")
+
+                    # Display saved items if any
                     if stored_ids:
                         try:
                             engine = get_sqlalchemy_engine()
                             ids_str = ','.join(str(id) for id in stored_ids)
-                            query = text(f"SELECT id, link, title, date, summary FROM content_data WHERE id IN ({ids_str})")
+                            query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment FROM content_data WHERE id IN ({ids_str})")
                             saved_df = pd.read_sql(query, engine)
-                            
+
                             if not saved_df.empty:
                                 st.subheader("Newly Extracted Content")
                                 st.dataframe(saved_df)
                         except Exception as e:
-                            logger.error(f"Error displaying saved items: {str(e)}")
-                            print(f"ERROR: Could not display saved items: {str(e)}")
-                    
-                except Exception as e:
-                    logger.error(f"Error handling extraction results: {str(e)}")
-                    print(f"ERROR: Failed to handle extraction results: {str(e)}")
-                    status_placeholder.error(f"Error handling extraction results: {str(e)}")
+                            logging.error(f"Error displaying saved items: {str(e)}")
+                            print(f"❌ Error displaying saved items: {str(e)}")
 
-                # Display the latest data
+                except Exception as e:
+                    logging.error(f"Error handling extraction results: {str(e)}")
+                    status_placeholder.error(f"Error handling extraction results: {str(e)}")
+                    print(f"❌ Error processing extraction results: {str(e)}")
+
+                # Display latest content data
                 st.subheader("Latest Content Data")
                 st.dataframe(fetch_data())
 
             else:
+                # Handle extraction failure
                 error_msg = results.get('error', 'Unknown error')
-                logger.error(f"Web extraction failed or found no results: {error_msg}")
-                print(f"ERROR: Web extraction failed: {error_msg}")
+                logging.error(f"Web extraction failed: {error_msg}")
                 progress_bar.progress(1.0)
-                status_placeholder.error(f"Web extraction failed or found no results: {error_msg}")
+                status_placeholder.error(f"Web extraction failed: {error_msg}")
+                print(f"❌ Web extraction failed: {error_msg}")
 
         except Exception as e:
-            logger.exception(f"Exception during web extraction: {str(e)}")
-            print(f"CRITICAL ERROR: Web extraction process failed: {str(e)}")
+            # Catch and log any unexpected errors
+            logging.exception(f"Exception during web extraction: {str(e)}")
             progress_bar.progress(1.0)
-            status_placeholder.error(f"Web extraction failed with exception: {str(e)}")
+            status_placeholder.error(f"Web extraction failed: {str(e)}")
+            print(f"❌ Critical error during web extraction: {str(e)}")
+
 
 # Sidebar for application navigation
 st.sidebar.title("Navigation")
@@ -502,8 +675,8 @@ elif app_mode == "Web Extraction":
     # Extraction options
     col1, col2 = st.columns(2)
     with col1:
-        max_queries = st.slider("Number of search queries to process", 20, 300, 75)
-        max_results_per_query = st.slider("Results per query", 7, 40, 35)
+        max_queries = st.slider("Number of search queries to process", 5, 40, 20)
+        max_results_per_query = st.slider("Results per query", 3, 8, 6)
         logger.debug(f"User set max_queries to: {max_queries}, max_results_per_query to: {max_results_per_query}")
         print(f"User set extraction parameters: {max_queries} queries with {max_results_per_query} results per query")
     

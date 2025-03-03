@@ -5,8 +5,17 @@ from psycopg2.extras import execute_values
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 import json
+from openai import OpenAI
+
 import re
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=openai_api_key)
 
 # Configure logging
 logger = logging.getLogger("ContentDB")
@@ -135,6 +144,90 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     logger.warning(f"Could not parse date string: {date_str}")
     return None
 
+def generate_themes_with_openai(content: str) -> List[str]:
+    """
+    Generate themes from content using OpenAI API with improved error handling.
+    
+    Args:
+        content: The content to analyze
+        
+    Returns:
+        List of themes
+    """
+    try:
+        # Truncate content if it's too long for API limits
+        max_content_length = 4000  # Adjust based on model token limits
+        truncated_content = content[:max_content_length] if len(content) > max_content_length else content
+        
+        logger.debug(f"Sending content to OpenAI API (length: {len(truncated_content)})")
+        print(f"Sending content to OpenAI API (length: {len(truncated_content)} chars)")
+        
+        # Call OpenAI API using the openai_client variable
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",  # Adjust based on available models
+            messages=[
+                {"role": "system", "content": "Extract 3-5 main themes from the following text. Return only a JSON array of strings."},
+                {"role": "user", "content": truncated_content}
+            ],
+            temperature=0.3
+        )
+        
+        # Debug the raw response format
+        logger.debug(f"OpenAI API response type: {type(response)}")
+        logger.debug(f"OpenAI API response structure: {dir(response)}")
+        
+        # Handle response
+        themes = []
+        
+        # Access the content from the response
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            if hasattr(response.choices[0], 'message') and hasattr(response.choices[0].message, 'content'):
+                content = response.choices[0].message.content
+            else:
+                content = str(response.choices[0])
+        else:
+            # Last resort: try to extract something useful
+            content = str(response)
+        
+        # Process content to extract themes
+        if content:
+            # Try parsing as JSON if it looks like a JSON array
+            if content.strip().startswith('[') and content.strip().endswith(']'):
+                try:
+                    import json
+                    themes = json.loads(content)
+                    logger.debug(f"Successfully parsed JSON themes: {themes}")
+                except json.JSONDecodeError as json_error:
+                    logger.warning(f"Failed to parse JSON themes: {str(json_error)}")
+                    # Fall back to simple text parsing
+                    themes = [theme.strip() for theme in content.strip('[]').split(',')]
+            else:
+                # Look for line breaks or commas
+                if '\n' in content:
+                    themes = [theme.strip() for theme in content.split('\n') if theme.strip()]
+                elif ',' in content:
+                    themes = [theme.strip() for theme in content.split(',') if theme.strip()]
+                else:
+                    themes = [content.strip()]
+        
+        # Clean up and validate themes
+        validated_themes = []
+        for theme in themes:
+            # Remove quotes if present
+            theme = theme.strip('"\'')
+            if theme and len(theme) > 2:  # Minimum length check
+                validated_themes.append(theme)
+        
+        logger.info(f"Generated {len(validated_themes)} themes")
+        print(f"Generated {len(validated_themes)} themes")
+        
+        return validated_themes
+    
+    except Exception as e:
+        logger.error(f"Error in OpenAI theme generation: {str(e)}")
+        print(f"ERROR in theme generation: {str(e)}")
+        return []
+
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     Store extracted data into the database using the new consolidated schema.
@@ -147,9 +240,11 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     if not extracted_data:
         logger.warning("No data to store")
+        print("WARNING: No data to store in database")
         return []
     
     logger.info(f"Storing {len(extracted_data)} results in database")
+    print(f"INFO: Attempting to store {len(extracted_data)} records in database")
     
     try:
         conn = get_db_connection()
@@ -160,9 +255,19 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         
         # List to store inserted record IDs
         inserted_ids = []
+        success_count = 0
+        error_count = 0
         
-        for item in extracted_data:
+        logger.debug("Beginning processing of individual data items")
+        print(f"Processing {len(extracted_data)} items...")
+        
+        for i, item in enumerate(extracted_data):
             try:
+                # Log progress for larger datasets
+                if i % 10 == 0 and i > 0:
+                    logger.debug(f"Processed {i}/{len(extracted_data)} items so far")
+                    print(f"Progress: {i}/{len(extracted_data)} items processed")
+                
                 # Extract item data
                 title = item.get("title", "")
                 link = item.get("link", "")
@@ -170,60 +275,193 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 content = item.get("content", "")
                 snippet = item.get("snippet", "")
                 summary = item.get("summary", snippet)
-                theme = item.get("theme", "Environmental Sustainability")
-                organization = item.get("organization")
+                
+                logger.debug(f"Processing item: {title[:50]}... | URL: {link}")
+                
+                # Extract main domain from URL for organization identification
+                import re
+                from urllib.parse import urlparse
+                
+                # Parse the URL to extract domain
+                try:
+                    parsed_url = urlparse(link)
+                    domain = parsed_url.netloc
+                    
+                    # Remove 'www.' prefix if present
+                    if domain.startswith('www.'):
+                        domain = domain[4:]
+                    
+                    # Extract main part of domain (before first dot)
+                    main_domain = domain.split('.')[0]
+                    
+                    logger.debug(f"Extracted domain: {domain}, main part: {main_domain}")
+                    print(f"Domain: {domain}")
+                    
+                    # Assign organization based on specific domains
+                    if domain == "kfw.de" or main_domain == "kfw":
+                        organization = "KfW"
+                    elif domain == "giz.de" or main_domain == "giz":
+                        organization = "GIZ"
+                    elif domain == "bmz.de" or main_domain == "bmz":
+                        organization = "BMZ"
+                    else:
+                        # Use the main domain as the organization
+                        organization = main_domain.capitalize()
+                        
+                    logger.info(f"Identified organization: {organization} for domain: {domain}")
+                    print(f"Organization: {organization} | URL: {link[:50]}...")
+                    
+                except Exception as url_error:
+                    organization = None
+                    logger.warning(f"Error extracting domain from URL: {link}: {str(url_error)}")
+                    print(f"WARNING: Could not extract domain from URL: {link}")
+                
+                # Generate themes using OpenAI
+                if openai_api_key:
+                    try:
+                        logger.info(f"Generating themes with OpenAI for: {title[:50]}...")
+                        print(f"Generating themes for item {i+1}: {title[:30]}...")
+                        item_themes = generate_themes_with_openai(content)
+                        # Fix for the 'ChatCompletion' object is not subscriptable error
+                        if hasattr(item_themes, 'choices') and len(item_themes.choices) > 0:
+                            # Extract content from the ChatCompletion object
+                            themes_content = item_themes.choices[0].message.content
+                            # Convert string representation to list if needed
+                            if isinstance(themes_content, str):
+                                # Try to convert string to list if it looks like a list
+                                if themes_content.strip().startswith('[') and themes_content.strip().endswith(']'):
+                                    try:
+                                        import json
+                                        item_themes = json.loads(themes_content)
+                                    except:
+                                        # If JSON parsing fails, use simple string split
+                                        item_themes = [theme.strip() for theme in themes_content.strip('[]').split(',')]
+                                else:
+                                    # Just use the content as a single theme
+                                    item_themes = [themes_content]
+                            else:
+                                item_themes = themes_content
+                        logger.debug(f"Generated themes: {item_themes}")
+                    except Exception as openai_error:
+                        error_msg = f"Error generating themes with OpenAI for URL {link}: {str(openai_error)}"
+                        logger.warning(error_msg)
+                        print(f"WARNING: {error_msg}")
+                        item_themes = []
+                else:
+                    logger.warning("OpenAI API key not found. Skipping theme generation.")
+                    print("WARNING: OpenAI API key not found. Skipping theme generation.")
+                    item_themes = []
                 
                 # Format and validate date
                 date_value = None
                 if date_str:
                     try:
                         date_value = format_date(date_str)
+                        logger.debug(f"Formatted date '{date_str}' to '{date_value}'")
                     except Exception as date_error:
-                        logger.warning(f"Error processing date '{date_str}' for URL {link}: {str(date_error)}")
+                        error_msg = f"Error processing date '{date_str}' for URL {link}: {str(date_error)}"
+                        logger.warning(error_msg)
+                        print(f"WARNING: {error_msg}")
+                else:
+                    logger.debug(f"No date provided for URL: {link}")
+                
+                # Basic sentiment analysis on content
+                sentiment = "Neutral"
+                positive_keywords = ["success", "benefit", "advantage", "improve", "growth", "achievement", "positive", 
+                                   "sustainable", "opportunity", "progress", "development", "cooperation"]
+                negative_keywords = ["challenge", "risk", "problem", "difficulty", "issue", "concern", "negative", 
+                                   "obstacle", "failure", "crisis", "conflict", "dispute"]
+                
+                # Simple sentiment analysis
+                content_lower = content.lower()
+                positive_count = sum(1 for word in positive_keywords if word in content_lower)
+                negative_count = sum(1 for word in negative_keywords if word in content_lower)
+                
+                if positive_count > negative_count * 1.5:
+                    sentiment = "Positive"
+                elif negative_count > positive_count * 1.5:
+                    sentiment = "Negative"
+                
+                logger.debug(f"Sentiment analysis: {sentiment} (Positive: {positive_count}, Negative: {negative_count})")
+                print(f"Sentiment analysis: {sentiment}")
+                
+                # Extract potential benefits to Germany
+                benefits_to_germany = None
+                if "germany" in content_lower and any(benefit in content_lower for benefit in 
+                                                    ["benefit", "advantage", "partnership", "cooperation", 
+                                                     "collaboration", "economic", "trade", "investment"]):
+                    # Extract paragraph containing both Germany and benefit terms
+                    paragraphs = content.split('\n')
+                    for para in paragraphs:
+                        para_lower = para.lower()
+                        if "germany" in para_lower and any(benefit in para_lower for benefit in 
+                                                         ["benefit", "advantage", "partnership", "cooperation", 
+                                                          "collaboration", "economic", "trade", "investment"]):
+                            benefits_to_germany = para
+                            break
+                
+                if benefits_to_germany:
+                    logger.info(f"Found potential benefits to Germany: {benefits_to_germany[:100]}...")
+                    print(f"Benefits to Germany: Found potential content")
+                else:
+                    print(f"Benefits to Germany: None identified")
                 
                 # Insert into content_data table with the new structure
-                # Note: Initial insertion sets benefits_to_germany and insights to NULL
                 query = """
                 INSERT INTO content_data 
-                (link, title, date, summary, full_content, information, theme, organization, sentiment, benefits_to_germany, insights)
+                (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id;
                 """
                 
-                # Set default sentiment to neutral
-                sentiment = "Neutral"
-                
+                logger.debug(f"Executing SQL insert for URL: {link}")
                 cursor.execute(
                     query, 
-                    (link, title, date_value, summary, content, summary, theme, organization, sentiment, None, None)
+                    (link, title, date_value, summary, content, summary, item_themes, organization, sentiment, benefits_to_germany, None)
                 )
                 
                 # Get the ID of the inserted record
                 record_id = cursor.fetchone()[0]
                 inserted_ids.append(record_id)
+                success_count += 1
                 
                 logger.info(f"Inserted record with ID {record_id} for URL: {link}")
+                print(f"SUCCESS: Inserted record ID {record_id} | {title[:50]}")
                 
             except Exception as item_error:
-                logger.error(f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}")
+                error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
+                logger.error(error_msg)
+                print(f"ERROR: {error_msg}")
+                error_count += 1
                 # Continue with next item
                 continue
         
         # Commit the transaction
         conn.commit()
         logger.info(f"Successfully stored {len(inserted_ids)} records in database")
+        print(f"\nDATABASE SUMMARY:")
+        print(f"- Total records processed: {len(extracted_data)}")
+        print(f"- Successfully stored: {success_count}")
+        print(f"- Failed: {error_count}")
+        print(f"- Success rate: {(success_count/len(extracted_data))*100:.1f}%")
         
         # Close the cursor and connection
         cursor.close()
         conn.close()
+        logger.debug("Database connection closed")
         
         return inserted_ids
     
     except Exception as e:
-        logger.error(f"Error storing data in database: {str(e)}")
+        error_msg = f"Error storing data in database: {str(e)}"
+        logger.error(error_msg)
+        print(f"CRITICAL ERROR: {error_msg}")
         if 'conn' in locals() and conn:
+            logger.info("Rolling back database transaction")
+            print("Rolling back database transaction...")
             conn.rollback()
             conn.close()
+            logger.debug("Database connection closed after rollback")
         raise
 
 def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
