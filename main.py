@@ -26,11 +26,7 @@ import concurrent.futures
 from openai import OpenAI
 
 # Themes and Insights Functions
-from insights_functions import (
-    generate_insights_with_openai,
-    generate_benefits_to_germany_with_openai,
-    analyze_sentiment_with_openai,load_prompt
-)
+
 import os
 # View Data page function
 import streamlit as st
