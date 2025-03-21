@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 from typing import Dict, List, Optional, Tuple, Any
 import traceback
 import json
-import numpy as np
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from content_db import get_db_connection
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -26,7 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger("WebExtractor")
 
 class WebExtractor:
-    """Class for extracting web content related to environmental sustainability."""
+    """Class for extracting web content related to ABS CDI and Bio-innovation Africa initiatives."""
     
     def __init__(self, 
                 search_api_key=None,
@@ -47,75 +47,114 @@ class WebExtractor:
         # Set max_workers
         self.max_workers = max_workers
         
-        # Target organizations to prioritize
+        # Target organizations and domains to prioritize
         self.priority_domains = [
             "giz.de", 
             "bmz.de", 
-            "kfw.de"
+            "kfw.de",
+            "cbd.int",
+            "absch.cbd.int",
+            "abs-initiative.info"
         ]
         
-        # Configure environmental topics
-        self.configure_topics()
+        # Configure the specific initiatives to track
+        self.configure_initiatives()
     
-    def configure_topics(self):
-        """Configure the environmental topics and associated keywords."""
-        self.topics = {
-            "indigenous_peoples": [
-                "indigenous", "native communities", "indigenous rights", 
-                "traditional knowledge", "aboriginal", "local communities"
+    def configure_initiatives(self):
+        """Configure the specific initiatives and associated keywords."""
+        
+        # Define the initiatives to track
+        self.initiatives = {
+            "abs_cdi": {
+                "names": [
+                    "ABS Capacity Development Initiative",
+                    "ABS CDI",
+                    "ABS Capacity Development Initiative for Africa",
+                    "Capacity Development Initiative",
+                    "Initiative pour le renforcement des capacités en matière d'APA",
+                    "Accès et Partage des Avantages",
+                    "Initiative sur le développement des capacités pour l'APA",
+                    "Initiative de renforcement des capacités sur l'APA",
+                    "Initiative APA"
+                ],
+                "keywords": [
+                    "nagoya protocol", "access and benefit sharing", "genetic resources", 
+                    "traditional knowledge", "convention on biological diversity", "cbd",
+                    "fair and equitable sharing", "bioprospecting", "ABS", "APA",
+                    "capacity development", "benefit sharing"
+                ]
+            },
+            "bio_innovation_africa": {
+                "names": [
+                    "Bio-innovation Africa",
+                    "BioInnovation Africa"
+                ],
+                "keywords": [
+                    "biotrade", "biodiversity", "sustainable use", "value chains",
+                    "bio-economy", "biological resources", "green business", 
+                    "natural ingredients", "africa innovation", "sustainable sourcing"
+                ]
+            }
+        }
+        
+        # Define benefit categories to track
+        self.benefit_categories = {
+            "environmental_benefits": [
+                "biodiversity conservation", "ecosystem restoration", "sustainable use",
+                "habitat protection", "ecological integrity", "conservation", "protected areas",
+                "species protection", "environmental sustainability"
             ],
-            "protected_areas": [
-                "national park", "conservation area", "marine reserve", "protected area",
-                "wildlife refuge", "conservation", "nature reserve"
+            "economic_benefits": [
+                "poverty alleviation", "private sector", "technology transfer", 
+                "sustainable development", "job creation", "employment", "income generation",
+                "public-private partnerships", "market access", "trade", "investment",
+                "economic growth", "livelihoods", "business opportunities", "value chains"
             ],
-            "forest_restoration": [
-                "forest restoration", "land restoration", "reforestation", "afforestation",
-                "rewilding", "forest rehabilitation", "ecological restoration"
+            "social_benefits": [
+                "indigenous peoples", "local communities", "IPLCs", "capacity building",
+                "empowerment", "gender equality", "education", "training", "skills development",
+                "participatory approach", "inclusion", "community development", "knowledge sharing"
             ],
-            "marine_conservation": [
-                "marine conservation", "marine protection", "ocean conservation", 
-                "coral reef", "coastal protection", "blue economy"
+            "strategic_benefits": [
+                "global governance", "policy development", "legislation", "regulations",
+                "institutional frameworks", "international cooperation", "partnerships",
+                "stakeholder engagement", "compliance", "legal framework", "policy implementation"
             ],
-            "ecosystem_services": [
-                "ecosystem services", "carbon sequestration", "Amazon basin", 
-                "Congo basin", "rainforest", "biodiversity", "watershed services"
-            ],
-            "sustainable_agriculture": [
-                "sustainable agriculture", "agroforestry", "organic farming",
-                "permaculture", "sustainable farming", "crop rotation"
-            ],
-            "sustainable_forestry": [
-                "sustainable forestry", "sustainable timber", "forest management",
-                "reduced impact logging", "FSC certification", "sustainable logging"
-            ],
-            "aquaculture": [
-                "aquaculture", "fish farming", "sustainable aquaculture",
-                "biodiversity in aquaculture", "responsible aquaculture"
+            "success_examples": [
+                "case study", "success story", "achievements", "impact", "outcomes",
+                "value chains", "capacity development tools", "results", "implementation",
+                "monitoring", "evaluation", "best practices", "lessons learned"
             ]
         }
         
-        # Generate search queries based on topics and organizations
+        # Generate search queries based on initiatives
         self.search_queries = []
         
-        # Base organization keywords
-        organizations = ["GIZ", "BMZ", "KfW", "Germany international cooperation"]
+        # Add general queries for each initiative
+        for initiative_key, initiative_data in self.initiatives.items():
+            for name in initiative_data["names"][:2]:  # Use first two names for each initiative
+                self.search_queries.append(f"{name} benefits")
+                self.search_queries.append(f"{name} impact")
+                self.search_queries.append(f"{name} success")
+                
+                # Add specific benefit category queries
+                for category, keywords in self.benefit_categories.items():
+                    # Use a representative keyword from each category
+                    category_term = keywords[0].replace("_", " ")
+                    self.search_queries.append(f"{name} {category_term}")
         
-        # Generate combination of queries
-        for org in organizations:
-            # Add general environmental query for each organization
-            self.search_queries.append(f"{org} environmental sustainability")
-            
-            # Add specific topic queries
-            for topic_name, keywords in self.topics.items():
-                # Use the first two keywords from each topic
-                for keyword in keywords[:2]:
-                    self.search_queries.append(f"{org} {keyword}")
-                    
+        # Add specific queries for developing countries and specific regions
+        regions = ["Africa", "developing countries", "biodiversity hotspots"]
+        for region in regions:
+            for initiative_key, initiative_data in self.initiatives.items():
+                primary_name = initiative_data["names"][0]  # Use primary name
+                self.search_queries.append(f"{primary_name} {region} benefits")
+                
         logger.info(f"Generated {len(self.search_queries)} search queries")
     
     def generate_search_queries(self, max_queries: Optional[int] = None) -> List[str]:
         """
-        Generate a list of search queries based on configured topics and organizations.
+        Generate a list of search queries based on configured initiatives.
         
         Args:
             max_queries: Maximum number of queries to generate (None for all)
@@ -427,54 +466,177 @@ class WebExtractor:
             logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
             return "", "", None
     
-    def estimate_relevance(self, title: str, content: str) -> Tuple[float, Dict[str, float]]:
+    def identify_initiative(self, content: str) -> Tuple[str, float]:
         """
-        Estimate relevance of content to environmental topics using keyword matching.
-        This function replaces AI-based relevance scoring with simple keyword matching.
+        Identify which initiative is mentioned in the content and calculate confidence.
         
         Args:
-            title: Title of the content
-            content: Main content text
+            content: Content text to analyze
             
         Returns:
-            Tuple of (overall_score, topic_scores_dict)
+            Tuple of (initiative_key, confidence_score)
         """
-        combined_text = f"{title.lower()} {content.lower()}"
+        content_lower = content.lower()
         
-        # Count keywords for each topic
-        topic_scores = {}
-        for topic, keywords in self.topics.items():
-            topic_count = 0
-            for keyword in keywords:
-                # Count occurrences of each keyword
-                count = combined_text.count(keyword.lower())
-                topic_count += count
+        # Track mentions of each initiative
+        initiative_scores = {}
+        
+        for initiative_key, initiative_data in self.initiatives.items():
+            # Count name mentions (more important)
+            name_count = 0
+            for name in initiative_data["names"]:
+                name_count += content_lower.count(name.lower())
+            
+            # Count keyword mentions (less important)
+            keyword_count = 0
+            for keyword in initiative_data["keywords"]:
+                keyword_count += content_lower.count(keyword.lower())
+            
+            # Calculate score - names are weighted higher than keywords
+            score = (name_count * 3) + keyword_count
             
             # Normalize score based on content length
-            content_length = len(combined_text)
-            normalized_score = min(1.0, (topic_count * 500) / max(1, content_length))
-            topic_scores[topic] = normalized_score
+            content_length = max(1, len(content_lower))
+            normalized_score = min(1.0, (score * 500) / content_length)
+            
+            initiative_scores[initiative_key] = normalized_score
         
-        # Calculate overall relevance as average of top 3 topic scores
-        top_scores = sorted(topic_scores.values(), reverse=True)[:3]
-        overall_score = sum(top_scores) / len(top_scores) if top_scores else 0
+        # Find initiative with highest score
+        if not initiative_scores:
+            return "unknown", 0.0
+            
+        best_initiative = max(initiative_scores.items(), key=lambda x: x[1])
         
-        # Boost score for priority domains
-        domain_boost = 0
-        try:
-            url_domain = urlparse(url).netloc.lower()
-            if any(domain in url_domain for domain in self.priority_domains):
-                domain_boost = 0.3
-                overall_score = min(1.0, overall_score + domain_boost)
-        except:
-            pass
+        # Only return initiative if score is above threshold
+        if best_initiative[1] >= 0.1:
+            return best_initiative
+        else:
+            return "unknown", best_initiative[1]
+    
+    def identify_benefit_categories(self, content: str) -> Dict[str, float]:
+        """
+        Identify which benefit categories are mentioned in the content and their relevance.
         
-        return overall_score, topic_scores
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary of benefit categories and their scores
+        """
+        content_lower = content.lower()
+        content_length = max(1, len(content_lower))
+        
+        # Track scores for each benefit category
+        category_scores = {}
+        
+        for category, keywords in self.benefit_categories.items():
+            keyword_count = 0
+            for keyword in keywords:
+                keyword_count += content_lower.count(keyword.lower())
+            
+            # Normalize score based on content length
+            normalized_score = min(1.0, (keyword_count * 500) / content_length)
+            category_scores[category] = normalized_score
+        
+        return category_scores
+    
+    def extract_benefits_examples(self, content: str, initiative: str) -> List[Dict[str, Any]]:
+        """
+        Extract examples of benefits from the content using a pattern-based approach.
+        
+        Args:
+            content: Content text to analyze
+            initiative: Initiative key (abs_cdi or bio_innovation_africa)
+            
+        Returns:
+            List of extracted benefit examples
+        """
+        if not content or len(content) < 100:
+            return []
+            
+        content_lower = content.lower()
+        
+        # Get initiative names and alternate versions
+        initiative_names = []
+        if initiative in self.initiatives:
+            initiative_names = [name.lower() for name in self.initiatives[initiative]["names"]]
+        
+        # Find paragraphs that mention benefits
+        paragraphs = content.split('\n\n')
+        benefit_paragraphs = []
+        
+        # Benefit indicator terms
+        benefit_terms = [
+            "benefit", "advantage", "impact", "result", "outcome", "achievement", 
+            "success", "improvement", "contribution", "led to", "resulted in",
+            "development of", "establishment of", "creation of", "implementation of"
+        ]
+        
+        # Country and region terms to look for
+        countries = [
+            "africa", "ghana", "kenya", "south africa", "ethiopia", "cameroon", 
+            "benin", "madagascar", "namibia", "senegal", "uganda", "tanzania",
+            "nigeria", "morocco", "developing country", "developing countries"
+        ]
+        
+        # Find paragraphs that mention benefits
+        for paragraph in paragraphs:
+            paragraph_lower = paragraph.lower()
+            
+            # Check if the paragraph mentions the initiative
+            initiative_mentioned = any(name in paragraph_lower for name in initiative_names)
+            
+            # Or mentions a relevant term like ABS, Nagoya Protocol, etc.
+            relevant_terms = ["access and benefit sharing", "abs", "nagoya protocol", "bioinnovation", "bio-innovation"]
+            terms_mentioned = any(term in paragraph_lower for term in relevant_terms)
+            
+            # Check if benefit terms are mentioned
+            benefit_mentioned = any(term in paragraph_lower for term in benefit_terms)
+            
+            # Check if countries or regions are mentioned
+            country_mentioned = any(country in paragraph_lower for country in countries)
+            
+            # If the paragraph meets criteria, include it
+            if (initiative_mentioned or terms_mentioned) and (benefit_mentioned or country_mentioned):
+                # Only include paragraphs of reasonable length to avoid fragments
+                if len(paragraph.split()) >= 10:
+                    benefit_paragraphs.append(paragraph)
+        
+        # Extract structured benefit examples
+        benefit_examples = []
+        
+        for paragraph in benefit_paragraphs:
+            paragraph_lower = paragraph.lower()
+            
+            # Determine benefit category
+            category = "general"
+            category_scores = self.identify_benefit_categories({paragraph})
+            if category_scores:
+                # Find category with highest score
+                category = max(category_scores.items(), key=lambda x: x[1])[0]
+                
+            # Identify countries mentioned
+            mentioned_countries = []
+            for country in countries:
+                if country in paragraph_lower:
+                    mentioned_countries.append(country.title())
+                    
+            # Create benefit example
+            benefit_example = {
+                "text": paragraph.strip(),
+                "category": category,
+                "countries": mentioned_countries,
+                "initiative": initiative,
+                "word_count": len(paragraph.split())
+            }
+            
+            benefit_examples.append(benefit_example)
+        
+        return benefit_examples
     
     def identify_themes(self, content: str) -> List[str]:
         """
-        Identify themes in content using keyword matching.
-        This function replaces AI-based theme identification.
+        Identify themes in content using keywords from benefit categories.
         
         Args:
             content: Content text to analyze
@@ -483,22 +645,48 @@ class WebExtractor:
             List of identified themes
         """
         content_lower = content.lower()
-        identified_themes = []
         
-        for topic, keywords in self.topics.items():
+        themes = []
+        theme_mapping = {
+            "Biodiversity Conservation": ["biodiversity conservation", "habitat protection", "species protection"],
+            "Ecosystem Restoration": ["ecosystem restoration", "ecological integrity", "habitat restoration"],
+            "Poverty Alleviation": ["poverty alleviation", "livelihoods", "income generation"],
+            "Private Sector Engagement": ["private sector", "business", "companies", "industry"],
+            "Technology Transfer": ["technology transfer", "innovation", "technical assistance"],
+            "Sustainable Development": ["sustainable development", "sdgs", "sustainability"],
+            "Job Creation": ["job creation", "employment", "economic opportunities"],
+            "Indigenous Knowledge": ["indigenous knowledge", "traditional knowledge", "indigenous peoples"],
+            "Capacity Building": ["capacity building", "training", "skills development", "workshop"],
+            "Policy Development": ["policy", "legislation", "regulations", "legal framework"],
+            "Value Chains": ["value chain", "supply chain", "market access", "value addition"],
+            "Benefit Sharing": ["benefit sharing", "fair and equitable", "abs agreement"]
+        }
+        
+        # Check for each theme's keywords
+        for theme, keywords in theme_mapping.items():
             for keyword in keywords:
-                if keyword.lower() in content_lower:
-                    # Convert topic from snake_case to Title Case
-                    theme = " ".join(word.capitalize() for word in topic.split("_"))
-                    identified_themes.append(theme)
-                    break  # Only add the theme once
+                if keyword in content_lower:
+                    if theme not in themes:
+                        themes.append(theme)
+                    break  # Found one keyword for this theme, move to next theme
         
-        return identified_themes
-    
+        # Check which initiatives are mentioned
+        for initiative_key, initiative_data in self.initiatives.items():
+            for name in initiative_data["names"][:2]:  # Use first two names
+                if name.lower() in content_lower:
+                    initiative_name = name if len(name) > 5 else initiative_data["names"][0]
+                    themes.append(initiative_name)
+                    break
+        
+        # If no themes were found, add a default
+        if not themes:
+            themes.append("Access and Benefit Sharing")
+        
+        return themes
+
     def analyze_sentiment(self, content: str) -> str:
         """
         Analyze sentiment using simple keyword-based approach.
-        This function replaces AI-based sentiment analysis.
         
         Args:
             content: Content text to analyze
@@ -533,41 +721,160 @@ class WebExtractor:
         else:
             return "Neutral"
     
-    def extract_benefits_to_germany(self, content: str) -> Optional[str]:
+    def extract_organization_from_url(self, url: str) -> str:
         """
-        Extract benefits to Germany using keyword proximity.
-        This function replaces AI-based benefits extraction.
+        Extract organization name from URL.
         
         Args:
-            content: Content text to analyze
+            url: The URL to extract organization from
             
         Returns:
-            Extracted benefits or None
+            Organization name based on domain
         """
-        if "germany" not in content.lower() and "german" not in content.lower():
+        if not url:
+            return "Unknown"
+            
+        try:
+            # Parse the URL to extract domain
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            
+            # Remove 'www.' prefix if present
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            
+            # Special case handling for known domains
+            domain_map = {
+                "abs-initiative.info": "ABS Initiative",
+                "cbd.int": "CBD",
+                "absch.cbd.int": "ABS Clearing-House",
+                "giz.de": "GIZ",
+                "bmz.de": "BMZ",
+                "kfw.de": "KfW",
+                "unctad.org": "UNCTAD",
+                "uebt.org": "UEBT",
+                "ethicalbiotrade.org": "UEBT"
+            }
+            
+            # Check if domain matches any in the map
+            for key, value in domain_map.items():
+                if key in domain:
+                    return value
+            
+            # Extract main domain (before first dot)
+            main_domain = domain.split('.')[0].upper()
+            
+            return main_domain
+        except:
+            return "Unknown"
+            
+    def process_search_result(self, result, query_index, result_index, processed_urls):
+        """
+        Process a single search result to extract and analyze content.
+        
+        Args:
+            result: The search result dict with link, title, etc.
+            query_index: Index of the query that produced this result
+            result_index: Index of this result within the query results
+            processed_urls: Set of already processed URLs (passed by reference)
+            
+        Returns:
+            Dict containing processed content or None if extraction failed
+        """
+        logger = logging.getLogger(__name__)
+        url = result.get("link")
+        title = result.get("title", "Untitled")
+        
+        # Log processing start
+        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
+        
+        try:
+            # Extract content from URL using scrape_webpage method
+            content, extracted_title, date = self.scrape_webpage(url, title)
+            
+            if not content or len(content) < 100:
+                logger.warning(f"Insufficient content from {url} (length: {len(content) if content else 0})")
+                return None
+            
+            # Create a simple summary (first 500 chars)
+            summary = content[:500] + "..." if len(content) > 500 else content
+            
+            # Identify which initiative is mentioned
+            initiative_key, initiative_score = self.identify_initiative(content)
+            
+            # Only proceed if content is relevant to our initiatives
+            if initiative_key == "unknown" or initiative_score < 0.1:
+                logger.info(f"Content not relevant to tracked initiatives: {url}")
+                return None
+            
+            # Identify themes using the class method
+            themes = self.identify_themes(content)
+            
+            # Extract organization from URL domain
+            organization = self.extract_organization_from_url(url)
+            
+            # Analyze sentiment
+            sentiment = self.analyze_sentiment(content)
+            
+            # Extract benefit categories
+            benefit_categories = self.identify_benefit_categories(content)
+            
+            # Calculate relevance score - average of top benefit category scores
+            top_scores = sorted(benefit_categories.values(), reverse=True)[:3]
+            relevance_score = sum(top_scores) / len(top_scores) if top_scores else 0
+            
+            # Boost score for priority domains
+            domain_boost = 0
+            try:
+                url_domain = urlparse(url).netloc.lower()
+                if any(domain in url_domain for domain in self.priority_domains):
+                    domain_boost = 0.3
+                    relevance_score = min(1.0, relevance_score + domain_boost)
+            except:
+                pass
+            
+            # Extract benefit examples
+            benefit_examples = self.extract_benefits_examples(content, initiative_key)
+            
+            # Format benefit examples as text
+            benefits_to_germany = None
+            if benefit_examples:
+                examples_text = []
+                for example in benefit_examples:
+                    examples_text.append(f"[{example['category'].replace('_', ' ').title()}] {example['text']}")
+                
+                benefits_to_germany = "\n\n".join(examples_text)
+            
+            # Create result dictionary
+            result_data = {
+                "title": extracted_title or title,
+                "link": url,
+                "date": date,
+                "content": content,
+                "summary": summary,
+                "themes": themes,
+                "organization": organization,
+                "sentiment": sentiment,
+                "initiative": self.initiatives[initiative_key]["names"][0] if initiative_key in self.initiatives else "Unknown Initiative",
+                "initiative_key": initiative_key,
+                "initiative_score": initiative_score,
+                "benefit_categories": benefit_categories,
+                "benefit_examples": benefit_examples,
+                "benefits_to_germany": benefits_to_germany,
+                "relevance_score": relevance_score,
+                "query_index": query_index,
+                "result_index": result_index,
+                "extraction_timestamp": datetime.now().isoformat()
+            }
+            
+            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f}, initiative: {initiative_key})")
+            return result_data
+            
+        except Exception as e:
+            logger.error(f"Error processing {url}: {str(e)}")
+            logger.debug(f"Traceback: {traceback.format_exc()}")
             return None
-        
-        # Find sentences that mention Germany and benefit keywords
-        sentences = re.split(r'(?<=[.!?])\s+', content)
-        benefit_sentences = []
-        
-        benefit_keywords = [
-            "benefit", "advantage", "gain", "profit", "value", "opportunity",
-            "improvement", "enhanced", "strengthen", "contribute", "partnership",
-            "cooperation", "support", "funding", "investment", "expertise"
-        ]
-        
-        for sentence in sentences:
-            sentence_lower = sentence.lower()
-            if ("germany" in sentence_lower or "german" in sentence_lower):
-                if any(keyword in sentence_lower for keyword in benefit_keywords):
-                    benefit_sentences.append(sentence.strip())
-        
-        if benefit_sentences:
-            return " ".join(benefit_sentences)
-        
-        return None
-    
+
     def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
         Main method to extract web content based on search queries.
@@ -771,6 +1078,7 @@ class WebExtractor:
                 print("\n📋 RESULTS SUMMARY:")
                 for i, result in enumerate(all_results):
                     relevance = result.get("relevance_score", 0)
+                    initiative = result.get("initiative", "Unknown Initiative")
                     
                     # Determine relevance category and emoji
                     if relevance > 0.7:
@@ -789,8 +1097,20 @@ class WebExtractor:
                     print(f"\n{i+1}. {rel_emoji} [{relevance_status}] {result['title']}")
                     print(f"   🔗 URL: {result['link']}")
                     print(f"   📅 Date: {result['date'] if result['date'] else 'Not found'}")
+                    print(f"   🏢 Initiative: {initiative}")
                     print(f"   📊 Relevance: {relevance:.2f}")
                     print(f"   🏷️ Themes: {', '.join(result['themes']) if result['themes'] else 'None'}")
+                    
+                    # Show benefit categories
+                    if result.get('benefit_categories'):
+                        top_benefits = sorted(result['benefit_categories'].items(), key=lambda x: x[1], reverse=True)[:3]
+                        benefit_str = ", ".join([f"{k.replace('_', ' ').title()} ({v:.2f})" for k, v in top_benefits])
+                        print(f"   💼 Top Benefits: {benefit_str}")
+                    
+                    # Show number of benefit examples
+                    if result.get('benefit_examples'):
+                        print(f"   📝 Benefit Examples: {len(result['benefit_examples'])}")
+                    
                     print(f"   📏 Length: {len(result['content'])} chars")
             
             # Return a dictionary with status and results
@@ -828,83 +1148,6 @@ class WebExtractor:
                 "error_type": error_type
             }
 
-
-    def process_search_result(self, result, query_index, result_index, processed_urls):
-        """
-        Process a single search result to extract and analyze content.
-        
-        Args:
-            result: The search result dict with link, title, etc.
-            query_index: Index of the query that produced this result
-            result_index: Index of this result within the query results
-            processed_urls: Set of already processed URLs (passed by reference)
-            
-        Returns:
-            Dict containing processed content or None if extraction failed
-        """
-        logger = logging.getLogger(__name__)
-        url = result.get("link")
-        title = result.get("title", "Untitled")
-        
-        # Log processing start
-        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
-        
-        try:
-            # Extract content from URL using scrape_webpage method
-            content, extracted_title, date = self.scrape_webpage(url, title)
-            
-            if not content or len(content) < 100:
-                logger.warning(f"Insufficient content from {url} (length: {len(content) if content else 0})")
-                return None
-            
-            # Create a simple summary (first 500 chars)
-            summary = content[:500] + "..." if len(content) > 500 else content
-            
-            # Identify themes using the class method
-            themes = self.identify_themes(content)
-            
-            # Extract organization from URL domain
-            # Get domain from URL - simple implementation inside the class
-            parsed_url = urlparse(url)
-            domain = parsed_url.netloc.lower()
-            if domain.startswith('www.'):
-                domain = domain[4:]
-            organization = domain.split('.')[0].upper()
-            
-            # Analyze sentiment
-            sentiment = self.analyze_sentiment(content)
-            
-            # Calculate relevance score
-            relevance_score, topic_scores = self.estimate_relevance(extracted_title or title, content)
-            
-            # Extract benefits to Germany if the method exists
-            benefits_to_germany = None
-            if hasattr(self, 'extract_benefits_to_germany'):
-                benefits_to_germany = self.extract_benefits_to_germany(content)
-            
-            # Create result dictionary
-            result_data = {
-                "title": extracted_title or title,
-                "link": url,
-                "date": date,
-                "content": content,
-                "summary": summary,
-                "themes": themes,
-                "organization": organization,
-                "sentiment": sentiment,
-                "relevance_score": relevance_score,
-                "query_index": query_index,
-                "result_index": result_index,
-                "extraction_timestamp": datetime.now().isoformat()
-            }
-            
-            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f})")
-            return result_data
-            
-        except Exception as e:
-            logger.error(f"Error processing {url}: {str(e)}")
-            logger.debug(f"Traceback: {traceback.format_exc()}")
-            return None
     def run(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
         Run the web extraction process and return results in a structured format.

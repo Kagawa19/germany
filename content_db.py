@@ -111,20 +111,22 @@ def is_high_quality_content(content, title, url):
         logger.info(f"Content too short for quality AI processing: {len(content)} chars")
         return False
     
-    # Skip if content doesn't mention Germany (for relevance)
-    if "germany" not in content.lower() and "german" not in content.lower():
-        logger.info(f"Content doesn't mention Germany, skipping AI processing")
+    # Skip if content doesn't mention relevant terms
+    relevant_terms = ["germany", "german", "abs", "capacity", "bio-innovation", "africa"]
+    if not any(term in content.lower() for term in relevant_terms):
+        logger.info(f"Content doesn't mention relevant terms, skipping AI processing")
         return False
     
     # Check if the content is from a reliable domain
-    reliable_domains = ["giz.de", "bmz.de", "kfw.de", "europa.eu", "un.org", "worldbank.org"]
+    reliable_domains = ["giz.de", "bmz.de", "kfw.de", "europa.eu", "un.org", "abs-initiative.info", "cbd.int"]
     is_reliable_source = any(domain in url.lower() for domain in reliable_domains)
     
     # Look for quality indicators in the content
     quality_keywords = [
         "cooperation", "sustainable", "development", "partnership", "initiative",
         "project", "bilateral", "agreement", "funding", "investment", 
-        "climate", "conservation", "biodiversity", "renewable", "forest"
+        "climate", "conservation", "biodiversity", "renewable", "forest",
+        "abs", "nagoya", "capacity", "benefit sharing"
     ]
     
     # Calculate a quality score based on keyword presence and other factors
@@ -186,17 +188,18 @@ def generate_summary(content, max_sentences=5):
     client = get_openai_client()
     if client:
         try:
-            # Extract sections most relevant to Germany
-            germany_paragraphs = []
+            # Extract sections most relevant to initiatives
+            relevant_paragraphs = []
             paragraphs = content.split('\n\n')
             for para in paragraphs:
-                if "germany" in para.lower() or "german" in para.lower():
-                    germany_paragraphs.append(para)
+                para_lower = para.lower()
+                if any(term in para_lower for term in ["abs", "capacity development", "bio-innovation", "africa", "nagoya", "benefit sharing"]):
+                    relevant_paragraphs.append(para)
             
-            # Use either Germany-focused paragraphs or first part of content
-            if germany_paragraphs and len(' '.join(germany_paragraphs)) >= 300:
-                content_to_summarize = ' '.join(germany_paragraphs[:3])  # Top 3 most relevant paragraphs
-                logger.info(f"Using {len(germany_paragraphs)} Germany-specific paragraphs for summary")
+            # Use either initiative-focused paragraphs or first part of content
+            if relevant_paragraphs and len(' '.join(relevant_paragraphs)) >= 300:
+                content_to_summarize = ' '.join(relevant_paragraphs[:3])  # Top 3 most relevant paragraphs
+                logger.info(f"Using {len(relevant_paragraphs)} initiative-specific paragraphs for summary")
             else:
                 # Use only first 3000 chars to save on token costs
                 content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
@@ -205,7 +208,7 @@ def generate_summary(content, max_sentences=5):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": f"Summarize this content, focusing particularly on Germany's role, contributions, and any benefits mentioned: {content_to_summarize}"}
+                    {"role": "user", "content": f"Summarize this content, focusing particularly on ABS Capacity Development Initiative, Bio-innovation Africa, or other initiatives mentioned: {content_to_summarize}"}
                 ],
                 temperature=0.3,
                 max_tokens=150
@@ -220,7 +223,6 @@ def generate_summary(content, max_sentences=5):
     
     return content
 
-# FIXED: Removed the 'self' parameter from this function since it's not a class method
 def analyze_sentiment(content: str) -> str:
     """
     Analyze sentiment using simple keyword-based approach.
@@ -258,11 +260,10 @@ def analyze_sentiment(content: str) -> str:
         return "Negative"
     else:
         return "Neutral"
-    
 
 def extract_benefits(content: str) -> Optional[str]:
     """
-    Extract potential benefits to Germany using OpenAI with prompt from benefits.txt file.
+    Extract potential benefits using OpenAI with prompt from benefits.txt file.
     Only processes high-quality content.
     
     Args:
@@ -271,8 +272,9 @@ def extract_benefits(content: str) -> Optional[str]:
     Returns:
         Extracted benefits text or None
     """
-    # Skip if no mention of Germany
-    if "germany" not in content.lower() and "german" not in content.lower():
+    # Skip if no mention of relevant terms
+    relevant_terms = ["germany", "german", "abs", "capacity", "bio-innovation", "africa"]
+    if not any(term in content.lower() for term in relevant_terms):
         return None
     
     # Check title and URL if available from context
@@ -288,7 +290,7 @@ def extract_benefits(content: str) -> Optional[str]:
     client = get_openai_client()
     if client:
         try:
-            # Extract sections most relevant to Germany and benefits
+            # Extract sections most relevant to benefits
             benefit_keywords = [
                 "benefit", "advantage", "gain", "profit", "value", "opportunity",
                 "improvement", "enhanced", "strengthen", "contribute", "partnership",
@@ -302,11 +304,11 @@ def extract_benefits(content: str) -> Optional[str]:
                 # Fallback to simple sentence splitting
                 sentences = re.split(r'(?<=[.!?])\s+', content)
             
-            # Find sentences that mention both Germany and potential benefits
+            # Find sentences that mention both initiatives and potential benefits
             benefit_sentences = []
             for sentence in sentences:
                 sentence_lower = sentence.lower()
-                if ("germany" in sentence_lower or "german" in sentence_lower):
+                if any(term in sentence_lower for term in ["abs", "capacity development", "bio-innovation", "africa"]):
                     if any(keyword in sentence_lower for keyword in benefit_keywords):
                         benefit_sentences.append(sentence.strip())
             
@@ -321,15 +323,15 @@ def extract_benefits(content: str) -> Optional[str]:
             # Load prompt from benefits.txt file
             system_prompt = load_prompt_file("benefits.txt")
             if not system_prompt:
-                logger.error("Benefits prompt file not found or empty")
-                return None
+                # Fallback prompt
+                system_prompt = "Extract specific benefits mentioned in the text related to the ABS Capacity Development Initiative or Bio-innovation Africa initiatives. Focus on concrete, factual examples rather than general claims. If no specific benefits are mentioned, indicate this clearly."
             
-            logger.info("Extracting benefits to Germany using OpenAI with benefits.txt prompt")
+            logger.info("Extracting benefits using OpenAI")
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Extract any specific benefits to Germany from this text, focusing on concrete advantages, opportunities, or gains: {content_to_analyze}"}
+                    {"role": "user", "content": f"Extract any specific benefits from this text, focusing on concrete advantages, opportunities, or gains related to the ABS Capacity Development Initiative or Bio-innovation Africa: {content_to_analyze}"}
                 ],
                 temperature=0.3,
                 max_tokens=200
@@ -339,7 +341,7 @@ def extract_benefits(content: str) -> Optional[str]:
             
             # Check if no benefits were found
             if "no specific benefits" in benefits.lower() or "no benefits" in benefits.lower():
-                logger.info("OpenAI found no benefits to Germany")
+                logger.info("OpenAI found no benefits")
                 return None
                 
             logger.info(f"Successfully extracted benefits with OpenAI ({len(benefits)} chars)")
@@ -350,12 +352,314 @@ def extract_benefits(content: str) -> Optional[str]:
     
     return None
 
-# Modified store_extract_data function to use the updated functions
+def identify_initiative(content: str) -> Tuple[str, float]:
+    """
+    Identify which initiative is mentioned in the content and calculate confidence.
+    
+    Args:
+        content: Content text to analyze
+        
+    Returns:
+        Tuple of (initiative_key, confidence_score)
+    """
+    content_lower = content.lower()
+    
+    # Define initiatives with their names and keywords
+    initiatives = {
+        "abs_cdi": {
+            "names": [
+                "ABS Capacity Development Initiative",
+                "ABS CDI",
+                "ABS Capacity Development Initiative for Africa",
+                "Capacity Development Initiative",
+                "Initiative pour le renforcement des capacités en matière d'APA",
+                "Accès et Partage des Avantages",
+                "Initiative sur le développement des capacités pour l'APA",
+                "Initiative de renforcement des capacités sur l'APA",
+                "Initiative APA"
+            ],
+            "keywords": [
+                "nagoya protocol", "access and benefit sharing", "genetic resources", 
+                "traditional knowledge", "convention on biological diversity", "cbd",
+                "fair and equitable sharing", "bioprospecting", "ABS", "APA",
+                "capacity development", "benefit sharing"
+            ]
+        },
+        "bio_innovation_africa": {
+            "names": [
+                "Bio-innovation Africa",
+                "BioInnovation Africa"
+            ],
+            "keywords": [
+                "biotrade", "biodiversity", "sustainable use", "value chains",
+                "bio-economy", "biological resources", "green business", 
+                "natural ingredients", "africa innovation", "sustainable sourcing"
+            ]
+        }
+    }
+    
+    # Track mentions of each initiative
+    initiative_scores = {}
+    
+    for initiative_key, initiative_data in initiatives.items():
+        # Count name mentions (more important)
+        name_count = 0
+        for name in initiative_data["names"]:
+            name_count += content_lower.count(name.lower())
+        
+        # Count keyword mentions (less important)
+        keyword_count = 0
+        for keyword in initiative_data["keywords"]:
+            keyword_count += content_lower.count(keyword.lower())
+        
+        # Calculate score - names are weighted higher than keywords
+        score = (name_count * 3) + keyword_count
+        
+        # Normalize score based on content length
+        content_length = max(1, len(content_lower))
+        normalized_score = min(1.0, (score * 500) / content_length)
+        
+        initiative_scores[initiative_key] = normalized_score
+    
+    # Find initiative with highest score
+    if not initiative_scores:
+        return "unknown", 0.0
+            
+    best_initiative = max(initiative_scores.items(), key=lambda x: x[1])
+    
+    # Only return initiative if score is above threshold
+    if best_initiative[1] >= 0.1:
+        return best_initiative
+    else:
+        return "unknown", best_initiative[1]
+
+def identify_themes(content: str) -> List[str]:
+    """
+    Identify themes in content using keyword matching.
+    
+    Args:
+        content: Text content to analyze
+        
+    Returns:
+        List of identified themes
+    """
+    content_lower = content.lower()
+    themes = []
+    
+    # Define theme keywords dictionary
+    theme_keywords = {
+        "Indigenous Peoples": [
+            "indigenous", "native communities", "indigenous rights", 
+            "traditional knowledge", "aboriginal", "local communities"
+        ],
+        "Protected Areas": [
+            "national park", "conservation area", "marine reserve", "protected area",
+            "wildlife refuge", "conservation", "nature reserve"
+        ],
+        "Forest Restoration": [
+            "forest restoration", "land restoration", "reforestation", "afforestation",
+            "rewilding", "forest rehabilitation", "ecological restoration"
+        ],
+        "Marine Conservation": [
+            "marine conservation", "marine protection", "ocean conservation", 
+            "coral reef", "coastal protection", "blue economy"
+        ],
+        "Ecosystem Services": [
+            "ecosystem services", "carbon sequestration", "Amazon basin", 
+            "Congo basin", "rainforest", "biodiversity", "watershed services"
+        ],
+        "Sustainable Agriculture": [
+            "sustainable agriculture", "agroforestry", "organic farming",
+            "permaculture", "sustainable farming", "crop rotation"
+        ],
+        "Sustainable Forestry": [
+            "sustainable forestry", "sustainable timber", "forest management",
+            "reduced impact logging", "FSC certification", "sustainable logging"
+        ],
+        "Aquaculture": [
+            "aquaculture", "fish farming", "sustainable aquaculture",
+            "biodiversity in aquaculture", "responsible aquaculture"
+        ],
+        "Access and Benefit Sharing": [
+            "abs", "access and benefit sharing", "nagoya protocol", 
+            "genetic resources", "bioprospecting", "benefit sharing"
+        ],
+        "Capacity Development": [
+            "capacity development", "capacity building", "training", 
+            "skills development", "knowledge transfer", "institutional strengthening"
+        ],
+        "Bio-innovation": [
+            "bio-innovation", "biotrade", "bio-economy", "biotechnology",
+            "bio-based", "biological resources", "biotrade"
+        ]
+    }
+    
+    # Check for each theme's keywords in the content
+    for theme, keywords in theme_keywords.items():
+        for keyword in keywords:
+            if keyword in content_lower:
+                if theme not in themes:
+                    themes.append(theme)
+                break  # Found one keyword for this theme, move to next theme
+    
+    # Check which initiatives are mentioned and add as themes
+    if "abs capacity development initiative" in content_lower or "abs cdi" in content_lower:
+        themes.append("ABS Capacity Development Initiative")
+    
+    if "bio-innovation africa" in content_lower or "bioinnovation africa" in content_lower:
+        themes.append("Bio-innovation Africa")
+    
+    # Add Environmental Sustainability as default theme if nothing else matched
+    if not themes:
+        themes.append("Environmental Sustainability")
+    
+    return themes
+
+def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, Any]]:
+    """
+    Extract examples of benefits from the content using a pattern-based approach.
+    
+    Args:
+        content: Content text to analyze
+        initiative: Initiative key (abs_cdi or bio_innovation_africa)
+        
+    Returns:
+        List of extracted benefit examples
+    """
+    if not content or len(content) < 100:
+        return []
+            
+    content_lower = content.lower()
+    
+    # Define initiatives with names and keywords
+    initiatives = {
+        "abs_cdi": {
+            "names": [
+                "abs capacity development initiative",
+                "abs cdi",
+                "capacity development initiative for africa",
+                "initiative pour le renforcement des capacités en matière d'apa"
+            ]
+        },
+        "bio_innovation_africa": {
+            "names": [
+                "bio-innovation africa",
+                "bioinnovation africa"
+            ]
+        },
+        "unknown": {
+            "names": ["abs", "capacity development", "benefit sharing", "nagoya protocol"]
+        }
+    }
+    
+    # Get initiative names
+    initiative_names = []
+    if initiative in initiatives:
+        initiative_names = initiatives[initiative]["names"]
+    else:
+        initiative_names = initiatives["unknown"]["names"]
+    
+    # Find paragraphs that mention benefits
+    paragraphs = content.split('\n\n')
+    benefit_paragraphs = []
+    
+    # Benefit indicator terms
+    benefit_terms = [
+        "benefit", "advantage", "impact", "result", "outcome", "achievement", 
+        "success", "improvement", "contribution", "led to", "resulted in",
+        "development of", "establishment of", "creation of", "implementation of"
+    ]
+    
+    # Country and region terms to look for
+    countries = [
+        "africa", "ghana", "kenya", "south africa", "ethiopia", "cameroon", 
+        "benin", "madagascar", "namibia", "senegal", "uganda", "tanzania",
+        "nigeria", "morocco", "developing country", "developing countries"
+    ]
+    
+    # Find paragraphs that mention benefits
+    for paragraph in paragraphs:
+        paragraph_lower = paragraph.lower()
+        
+        # Check if the paragraph mentions the initiative
+        initiative_mentioned = any(name in paragraph_lower for name in initiative_names)
+        
+        # Check if benefit terms are mentioned
+        benefit_mentioned = any(term in paragraph_lower for term in benefit_terms)
+        
+        # Check if countries or regions are mentioned
+        country_mentioned = any(country in paragraph_lower for country in countries)
+        
+        # If the paragraph meets criteria, include it
+        if initiative_mentioned and (benefit_mentioned or country_mentioned):
+            # Only include paragraphs of reasonable length to avoid fragments
+            if len(paragraph.split()) >= 10:
+                benefit_paragraphs.append(paragraph)
+    
+    # Define benefit categories
+    benefit_categories = {
+        "environmental_benefits": [
+            "biodiversity conservation", "ecosystem restoration", "sustainable use",
+            "habitat protection", "ecological integrity", "conservation", "protected areas",
+            "species protection", "environmental sustainability"
+        ],
+        "economic_benefits": [
+            "poverty alleviation", "private sector", "technology transfer", 
+            "sustainable development", "job creation", "employment", "income generation",
+            "public-private partnerships", "market access", "trade", "investment",
+            "economic growth", "livelihoods", "business opportunities", "value chains"
+        ],
+        "social_benefits": [
+            "indigenous peoples", "local communities", "iplcs", "capacity building",
+            "empowerment", "gender equality", "education", "training", "skills development",
+            "participatory approach", "inclusion", "community development", "knowledge sharing"
+        ],
+        "strategic_benefits": [
+            "global governance", "policy development", "legislation", "regulations",
+            "institutional frameworks", "international cooperation", "partnerships",
+            "stakeholder engagement", "compliance", "legal framework", "policy implementation"
+        ]
+    }
+    
+    # Extract structured benefit examples
+    benefit_examples = []
+    
+    for paragraph in benefit_paragraphs:
+        paragraph_lower = paragraph.lower()
+        
+        # Determine benefit category
+        category = "general"
+        max_score = 0
+        
+        for cat_key, cat_terms in benefit_categories.items():
+            score = sum(paragraph_lower.count(term) for term in cat_terms)
+            if score > max_score:
+                max_score = score
+                category = cat_key
+                
+        # Identify countries mentioned
+        mentioned_countries = []
+        for country in countries:
+            if country in paragraph_lower:
+                mentioned_countries.append(country.title())
+                    
+        # Create benefit example
+        benefit_example = {
+            "text": paragraph.strip(),
+            "category": category,
+            "countries": mentioned_countries,
+            "initiative": initiative,
+            "word_count": len(paragraph.split())
+        }
+            
+        benefit_examples.append(benefit_example)
+    
+    return benefit_examples
+
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     Store extracted data into the database using a batch transaction.
-    Uses OpenAI for summary and benefits extraction when available.
-    Improved error handling while maintaining batch efficiency.
+    Enhanced to handle initiative-specific data.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -403,32 +707,62 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     error_count += 1
                     continue
                     
-                # Use existing summary or generate one with OpenAI
+                # Use existing summary or generate one
                 summary = item.get("summary", snippet)
-                if content and len(content) > 200:
-                    generated_summary = generate_summary(content)
-                    if generated_summary:
-                        summary = generated_summary
+                if not summary and content:
+                    # Simple summary extraction (first 500 chars)
+                    summary = content[:500] + "..." if len(content) > 500 else content
                 
-                # Get themes (either from item or identify them)
+                # Get themes from item or identify them
                 themes = item.get("themes", [])
-                if not themes:
+                if not themes and content:
                     themes = identify_themes(content)
                 
                 # Get organization
                 organization = item.get("organization", extract_organization_from_url(link))
                 
                 # Get sentiment (either from item or analyze it)
-                sentiment = item.get("sentiment")
+                sentiment = item.get("sentiment", "Neutral")
                 if not sentiment and content:
                     sentiment = analyze_sentiment(content)
                 
-                # Extract benefits to Germany using OpenAI with benefits.txt prompt
+                # Get initiative information or identify it
+                initiative = item.get("initiative", "Unknown Initiative")
+                initiative_key = item.get("initiative_key", "unknown")
+                
+                if initiative == "Unknown Initiative" and content:
+                    identified_initiative, score = identify_initiative(content)
+                    if identified_initiative != "unknown" and score >= 0.1:
+                        initiative_key = identified_initiative
+                        initiative_display_names = {
+                            "abs_cdi": "ABS Capacity Development Initiative",
+                            "bio_innovation_africa": "Bio-innovation Africa"
+                        }
+                        initiative = initiative_display_names.get(identified_initiative, "Unknown Initiative")
+                
+                # Extract benefits if not already provided
                 benefits_to_germany = item.get("benefits_to_germany")
-                if content and ("germany" in content.lower() or "german" in content.lower()):
-                    extracted_benefits = extract_benefits(content)
-                    if extracted_benefits:
-                        benefits_to_germany = extracted_benefits
+                if not benefits_to_germany and content:
+                    benefits_to_germany = extract_benefits(content)
+                
+                # Extract benefit examples if not already provided
+                benefit_examples = item.get("benefit_examples", [])
+                if not benefit_examples and content and initiative_key != "unknown":
+                    benefit_examples = extract_benefit_examples(content, initiative_key)
+                
+                # Format benefit categories as JSON if present
+                benefit_categories_json = None
+                if item.get("benefit_categories"):
+                    if isinstance(item["benefit_categories"], dict):
+                        benefit_categories_json = json.dumps(item["benefit_categories"])
+                    elif isinstance(item["benefit_categories"], str):
+                        # Already a JSON string
+                        benefit_categories_json = item["benefit_categories"]
+                
+                # Format benefit examples as JSON if present
+                benefit_examples_json = None
+                if benefit_examples:
+                    benefit_examples_json = json.dumps(benefit_examples)
                 
                 # Format and validate date
                 date_value = None
@@ -445,7 +779,11 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     "themes": themes,
                     "organization": organization,
                     "sentiment": sentiment,
-                    "benefits_to_germany": benefits_to_germany
+                    "initiative": initiative,
+                    "initiative_key": initiative_key,
+                    "benefits_to_germany": benefits_to_germany,
+                    "benefit_categories": benefit_categories_json,
+                    "benefit_examples": benefit_examples_json
                 })
                 
             except Exception as prep_error:
@@ -457,20 +795,82 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         # Now insert all valid items in a single transaction
         for i, item in enumerate(valid_items):
             try:
-                # Insert into content_data table
-                query = """
-                INSERT INTO content_data 
-                (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id;
-                """
+                # Check if all required fields needed for the original insert are present
+                required_fields = {
+                    "link": item["link"],
+                    "title": item["title"],
+                    "date_value": item["date_value"],
+                    "summary": item["summary"],
+                    "content": item["content"],
+                    "themes": item["themes"],
+                    "organization": item["organization"],
+                    "sentiment": item["sentiment"],
+                    "benefits_to_germany": item["benefits_to_germany"]
+                }
                 
-                cursor.execute(
-                    query, 
-                    (item["link"], item["title"], item["date_value"], item["summary"], 
-                     item["content"], item["summary"], item["themes"], 
-                     item["organization"], item["sentiment"], item["benefits_to_germany"], None)
-                )
+                # Construct the SQL query dynamically based on existing columns
+                try:
+                    # Check if table has initiative columns
+                    check_query = """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'content_data' AND column_name = 'initiative'
+                    );
+                    """
+                    cursor.execute(check_query)
+                    has_initiative_columns = cursor.fetchone()[0]
+                    
+                    if has_initiative_columns:
+                        # Use the enhanced schema with initiative columns
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
+                         insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["initiative"], item["initiative_key"], item["benefits_to_germany"],
+                             item["benefit_categories"], item["benefit_examples"], None)
+                        )
+                    else:
+                        # Use the original schema without initiative columns
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         benefits_to_germany, insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["benefits_to_germany"], None)
+                        )
+                except Exception as column_error:
+                    logger.warning(f"Error checking columns, falling back to original schema: {str(column_error)}")
+                    # Fall back to original schema if column check fails
+                    query = """
+                    INSERT INTO content_data 
+                    (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                     benefits_to_germany, insights, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    RETURNING id;
+                    """
+                    
+                    cursor.execute(
+                        query, 
+                        (item["link"], item["title"], item["date_value"], item["summary"], 
+                         item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                         item["benefits_to_germany"], None)
+                    )
                 
                 # Get the ID of the inserted record
                 record_id = cursor.fetchone()[0]
@@ -485,8 +885,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 logger.error(error_msg)
                 print(f"ERROR: {error_msg}")
                 
-                # IMPORTANT: Individual insert failures don't abort the whole transaction
-                # We continue with the next item
+                # Individual insert failures don't abort the whole transaction
                 error_count += 1
                 
                 # Check if the error is transaction-related
@@ -526,19 +925,50 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     item_conn = get_db_connection()
                     item_cursor = item_conn.cursor()
                     
-                    query = """
-                    INSERT INTO content_data 
-                    (link, title, date, summary, full_content, information, themes, organization, sentiment, benefits_to_germany, insights)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id;
+                    # Check if table has initiative columns
+                    check_query = """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'content_data' AND column_name = 'initiative'
+                    );
                     """
+                    item_cursor.execute(check_query)
+                    has_initiative_columns = item_cursor.fetchone()[0]
                     
-                    item_cursor.execute(
-                        query, 
-                        (item["link"], item["title"], item["date_value"], item["summary"], 
-                         item["content"], item["summary"], item["themes"], 
-                         item["organization"], item["sentiment"], item["benefits_to_germany"], None)
-                    )
+                    if has_initiative_columns:
+                        # Use the enhanced schema with initiative columns
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
+                         insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        item_cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["initiative"], item["initiative_key"], item["benefits_to_germany"],
+                             item["benefit_categories"], item["benefit_examples"], None)
+                        )
+                    else:
+                        # Use the original schema without initiative columns
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         benefits_to_germany, insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        item_cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["benefits_to_germany"], None)
+                        )
                     
                     record_id = item_cursor.fetchone()[0]
                     item_conn.commit()
@@ -679,72 +1109,57 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     logger.warning(f"Could not parse date string: {date_str}")
     return None
 
-def identify_themes(content: str) -> List[str]:
+def extract_organization_from_url(url: str) -> str:
     """
-    Identify themes in content using keyword matching instead of AI.
+    Extract organization name from URL.
     
     Args:
-        content: Text content to analyze
+        url: The URL to extract organization from
         
     Returns:
-        List of identified themes
+        Organization name based on domain
     """
-    content_lower = content.lower()
-    themes = []
-    
-    # Define theme keywords dictionary
-    theme_keywords = {
-        "Indigenous Peoples": [
-            "indigenous", "native communities", "indigenous rights", 
-            "traditional knowledge", "aboriginal", "local communities"
-        ],
-        "Protected Areas": [
-            "national park", "conservation area", "marine reserve", "protected area",
-            "wildlife refuge", "conservation", "nature reserve"
-        ],
-        "Forest Restoration": [
-            "forest restoration", "land restoration", "reforestation", "afforestation",
-            "rewilding", "forest rehabilitation", "ecological restoration"
-        ],
-        "Marine Conservation": [
-            "marine conservation", "marine protection", "ocean conservation", 
-            "coral reef", "coastal protection", "blue economy"
-        ],
-        "Ecosystem Services": [
-            "ecosystem services", "carbon sequestration", "Amazon basin", 
-            "Congo basin", "rainforest", "biodiversity", "watershed services"
-        ],
-        "Sustainable Agriculture": [
-            "sustainable agriculture", "agroforestry", "organic farming",
-            "permaculture", "sustainable farming", "crop rotation"
-        ],
-        "Sustainable Forestry": [
-            "sustainable forestry", "sustainable timber", "forest management",
-            "reduced impact logging", "FSC certification", "sustainable logging"
-        ],
-        "Aquaculture": [
-            "aquaculture", "fish farming", "sustainable aquaculture",
-            "biodiversity in aquaculture", "responsible aquaculture"
-        ]
-    }
-    
-    # Check for each theme's keywords in the content
-    for theme, keywords in theme_keywords.items():
-        for keyword in keywords:
-            if keyword in content_lower:
-                if theme not in themes:
-                    themes.append(theme)
-                break  # Found one keyword for this theme, move to next theme
-    
-    # Add Environmental Sustainability as default theme if nothing else matched
-    if not themes:
-        themes.append("Environmental Sustainability")
-    
-    return themes
+    if not url:
+        return "Unknown"
+        
+    try:
+        # Parse the URL to extract domain
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc.lower()
+        
+        # Remove 'www.' prefix if present
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        
+        # Special case handling for known domains
+        domain_map = {
+            "abs-initiative.info": "ABS Initiative",
+            "cbd.int": "CBD",
+            "absch.cbd.int": "ABS Clearing-House",
+            "giz.de": "GIZ",
+            "bmz.de": "BMZ",
+            "kfw.de": "KfW",
+            "unctad.org": "UNCTAD",
+            "uebt.org": "UEBT",
+            "ethicalbiotrade.org": "UEBT"
+        }
+        
+        # Check if domain matches any in the map
+        for key, value in domain_map.items():
+            if key in domain:
+                return value
+        
+        # Extract main domain (before first dot)
+        main_domain = domain.split('.')[0].upper()
+        
+        return main_domain
+    except:
+        return "Unknown"
 
 def fetch_data(limit=100, filters=None):
     """
     Fetch data from the database with optional filtering.
+    Enhanced to support initiative filtering.
     
     Args:
         limit: Maximum number of records to retrieve
@@ -777,6 +1192,10 @@ def fetch_data(limit=100, filters=None):
                 query_parts.append("sentiment = %s")
                 params['sentiment'] = filters['sentiment']
             
+            if filters.get('initiative'):
+                query_parts.append("initiative = %s")
+                params['initiative'] = filters['initiative']
+            
             if filters.get('start_date') and filters.get('end_date'):
                 query_parts.append("date BETWEEN %s AND %s")
                 params['start_date'] = filters['start_date']
@@ -785,19 +1204,50 @@ def fetch_data(limit=100, filters=None):
         # Construct WHERE clause
         where_clause = "WHERE " + " AND ".join(query_parts) if query_parts else ""
         
-        # Full query
-        query = f"""
-        SELECT 
-            id, link, title, date, summary, 
-            full_content, information, themes, 
-            organization, sentiment, 
-            benefits_to_germany, insights, 
-            created_at, updated_at
-        FROM content_data 
-        {where_clause}
-        ORDER BY id DESC 
-        LIMIT {limit}
-        """
+        # Check if initiative columns exist
+        try:
+            cursor = conn.cursor()
+            check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'content_data' AND column_name = 'initiative'
+            );
+            """
+            cursor.execute(check_query)
+            has_initiative_columns = cursor.fetchone()[0]
+            cursor.close()
+        except:
+            # If check fails, assume no initiative columns
+            has_initiative_columns = False
+        
+        # Full query with appropriate columns
+        if has_initiative_columns:
+            query = f"""
+            SELECT 
+                id, link, title, date, summary, 
+                full_content, themes, organization, sentiment, 
+                initiative, initiative_key, benefits_to_germany, 
+                benefit_categories, benefit_examples,
+                created_at, updated_at
+            FROM content_data 
+            {where_clause}
+            ORDER BY id DESC 
+            LIMIT {limit}
+            """
+        else:
+            # Fall back to original schema
+            query = f"""
+            SELECT 
+                id, link, title, date, summary, 
+                full_content, information, themes, 
+                organization, sentiment, 
+                benefits_to_germany, insights, 
+                created_at, updated_at
+            FROM content_data 
+            {where_clause}
+            ORDER BY id DESC 
+            LIMIT {limit}
+            """
         
         # Create parameter list in correct order for the query
         param_values = []
@@ -810,6 +1260,9 @@ def fetch_data(limit=100, filters=None):
             
             if filters.get('sentiment'):
                 param_values.append(filters['sentiment'])
+            
+            if filters.get('initiative'):
+                param_values.append(filters['initiative'])
             
             if filters.get('start_date') and filters.get('end_date'):
                 param_values.append(filters['start_date'])
@@ -828,6 +1281,17 @@ def fetch_data(limit=100, filters=None):
         # Create DataFrame
         df = pd.DataFrame(results, columns=column_names)
         
+        # Parse JSON columns if present
+        if 'benefit_categories' in df.columns:
+            df['benefit_categories'] = df['benefit_categories'].apply(
+                lambda x: json.loads(x) if x and isinstance(x, str) else None
+            )
+        
+        if 'benefit_examples' in df.columns:
+            df['benefit_examples'] = df['benefit_examples'].apply(
+                lambda x: json.loads(x) if x and isinstance(x, str) else None
+            )
+        
         # Close cursor and connection
         cursor.close()
         conn.close()
@@ -842,104 +1306,6 @@ def fetch_data(limit=100, filters=None):
         # Return empty DataFrame in case of error
         import pandas as pd
         return pd.DataFrame()
-
-def extract_organization_from_url(url):
-    """
-    Extract organization name from URL.
-    
-    Args:
-        url: The URL to extract organization from
-        
-    Returns:
-        Organization name based on domain
-    """
-    if not url:
-        return "Unknown"
-        
-    try:
-        # Parse the URL to extract domain
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc.lower()
-        
-        # Remove 'www.' prefix if present
-        if domain.startswith('www.'):
-            domain = domain[4:]
-        
-        # Extract main domain (before first dot)
-        main_domain = domain.split('.')[0]
-        
-        # Return capitalized domain
-        return main_domain.upper()
-    except:
-        return "Unknown"
-
-# The rest of the code remains unchanged
-
-def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
-    """
-    Retrieve content data by ID.
-    
-    Args:
-        content_id: The ID of the content to retrieve
-        
-    Returns:
-        Dictionary containing the content data or None if not found
-    """
-    logger.info(f"Retrieving content with ID: {content_id}")
-    
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        query = """
-        SELECT id, link, title, date, summary, full_content, information, themes, organization,
-               sentiment, benefits_to_germany, insights, created_at, updated_at
-        FROM content_data
-        WHERE id = %s;
-        """
-        
-        cursor.execute(query, (content_id,))
-        record = cursor.fetchone()
-        
-        if record:
-            # Get column names
-            column_names = [desc[0] for desc in cursor.description]
-            
-            # Create dictionary from record
-            content = dict(zip(column_names, record))
-            
-            # Convert date to string if needed
-            if content['date'] and isinstance(content['date'], datetime):
-                content['date'] = content['date'].isoformat()
-            
-            # Convert timestamps to strings
-            if content['created_at'] and isinstance(content['created_at'], datetime):
-                content['created_at'] = content['created_at'].isoformat()
-            
-            if content['updated_at'] and isinstance(content['updated_at'], datetime):
-                content['updated_at'] = content['updated_at'].isoformat()
-                
-            logger.info(f"Found content: {content['title']}")
-            
-            # Close cursor and connection
-            cursor.close()
-            conn.close()
-            
-            return content
-        else:
-            logger.warning(f"No content found with ID: {content_id}")
-            
-            # Close cursor and connection
-            cursor.close()
-            conn.close()
-            
-            return None
-            
-    except Exception as e:
-        logger.error(f"Error retrieving content: {str(e)}")
-        if 'conn' in locals() and conn:
-            conn.close()
-        raise
 
 def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
@@ -958,12 +1324,35 @@ def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        query = """
-        SELECT id, link, title, date, summary, themes, organization, sentiment, benefits_to_germany
-        FROM content_data
-        ORDER BY id DESC
-        LIMIT %s OFFSET %s;
-        """
+        # Check if initiative columns exist
+        try:
+            check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'content_data' AND column_name = 'initiative'
+            );
+            """
+            cursor.execute(check_query)
+            has_initiative_columns = cursor.fetchone()[0]
+        except:
+            # If check fails, assume no initiative columns
+            has_initiative_columns = False
+        
+        # Prepare query based on available columns
+        if has_initiative_columns:
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, sentiment, initiative, benefits_to_germany
+            FROM content_data
+            ORDER BY id DESC
+            LIMIT %s OFFSET %s;
+            """
+        else:
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, sentiment, benefits_to_germany
+            FROM content_data
+            ORDER BY id DESC
+            LIMIT %s OFFSET %s;
+            """
         
         cursor.execute(query, (limit, offset))
         records = cursor.fetchall()
@@ -996,135 +1385,108 @@ def get_all_content(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
             conn.close()
         raise
 
-def update_content(content_id: int, data: Dict[str, Any]) -> bool:
+def get_content_by_id(content_id: int) -> Optional[Dict[str, Any]]:
     """
-    Update content data by ID.
+    Retrieve content data by ID.
     
     Args:
-        content_id: The ID of the content to update
-        data: Dictionary containing the fields to update
+        content_id: The ID of the content to retrieve
         
     Returns:
-        True if update was successful, False otherwise
+        Dictionary containing the content data or None if not found
     """
-    logger.info(f"Updating content with ID: {content_id}")
-    
-    # Fields that can be updated
-    allowed_fields = [
-        "title", "date", "summary", "full_content", 
-        "information", "themes", "organization", "sentiment",
-        "benefits_to_germany", "insights"
-    ]
-    
-    # Filter out any fields that are not allowed
-    update_data = {k: v for k, v in data.items() if k in allowed_fields}
-    
-    if not update_data:
-        logger.warning("No valid fields to update")
-        return False
+    logger.info(f"Retrieving content with ID: {content_id}")
     
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Format date if present
-        if "date" in update_data and update_data["date"]:
-            try:
-                update_data["date"] = format_date(update_data["date"])
-            except Exception as e:
-                logger.warning(f"Error formatting date for update: {str(e)}")
+        # Check if initiative columns exist
+        try:
+            check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'content_data' AND column_name = 'initiative'
+            );
+            """
+            cursor.execute(check_query)
+            has_initiative_columns = cursor.fetchone()[0]
+        except:
+            # If check fails, assume no initiative columns
+            has_initiative_columns = False
         
-        # Build the SET part of the query dynamically
-        set_clauses = []
-        params = []
-        
-        for field, value in update_data.items():
-            set_clauses.append(f"{field} = %s")
-            params.append(value)
-        
-        set_clause = ", ".join(set_clauses)
-        
-        query = f"""
-        UPDATE content_data
-        SET {set_clause}
-        WHERE id = %s
-        RETURNING id;
-        """
-        
-        # Add the content_id as the last parameter
-        params.append(content_id)
-        
-        cursor.execute(query, params)
-        
-        # Check if a row was affected
-        updated = cursor.fetchone() is not None
-        
-        # Commit the transaction
-        conn.commit()
-        
-        # Close the cursor and connection
-        cursor.close()
-        conn.close()
-        
-        if updated:
-            logger.info(f"Successfully updated content with ID: {content_id}")
+        # Prepare query based on available columns
+        if has_initiative_columns:
+            query = """
+            SELECT id, link, title, date, summary, full_content, themes, organization,
+                   sentiment, initiative, initiative_key, benefits_to_germany, 
+                   benefit_categories, benefit_examples, created_at, updated_at
+            FROM content_data
+            WHERE id = %s;
+            """
         else:
-            logger.warning(f"No content found with ID: {content_id}")
-        
-        return updated
-        
-    except Exception as e:
-        logger.error(f"Error updating content: {str(e)}")
-        if 'conn' in locals() and conn:
-            conn.rollback()
-            conn.close()
-        raise
-
-def delete_content(content_id: int) -> bool:
-    """
-    Delete content data by ID.
-    
-    Args:
-        content_id: The ID of the content to delete
-        
-    Returns:
-        True if deletion was successful, False otherwise
-    """
-    logger.info(f"Deleting content with ID: {content_id}")
-    
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        query = """
-        DELETE FROM content_data
-        WHERE id = %s
-        RETURNING id;
-        """
+            query = """
+            SELECT id, link, title, date, summary, full_content, information, themes, organization,
+                   sentiment, benefits_to_germany, insights, created_at, updated_at
+            FROM content_data
+            WHERE id = %s;
+            """
         
         cursor.execute(query, (content_id,))
+        record = cursor.fetchone()
         
-        # Check if a row was affected
-        deleted = cursor.fetchone() is not None
-        
-        # Commit the transaction
-        conn.commit()
-        
-        # Close the cursor and connection
-        cursor.close()
-        conn.close()
-        
-        if deleted:
-            logger.info(f"Successfully deleted content with ID: {content_id}")
+        if record:
+            # Get column names
+            column_names = [desc[0] for desc in cursor.description]
+            
+            # Create dictionary from record
+            content = dict(zip(column_names, record))
+            
+            # Convert date to string if needed
+            if content['date'] and isinstance(content['date'], datetime):
+                content['date'] = content['date'].isoformat()
+            
+            # Convert timestamps to strings
+            if content['created_at'] and isinstance(content['created_at'], datetime):
+                content['created_at'] = content['created_at'].isoformat()
+            
+            if content['updated_at'] and isinstance(content['updated_at'], datetime):
+                content['updated_at'] = content['updated_at'].isoformat()
+            
+            # Parse JSON fields if present
+            if 'benefit_categories' in content and content['benefit_categories']:
+                try:
+                    if isinstance(content['benefit_categories'], str):
+                        content['benefit_categories'] = json.loads(content['benefit_categories'])
+                except:
+                    pass
+            
+            if 'benefit_examples' in content and content['benefit_examples']:
+                try:
+                    if isinstance(content['benefit_examples'], str):
+                        content['benefit_examples'] = json.loads(content['benefit_examples'])
+                except:
+                    pass
+                
+            logger.info(f"Found content: {content['title']}")
+            
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+            
+            return content
         else:
             logger.warning(f"No content found with ID: {content_id}")
-        
-        return deleted
-        
+            
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+            
+            return None
+            
     except Exception as e:
-        logger.error(f"Error deleting content: {str(e)}")
+        logger.error(f"Error retrieving content: {str(e)}")
         if 'conn' in locals() and conn:
-            conn.rollback()
             conn.close()
         raise
 
@@ -1132,6 +1494,7 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
     Search for content matching the given query terms.
     Uses PostgreSQL full-text search capabilities.
+    Enhanced to include initiative data.
     
     Args:
         query_terms: String containing search terms
@@ -1146,21 +1509,53 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Create a tsquery from the search terms
-        query = """
-        SELECT id, link, title, date, summary, themes, organization, sentiment
-        FROM content_data
-        WHERE 
-            to_tsvector('english', COALESCE(title, '')) @@ plainto_tsquery('english', %s) OR
-            to_tsvector('english', COALESCE(summary, '')) @@ plainto_tsquery('english', %s) OR
-            to_tsvector('english', COALESCE(full_content, '')) @@ plainto_tsquery('english', %s)
-        ORDER BY 
-            ts_rank(to_tsvector('english', COALESCE(title, '')), plainto_tsquery('english', %s)) +
-            ts_rank(to_tsvector('english', COALESCE(summary, '')), plainto_tsquery('english', %s)) DESC
-        LIMIT %s;
-        """
+        # Check if initiative columns exist
+        try:
+            check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'content_data' AND column_name = 'initiative'
+            );
+            """
+            cursor.execute(check_query)
+            has_initiative_columns = cursor.fetchone()[0]
+        except:
+            # If check fails, assume no initiative columns
+            has_initiative_columns = False
         
-        cursor.execute(query, (query_terms, query_terms, query_terms, query_terms, query_terms, limit))
+        # Create a tsquery from the search terms
+        if has_initiative_columns:
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, sentiment, initiative, initiative_key, benefits_to_germany
+            FROM content_data
+            WHERE 
+                to_tsvector('english', COALESCE(title, '')) @@ plainto_tsquery('english', %s) OR
+                to_tsvector('english', COALESCE(summary, '')) @@ plainto_tsquery('english', %s) OR
+                to_tsvector('english', COALESCE(full_content, '')) @@ plainto_tsquery('english', %s) OR
+                to_tsvector('english', COALESCE(benefits_to_germany, '')) @@ plainto_tsquery('english', %s)
+            ORDER BY 
+                ts_rank(to_tsvector('english', COALESCE(title, '')), plainto_tsquery('english', %s)) +
+                ts_rank(to_tsvector('english', COALESCE(summary, '')), plainto_tsquery('english', %s)) DESC
+            LIMIT %s;
+            """
+            
+            cursor.execute(query, (query_terms, query_terms, query_terms, query_terms, query_terms, query_terms, limit))
+        else:
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, sentiment, benefits_to_germany
+            FROM content_data
+            WHERE 
+                to_tsvector('english', COALESCE(title, '')) @@ plainto_tsquery('english', %s) OR
+                to_tsvector('english', COALESCE(summary, '')) @@ plainto_tsquery('english', %s) OR
+                to_tsvector('english', COALESCE(full_content, '')) @@ plainto_tsquery('english', %s)
+            ORDER BY 
+                ts_rank(to_tsvector('english', COALESCE(title, '')), plainto_tsquery('english', %s)) +
+                ts_rank(to_tsvector('english', COALESCE(summary, '')), plainto_tsquery('english', %s)) DESC
+            LIMIT %s;
+            """
+            
+            cursor.execute(query, (query_terms, query_terms, query_terms, query_terms, query_terms, limit))
+        
         records = cursor.fetchall()
         
         # Get column names
@@ -1191,155 +1586,10 @@ def search_content(query_terms: str, limit: int = 20) -> List[Dict[str, Any]]:
             conn.close()
         raise
 
-def get_stats():
-    """
-    Get statistics about the content in the database.
-    
-    Returns:
-        Dictionary containing statistics
-    """
-    logger.info("Getting content statistics")
-    
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        stats = {}
-        
-        # Total content count
-        cursor.execute("SELECT COUNT(*) FROM content_data")
-        stats['total_content'] = cursor.fetchone()[0]
-        
-        # Organization count
-        cursor.execute("SELECT COUNT(DISTINCT organization) FROM content_data WHERE organization IS NOT NULL")
-        stats['organization_count'] = cursor.fetchone()[0]
-        
-        # Theme count (requires unnesting the array)
-        cursor.execute("SELECT COUNT(DISTINCT unnest(themes)) FROM content_data WHERE themes IS NOT NULL")
-        stats['theme_count'] = cursor.fetchone()[0]
-        
-        # Sentiment distribution
-        cursor.execute("""
-            SELECT sentiment, COUNT(*) 
-            FROM content_data 
-            WHERE sentiment IS NOT NULL 
-            GROUP BY sentiment
-        """)
-        stats['sentiment_distribution'] = dict(cursor.fetchall())
-        
-        # Date range
-        cursor.execute("SELECT MIN(date), MAX(date) FROM content_data WHERE date IS NOT NULL")
-        min_date, max_date = cursor.fetchone()
-        stats['date_range'] = {
-            'min_date': min_date.isoformat() if min_date else None,
-            'max_date': max_date.isoformat() if max_date else None,
-        }
-        
-        # Top organizations
-        cursor.execute("""
-            SELECT organization, COUNT(*) as count
-            FROM content_data
-            WHERE organization IS NOT NULL
-            GROUP BY organization
-            ORDER BY count DESC
-            LIMIT 5
-        """)
-        stats['top_organizations'] = dict(cursor.fetchall())
-        
-        # Top themes
-        cursor.execute("""
-            SELECT theme, COUNT(*) as count
-            FROM (
-                SELECT unnest(themes) as theme
-                FROM content_data
-                WHERE themes IS NOT NULL
-            ) t
-            GROUP BY theme
-            ORDER BY count DESC
-            LIMIT 5
-        """)
-        stats['top_themes'] = dict(cursor.fetchall())
-        
-        # Content with benefits to Germany
-        cursor.execute("SELECT COUNT(*) FROM content_data WHERE benefits_to_germany IS NOT NULL")
-        stats['content_with_benefits'] = cursor.fetchone()[0]
-        
-        # Close cursor and connection
-        cursor.close()
-        conn.close()
-        
-        logger.info("Successfully retrieved content statistics")
-        return stats
-        
-    except Exception as e:
-        logger.error(f"Error getting content statistics: {str(e)}")
-        if 'conn' in locals() and conn:
-            conn.close()
-        # Return empty stats in case of error
-        return {}
-
-def clean_text(text):
-    """
-    Clean text by removing extra whitespace, normalizing quotes, etc.
-    
-    Args:
-        text: Text to clean
-        
-    Returns:
-        Cleaned text
-    """
-    if not text:
-        return ""
-    
-    # Replace multiple newlines with a single newline
-    text = re.sub(r'\n\s*\n', '\n\n', text)
-    
-    # Replace multiple spaces with a single space
-    text = re.sub(r' +', ' ', text)
-    
-    # Normalize quotes
-    text = text.replace('"', '"').replace('"', '"')
-    
-    # Remove leading/trailing whitespace
-    text = text.strip()
-    
-    return text
-
-
-def extract_organization_from_url(url):
-    """
-    Extract organization name from URL.
-    
-    Args:
-        url: The URL to extract organization from
-        
-    Returns:
-        Organization name based on domain
-    """
-    if not url:
-        return "Unknown"
-        
-    try:
-        # Parse the URL to extract domain
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc.lower()
-        
-        # Remove 'www.' prefix if present
-        if domain.startswith('www.'):
-            domain = domain[4:]
-        
-        # Extract main domain (before first dot)
-        main_domain = domain.split('.')[0]
-        
-        # Return capitalized domain
-        return main_domain.upper()
-    except:
-        return "Unknown"
-
 def create_schema():
     """
     Create the database schema if it doesn't exist.
-    This is useful for initializing a new database.
+    Updated to include new initiative-specific fields.
     
     Returns:
         True if successful, False otherwise
@@ -1350,7 +1600,7 @@ def create_schema():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Create content_data table
+        # Create content_data table if it doesn't exist (with original schema)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS content_data (
             id SERIAL PRIMARY KEY,
@@ -1370,12 +1620,47 @@ def create_schema():
         )
         """)
         
+        # Add new columns for initiatives if they don't exist
+        cursor.execute("""
+        DO $$
+        BEGIN
+            -- Check if initiative column exists
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='content_data' AND column_name='initiative') THEN
+                ALTER TABLE content_data ADD COLUMN initiative VARCHAR(100);
+            END IF;
+
+            -- Check if initiative_key column exists
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='content_data' AND column_name='initiative_key') THEN
+                ALTER TABLE content_data ADD COLUMN initiative_key VARCHAR(50);
+            END IF;
+
+            -- Check if benefit_categories column exists
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='content_data' AND column_name='benefit_categories') THEN
+                ALTER TABLE content_data ADD COLUMN benefit_categories JSONB;
+            END IF;
+
+            -- Check if benefit_examples column exists
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='content_data' AND column_name='benefit_examples') THEN
+                ALTER TABLE content_data ADD COLUMN benefit_examples JSONB;
+            END IF;
+        END
+        $$;
+        """)
+        
         # Create indexes for faster queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_link ON content_data (link)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_themes ON content_data USING GIN (themes)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_organization ON content_data (organization)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_date ON content_data (date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_sentiment ON content_data (sentiment)")
+        
+        # Create indexes for new columns
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_initiative ON content_data (initiative)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_initiative_key ON content_data (initiative_key)")
         
         # Create trigger for updated_at
         cursor.execute("""
@@ -1411,70 +1696,3 @@ def create_schema():
             conn.rollback()
             conn.close()
         return False
-
-def filter_urls_by_keywords(urls, keywords):
-    """
-    Filter a list of URLs to keep only those containing keywords.
-    
-    Args:
-        urls: List of URLs to filter
-        keywords: List of keywords to check for
-        
-    Returns:
-        Filtered list of URLs
-    """
-    if not urls or not keywords:
-        return urls
-        
-    filtered_urls = []
-    
-    for url in urls:
-        url_lower = url.lower()
-        if any(keyword.lower() in url_lower for keyword in keywords):
-            filtered_urls.append(url)
-    
-    return filtered_urls
-
-# Example usage
-if __name__ == "__main__":
-    # This is an example of how to use the module directly
-    try:
-        print("\n" + "="*50)
-        print("CONTENT DATABASE OPERATIONS")
-        print("="*50 + "\n")
-        
-        # Create schema if needed
-        create_schema()
-        
-        # Get statistics
-        stats = get_stats()
-        print(f"Database Statistics:")
-        print(f"- Total Content: {stats.get('total_content', 0)}")
-        print(f"- Organizations: {stats.get('organization_count', 0)}")
-        print(f"- Themes: {stats.get('theme_count', 0)}")
-        print(f"- Date Range: {stats.get('date_range', {})}")
-        
-        print("\nTesting theme identification...")
-        test_content = """
-        Germany's GIZ has been working with indigenous communities in the Amazon Basin
-        to implement sustainable forestry practices that protect biodiversity while
-        supporting local economies through carefully managed forest resources.
-        """
-        themes = identify_themes(test_content)
-        print(f"Identified themes: {themes}")
-        
-        print("\nTesting sentiment analysis...")
-        sentiment = analyze_sentiment(test_content)
-        print(f"Sentiment: {sentiment}")
-        
-        print("\nTesting benefit extraction...")
-        test_benefit_content = """
-        This partnership between Germany and Brazil provides significant advantages
-        for German companies seeking to develop sustainable forestry technologies
-        while benefiting from the expertise of local communities.
-        """
-        benefits = extract_benefits(test_benefit_content)
-        print(f"Benefits to Germany: {benefits}")
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
