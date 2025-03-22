@@ -966,11 +966,6 @@ class WebExtractor:
             # Identify which initiative is mentioned
             initiative_key, initiative_score = self.identify_initiative(content)
             
-            # Only proceed if content is relevant to our initiatives
-            if initiative_key == "unknown" or initiative_score < 0.1:
-                logger.info(f"Content not relevant to tracked initiatives: {url}")
-                return None
-            
             # Identify themes using the class method
             themes = self.identify_themes(content)
             
@@ -982,20 +977,6 @@ class WebExtractor:
             
             # Extract benefit categories
             benefit_categories = self.identify_benefit_categories(content)
-            
-            # Calculate relevance score - average of top benefit category scores
-            top_scores = sorted(benefit_categories.values(), reverse=True)[:3]
-            relevance_score = sum(top_scores) / len(top_scores) if top_scores else 0
-            
-            # Boost score for priority domains
-            domain_boost = 0
-            try:
-                url_domain = urlparse(url).netloc.lower()
-                if any(domain in url_domain for domain in self.priority_domains):
-                    domain_boost = 0.3
-                    relevance_score = min(1.0, relevance_score + domain_boost)
-            except:
-                pass
             
             # Extract benefit examples
             benefit_examples = self.extract_benefits_examples(content, initiative_key)
@@ -1009,7 +990,7 @@ class WebExtractor:
                 
                 benefits_to_germany = "\n\n".join(examples_text)
             
-            # Create result dictionary
+            # Create result dictionary without relevance score
             result_data = {
                 "title": extracted_title or title,
                 "link": url,
@@ -1026,19 +1007,19 @@ class WebExtractor:
                 "benefit_categories": benefit_categories,
                 "benefit_examples": benefit_examples,
                 "benefits_to_germany": benefits_to_germany,
-                "relevance_score": relevance_score,
                 "query_index": query_index,
                 "result_index": result_index,
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f}, initiative: {initiative_key}, language: {self.language})")
+            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, language: {self.language})")
             return result_data
             
         except Exception as e:
             logger.error(f"Error processing {url}: {str(e)}")
             logger.debug(f"Traceback: {traceback.format_exc()}")
             return None
+
 
     def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
@@ -1100,8 +1081,12 @@ class WebExtractor:
             
             # Search the web and collect results
             all_results = []
-            processed_urls = set()  # Track URLs to avoid duplicates within current run
+            processed_urls = set()  # IMPORTANT: Start with a fresh empty set each time
             skipped_total = 0      # Count of all skipped URLs
+            
+            # Add this line to explicitly log that we're starting with a fresh set
+            logger.info("Starting with empty processed_urls set - no in-memory URL history")
+            print("🔄 Starting with fresh URL tracking - no previous history carried over")
             
             logger.info(f"Search plan: Processing {len(queries)} queries with {self.max_workers} workers")
             
@@ -1312,7 +1297,6 @@ class WebExtractor:
                 "error": str(e),
                 "error_type": error_type
             }
-
     def run(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
         Run the web extraction process and return results in a structured format.

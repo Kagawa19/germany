@@ -91,12 +91,15 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         logging.info(f"Initializing WebExtractor with language: {language}")
         print(f"🔍 Initializing web content extractor for {language} content...")
 
-        # Initialize WebExtractor with language parameter
+        # Initialize WebExtractor with language parameter - create fresh instance every time
         extractor = WebExtractor(
             search_api_key=SERPER_API_KEY,
             max_workers=10,
             language=language
         )
+        
+        # Store in session state for reference
+        st.session_state['extractor_instance'] = extractor
 
         # Status placeholders
         status_placeholder = st.empty()
@@ -1140,6 +1143,36 @@ elif app_mode == "Export Data":
 elif app_mode == "Web Extraction":
     st.title("Web Content Extraction")
     st.write("Configure the extraction settings and click the button below to extract web content.")
+    
+    # Nuclear option - clear everything
+    st.sidebar.header("Reset Options")
+    if st.sidebar.button("🧨 Clear All URL Tracking and Database", 
+                         help="WARNING: This will delete all data and reset all tracking!"):
+        try:
+            # Clear database records
+            engine = get_sqlalchemy_engine()
+            with engine.connect() as conn:
+                conn.execute(text("TRUNCATE TABLE content_data"))
+                conn.commit()
+                
+            # Re-create database schema
+            success = create_schema()
+            if success:
+                st.sidebar.success("Database schema recreated successfully")
+            
+            # Force recreation of the WebExtractor class by removing any cached instances
+            # This ensures processed_urls set will be empty
+            if 'extractor_instance' in st.session_state:
+                del st.session_state['extractor_instance']
+            
+            # Force garbage collection to clean up memory
+            import gc
+            gc.collect()
+            
+            st.sidebar.success("✅ All URL records cleared from database and memory")
+            st.sidebar.info("The next extraction will start fresh with no URL history")
+        except Exception as e:
+            st.sidebar.error(f"Error clearing data: {str(e)}")
     
     # Language selection
     st.sidebar.header("Language Settings")
