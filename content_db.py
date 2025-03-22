@@ -659,7 +659,7 @@ def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, An
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     Store extracted data into the database using a batch transaction.
-    Enhanced to handle initiative-specific data.
+    Enhanced to handle initiative-specific data and language information.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -700,6 +700,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 date_str = item.get("date")
                 content = item.get("content", "")
                 snippet = item.get("snippet", "")
+                language = item.get("language", "English")  # Default to English if not specified
                 
                 # Skip items with empty/invalid URLs
                 if not link or len(link) < 5:
@@ -779,6 +780,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     "themes": themes,
                     "organization": organization,
                     "sentiment": sentiment,
+                    "language": language,  # Include language field
                     "initiative": initiative,
                     "initiative_key": initiative_key,
                     "benefits_to_germany": benefits_to_germany,
@@ -805,8 +807,33 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     "themes": item["themes"],
                     "organization": item["organization"],
                     "sentiment": item["sentiment"],
+                    "language": item["language"],
                     "benefits_to_germany": item["benefits_to_germany"]
                 }
+                
+                # Check if table has the language column
+                try:
+                    # Check if table has language column
+                    check_query = """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'content_data' AND column_name = 'language'
+                    );
+                    """
+                    cursor.execute(check_query)
+                    has_language_column = cursor.fetchone()[0]
+                    
+                    # If language column doesn't exist, add it
+                    if not has_language_column:
+                        alter_query = """
+                        ALTER TABLE content_data ADD COLUMN language VARCHAR(50) DEFAULT 'English';
+                        CREATE INDEX IF NOT EXISTS idx_content_data_language ON content_data (language);
+                        """
+                        cursor.execute(alter_query)
+                        logger.info("Added language column to content_data table")
+                        print("Added language column to database schema")
+                except Exception as column_error:
+                    logger.warning(f"Error checking language column: {str(column_error)}")
                 
                 # Construct the SQL query dynamically based on existing columns
                 try:
@@ -820,8 +847,36 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     cursor.execute(check_query)
                     has_initiative_columns = cursor.fetchone()[0]
                     
-                    if has_initiative_columns:
-                        # Use the enhanced schema with initiative columns
+                    # Check for language column (should be added by now)
+                    check_query = """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = 'content_data' AND column_name = 'language'
+                    );
+                    """
+                    cursor.execute(check_query)
+                    has_language_column = cursor.fetchone()[0]
+                    
+                    if has_initiative_columns and has_language_column:
+                        # Use the enhanced schema with initiative and language columns
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         language, initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
+                         insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["language"], item["initiative"], item["initiative_key"], item["benefits_to_germany"],
+                             item["benefit_categories"], item["benefit_examples"], None)
+                        )
+                    elif has_initiative_columns:
+                        # Use schema with initiative but without language
                         query = """
                         INSERT INTO content_data 
                         (link, title, date, summary, full_content, information, themes, organization, sentiment, 
@@ -838,8 +893,24 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                              item["initiative"], item["initiative_key"], item["benefits_to_germany"],
                              item["benefit_categories"], item["benefit_examples"], None)
                         )
+                    elif has_language_column:
+                        # Use schema with language but without initiative
+                        query = """
+                        INSERT INTO content_data 
+                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
+                         language, benefits_to_germany, insights, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        RETURNING id;
+                        """
+                        
+                        cursor.execute(
+                            query, 
+                            (item["link"], item["title"], item["date_value"], item["summary"], 
+                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
+                             item["language"], item["benefits_to_germany"], None)
+                        )
                     else:
-                        # Use the original schema without initiative columns
+                        # Use the original schema without initiative or language
                         query = """
                         INSERT INTO content_data 
                         (link, title, date, summary, full_content, information, themes, organization, sentiment, 
@@ -877,8 +948,8 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 inserted_ids.append(record_id)
                 success_count += 1
                 
-                logger.info(f"Inserted record with ID {record_id} for URL: {item['link']}")
-                print(f"SUCCESS: Inserted record ID {record_id} | {item['title'][:50]}")
+                logger.info(f"Inserted record with ID {record_id} for URL: {item['link']} (Language: {item['language']})")
+                print(f"SUCCESS: Inserted record ID {record_id} | {item['title'][:50]} | {item['language']}")
                 
             except Exception as item_error:
                 error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
@@ -925,24 +996,42 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     item_conn = get_db_connection()
                     item_cursor = item_conn.cursor()
                     
-                    # Check if table has initiative columns
-                    check_query = """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.columns 
-                        WHERE table_name = 'content_data' AND column_name = 'initiative'
-                    );
-                    """
-                    item_cursor.execute(check_query)
-                    has_initiative_columns = item_cursor.fetchone()[0]
+                    # Check if table has all required columns
+                    has_language_column = False
+                    has_initiative_columns = False
                     
-                    if has_initiative_columns:
-                        # Use the enhanced schema with initiative columns
+                    try:
+                        # Check if table has language column
+                        check_query = """
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_name = 'content_data' AND column_name = 'language'
+                        );
+                        """
+                        item_cursor.execute(check_query)
+                        has_language_column = item_cursor.fetchone()[0]
+                        
+                        # Check if table has initiative columns
+                        check_query = """
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns 
+                            WHERE table_name = 'content_data' AND column_name = 'initiative'
+                        );
+                        """
+                        item_cursor.execute(check_query)
+                        has_initiative_columns = item_cursor.fetchone()[0]
+                    except:
+                        pass
+                    
+                    # Use appropriate query based on available columns
+                    if has_initiative_columns and has_language_column:
+                        # Use the enhanced schema with initiative and language columns
                         query = """
                         INSERT INTO content_data 
                         (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
+                         language, initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
                          insights, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                         RETURNING id;
                         """
                         
@@ -950,11 +1039,11 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                             query, 
                             (item["link"], item["title"], item["date_value"], item["summary"], 
                              item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["initiative"], item["initiative_key"], item["benefits_to_germany"],
+                             item["language"], item["initiative"], item["initiative_key"], item["benefits_to_germany"],
                              item["benefit_categories"], item["benefit_examples"], None)
                         )
                     else:
-                        # Use the original schema without initiative columns
+                        # Use the original schema without special columns
                         query = """
                         INSERT INTO content_data 
                         (link, title, date, summary, full_content, information, themes, organization, sentiment, 
@@ -976,8 +1065,8 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     inserted_ids.append(record_id)
                     success_count += 1
                     
-                    logger.info(f"Individual insert succeeded for URL: {item['link']}")
-                    print(f"RECOVERY SUCCESS: Inserted record ID {record_id} | {item['title'][:50]}")
+                    logger.info(f"Individual insert succeeded for URL: {item['link']} (Language: {item['language']})")
+                    print(f"RECOVERY SUCCESS: Inserted record ID {record_id} | {item['title'][:50]} | {item['language']}")
                     
                 except Exception as item_error:
                     logger.error(f"Individual insert failed for URL {item['link']}: {str(item_error)}")
@@ -1601,6 +1690,7 @@ def create_schema():
         cursor = conn.cursor()
         
         # Create content_data table if it doesn't exist (with original schema)
+        # Add language column to schema creation
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS content_data (
             id SERIAL PRIMARY KEY,
@@ -1615,10 +1705,18 @@ def create_schema():
             sentiment VARCHAR(50),
             benefits_to_germany TEXT,
             insights TEXT,
+            language VARCHAR(50) DEFAULT 'English',
+            initiative VARCHAR(100),
+            initiative_key VARCHAR(50),
+            benefit_categories JSONB,
+            benefit_examples JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+        # Add index for language column
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_data_language ON content_data (language)")
         
         # Add new columns for initiatives if they don't exist
         cursor.execute("""

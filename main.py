@@ -58,19 +58,21 @@ def get_sqlalchemy_engine():
         raise
 
 # Function to run web extraction
-def run_web_extraction(max_queries=None, max_results_per_query=None):
+def run_web_extraction(max_queries=None, max_results_per_query=None, language="English"):
     """
     Run web extraction process with configurable parameters.
     
     Args:
         max_queries: Maximum number of queries to run
         max_results_per_query: Maximum results per query
+        language: Language for search queries (English, German, French)
     """
     # Log the start of the extraction process with detailed parameters
     logging.info(
         f"Starting web extraction process | "
         f"Max Queries: {max_queries or 'Unlimited'} | "
-        f"Max Results Per Query: {max_results_per_query or 'Unlimited'}"
+        f"Max Results Per Query: {max_results_per_query or 'Unlimited'} | "
+        f"Language: {language}"
     )
     
     # Print user-friendly startup message
@@ -78,25 +80,27 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
     print(f"   Configuration:")
     print(f"   - Max Queries: {max_queries or 'Unlimited'}")
     print(f"   - Max Results Per Query: {max_results_per_query or 'Unlimited'}")
+    print(f"   - Language: {language}")
 
     # Use Streamlit spinner for visual feedback
-    with st.spinner("Extracting web content... This may take a few minutes."):
+    with st.spinner(f"Extracting web content in {language}... This may take a few minutes."):
         # Create progress bar
         progress_bar = st.progress(0)
 
         # Log extractor initialization
-        logging.info("Initializing WebExtractor")
-        print("🔍 Initializing web content extractor...")
+        logging.info(f"Initializing WebExtractor with language: {language}")
+        print(f"🔍 Initializing web content extractor for {language} content...")
 
-        # Initialize WebExtractor
+        # Initialize WebExtractor with language parameter
         extractor = WebExtractor(
             search_api_key=SERPER_API_KEY,
-            max_workers=10
+            max_workers=10,
+            language=language
         )
 
         # Status placeholders
         status_placeholder = st.empty()
-        status_placeholder.info("Searching the web for relevant content...")
+        status_placeholder.info(f"Searching the web for relevant content in {language}...")
         progress_bar.progress(25)
 
         try:
@@ -116,10 +120,10 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
                     result_count = len(results["results"])
                     
                     # Detailed logging of extraction results
-                    logging.info(f"Web extraction successful. Found {result_count} results")
-                    print(f"✅ Web extraction complete. {result_count} items retrieved.")
+                    logging.info(f"Web extraction successful. Found {result_count} results in {language}")
+                    print(f"✅ Web extraction complete. {result_count} {language} items retrieved.")
                     
-                    status_placeholder.info(f"Processing {result_count} items...")
+                    status_placeholder.info(f"Processing {result_count} {language} items...")
                     progress_bar.progress(50)
 
                     try:
@@ -137,27 +141,31 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
                             logging.info(f"Filtered out {filtered_count} duplicate results")
                             print(f"🚫 Removed {filtered_count} duplicate entries.")
 
+                        # Add language to each result
+                        for result in results["results"]:
+                            result["language"] = language
+
                         # Store extracted data
                         stored_ids = store_extract_data(results["results"])
                         stored_count = len(stored_ids)
 
                         # Final progress and logging
                         progress_bar.progress(100)
-                        logging.info(f"Web extraction completed. Saved {stored_count}/{result_count} items to database")
-                        print(f"💾 Saved {stored_count} new items to database.")
+                        logging.info(f"Web extraction completed. Saved {stored_count}/{result_count} {language} items to database")
+                        print(f"💾 Saved {stored_count} new {language} items to database.")
                         
-                        status_placeholder.success(f"Saved {stored_count} new items to database.")
+                        status_placeholder.success(f"Saved {stored_count} new {language} items to database.")
 
                         # Display saved items if any
                         if stored_ids:
                             try:
                                 engine = get_sqlalchemy_engine()
                                 ids_str = ','.join(str(id) for id in stored_ids)
-                                query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment, initiative FROM content_data WHERE id IN ({ids_str})")
+                                query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment, language, initiative FROM content_data WHERE id IN ({ids_str})")
                                 saved_df = pd.read_sql(query, engine)
 
                                 if not saved_df.empty:
-                                    st.subheader("Newly Extracted Content")
+                                    st.subheader(f"Newly Extracted {language} Content")
                                     st.dataframe(saved_df)
                             except Exception as e:
                                 logging.error(f"Error displaying saved items: {str(e)}")
@@ -178,14 +186,14 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
                     message = results.get('message', 'No new content found')
                     skipped = results.get('skipped_urls', 0)
                     
-                    logging.info(f"Web extraction successful: {message}")
-                    print(f"✅ Web extraction complete. {message}")
+                    logging.info(f"Web extraction successful: {message} in {language}")
+                    print(f"✅ Web extraction complete. {message} in {language}")
                     
                     if skipped > 0:
                         print(f"⏭️ Skipped {skipped} already processed URLs")
                     
                     progress_bar.progress(100)
-                    status_placeholder.success(f"Web extraction complete: {message}")
+                    status_placeholder.success(f"Web extraction complete: {message} in {language}")
                     
                     # Still display latest content data
                     st.subheader("Latest Content Data")
@@ -195,11 +203,11 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
                 # Case 3: Warning status - not an error but needs attention
                 message = results.get('message', 'Warning during extraction')
                 
-                logging.warning(f"Web extraction warning: {message}")
-                print(f"⚠️ Web extraction completed with warnings: {message}")
+                logging.warning(f"Web extraction warning: {message} in {language}")
+                print(f"⚠️ Web extraction completed with warnings: {message} in {language}")
                 
                 progress_bar.progress(100)
-                status_placeholder.warning(f"Web extraction warning: {message}")
+                status_placeholder.warning(f"Web extraction warning: {message} in {language}")
                 
                 # Still display latest content data
                 st.subheader("Latest Content Data")
@@ -208,17 +216,95 @@ def run_web_extraction(max_queries=None, max_results_per_query=None):
             else:
                 # Case 4: True error
                 error_msg = results.get('error', results.get('message', 'Unknown error'))
-                logging.error(f"Web extraction failed: {error_msg}")
+                logging.error(f"Web extraction failed: {error_msg} in {language}")
                 progress_bar.progress(100)
-                status_placeholder.error(f"Web extraction failed: {error_msg}")
-                print(f"❌ Web extraction failed: {error_msg}")
+                status_placeholder.error(f"Web extraction failed: {error_msg} in {language}")
+                print(f"❌ Web extraction failed: {error_msg} in {language}")
 
         except Exception as e:
             # Catch and log any unexpected errors
-            logging.exception(f"Exception during web extraction: {str(e)}")
+            logging.exception(f"Exception during web extraction in {language}: {str(e)}")
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed: {str(e)}")
-            print(f"❌ Critical error during web extraction: {str(e)}")
+            print(f"❌ Critical error during web extraction in {language}: {str(e)}")
+
+
+def export_content_by_language(language="All"):
+    """
+    Export content data to CSV files, separated by language.
+    
+    Args:
+        language: Language to filter by, or "All" to export all languages separately
+    """
+    try:
+        engine = get_sqlalchemy_engine()
+        
+        if language == "All":
+            # Get list of available languages
+            query = text("SELECT DISTINCT language FROM content_data WHERE language IS NOT NULL")
+            languages = [row[0] for row in pd.read_sql(query, engine)['language']]
+            
+            if not languages:
+                st.warning("No language data found in the database.")
+                return
+                
+            st.info(f"Exporting data for {len(languages)} languages: {', '.join(languages)}")
+            
+            # Export each language separately
+            for lang in languages:
+                export_single_language(engine, lang)
+        else:
+            # Export just the selected language
+            export_single_language(engine, language)
+            
+    except Exception as e:
+        st.error(f"Error exporting data: {str(e)}")
+        logger.error(f"Error in export_content_by_language: {str(e)}")
+
+def export_single_language(engine, language):
+    """Helper function to export data for a single language"""
+    try:
+        # Create query for the selected language
+        query = text(f"""
+        SELECT 
+            id, link, title, date, summary, organization, sentiment, 
+            initiative, language, themes
+        FROM content_data 
+        WHERE language = :language
+        ORDER BY id DESC
+        """)
+        
+        # Execute query with parameter
+        df = pd.read_sql(query, engine, params={"language": language})
+        
+        if df.empty:
+            st.warning(f"No data found for language: {language}")
+            return
+            
+        # Convert themes array to string for CSV export
+        if 'themes' in df.columns:
+            df['themes'] = df['themes'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+        
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"content_export_{language}_{timestamp}.csv"
+        
+        # Convert to CSV
+        csv = df.to_csv(index=False)
+        
+        # Create download button
+        st.download_button(
+            label=f"Download {language} data ({len(df)} records)",
+            data=csv,
+            file_name=filename,
+            mime="text/csv"
+        )
+        
+        st.success(f"Prepared {len(df)} records for {language}")
+        
+    except Exception as e:
+        st.error(f"Error exporting {language} data: {str(e)}")
+        logger.error(f"Error in export_single_language for {language}: {str(e)}")
 
 def view_data_page():
     """Display the data viewing and exploration page."""
@@ -1017,10 +1103,12 @@ def initialization_page():
 st.sidebar.title("Navigation")
 app_mode = st.sidebar.selectbox(
     "Choose the app mode", 
-    ["Dashboard", "Initiative Analysis", "Initiative Comparison", "View Data", "Web Extraction", "Database Initialization"]
+    ["Dashboard", "Initiative Analysis", "Initiative Comparison", "View Data", "Web Extraction", "Database Initialization", "Export Data"]
 )
 logger.info(f"User selected app mode: {app_mode}")
 print(f"User navigated to: {app_mode}")
+
+
 
 # Main application logic
 if app_mode == "Dashboard":
@@ -1037,15 +1125,32 @@ elif app_mode == "View Data":
     st.title("Content Data Explorer")
     view_data_page()
 
+# In your Streamlit app, add an export section
+elif app_mode == "Export Data":
+    st.title("Export Content Data")
+    st.write("Export content data to CSV files by language.")
+    
+    # Language selection dropdown
+    export_languages = ["All"] + ["English", "German", "French"]  # Add any other languages in your data
+    export_language = st.selectbox("Select Language to Export", export_languages)
+    
+    if st.button("Generate Export"):
+        with st.spinner(f"Preparing export for {export_language}..."):
+            export_content_by_language(export_language)
 elif app_mode == "Web Extraction":
     st.title("Web Content Extraction")
     st.write("Configure the extraction settings and click the button below to extract web content.")
     
+    # Language selection
+    st.sidebar.header("Language Settings")
+    languages = ["English", "German", "French"]
+    selected_language = st.sidebar.selectbox("Select Language for Web Extraction", languages)
+    
     # Extraction options
     col1, col2 = st.columns(2)
     with col1:
-        max_queries = st.slider("Number of search queries to process", 5, 40, 20)
-        max_results_per_query = st.slider("Results per query", 3, 8, 6)
+        max_queries = st.slider("Number of search queries to process", 10, 60, 30)
+        max_results_per_query = st.slider("Results per query", 8, 15, 25)
         logger.debug(f"User set max_queries to: {max_queries}, max_results_per_query to: {max_results_per_query}")
         print(f"User set extraction parameters: {max_queries} queries with {max_results_per_query} results per query")
     
@@ -1067,9 +1172,9 @@ elif app_mode == "Web Extraction":
     
     # Add a button to trigger the extraction
     if st.button("Start Web Extraction", key="extract_button", use_container_width=True):
-        logger.info(f"User clicked Start Web Extraction button with params: max_queries={max_queries}, max_results_per_query={max_results_per_query}")
-        print(f"Starting web extraction process with {max_queries} queries and {max_results_per_query} results per query...")
-        run_web_extraction(max_queries=max_queries, max_results_per_query=max_results_per_query)
+        logger.info(f"User clicked Start Web Extraction button with params: max_queries={max_queries}, max_results_per_query={max_results_per_query}, language={selected_language}")
+        print(f"Starting web extraction process with {max_queries} queries and {max_results_per_query} results per query in {selected_language}...")
+        run_web_extraction(max_queries=max_queries, max_results_per_query=max_results_per_query, language=selected_language)
 
 elif app_mode == "Database Initialization":
     initialization_page()

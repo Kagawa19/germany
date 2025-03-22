@@ -30,13 +30,15 @@ class WebExtractor:
     
     def __init__(self, 
                 search_api_key=None,
-                max_workers=5):
+                max_workers=5,
+                language="English"):
         """
         Initialize WebExtractor with configuration options.
         
         Args:
             search_api_key: API key for search engine (e.g., Serper)
             max_workers: Number of workers for ThreadPoolExecutor
+            language: Language for search queries (English, German, French)
         """
         # Load environment variables
         load_dotenv()
@@ -47,95 +49,243 @@ class WebExtractor:
         # Set max_workers
         self.max_workers = max_workers
         
+        # Set language
+        self.language = language
+        
         # Target organizations and domains to prioritize
-        self.priority_domains = [
-            "giz.de", 
-            "bmz.de", 
-            "kfw.de",
-            "cbd.int",
-            "absch.cbd.int",
-            "abs-initiative.info"
-        ]
+        self.priority_domains = []
         
         # Configure the specific initiatives to track
         self.configure_initiatives()
-    
-    def configure_initiatives(self):
-        """Configure the specific initiatives and associated keywords."""
         
-        # Define the initiatives to track
-        self.initiatives = {
-            "abs_cdi": {
-                "names": [
-                    "ABS Capacity Development Initiative",
-                    "ABS CDI",
-                    "ABS Capacity Development Initiative for Africa",
-                    "Capacity Development Initiative",
-                    "Initiative pour le renforcement des capacités en matière d'APA",
-                    "Accès et Partage des Avantages",
-                    "Initiative sur le développement des capacités pour l'APA",
-                    "Initiative de renforcement des capacités sur l'APA",
-                    "Initiative APA"
+    def configure_initiatives(self):
+        """Configure the specific initiatives and associated keywords in selected language."""
+        
+        # Define initiatives with multilingual names and keywords
+        initiatives_by_language = {
+            "English": {
+                "abs_cdi": {
+                    "names": [
+                        "ABS Capacity Development Initiative",
+                        "ABS CDI",
+                        "ABS Capacity Development Initiative for Africa",
+                        "Capacity Development Initiative"
+                    ],
+                    "keywords": [
+                        "nagoya protocol", "access and benefit sharing", "genetic resources", 
+                        "traditional knowledge", "convention on biological diversity", "cbd",
+                        "fair and equitable sharing", "bioprospecting", "ABS",
+                        "capacity development", "benefit sharing", "implementation", "compliance"
+                    ]
+                },
+                "bio_innovation_africa": {
+                    "names": [
+                        "Bio-innovation Africa",
+                        "BioInnovation Africa"
+                    ],
+                    "keywords": [
+                        "biotrade", "biodiversity", "sustainable use", "value chains",
+                        "bio-economy", "biological resources", "green business", 
+                        "natural ingredients", "africa innovation", "sustainable sourcing",
+                        "bioeconomy", "bio-innovation", "value creation"
+                    ]
+                }
+            },
+            "German": {
+                "abs_cdi": {
+                    "names": [
+                        "ABS Capacity Development Initiative",
+                        "ABS CDI",
+                        "ABS-Kapazitätsentwicklungsinitiative",
+                        "Kapazitätsentwicklungsinitiative",
+                        "Initiative zur Kapazitätsentwicklung für ABS"
+                    ],
+                    "keywords": [
+                        "Nagoya-Protokoll", "Zugang und Vorteilsausgleich", "genetische Ressourcen",
+                        "traditionelles Wissen", "Übereinkommen über die biologische Vielfalt", "CBD",
+                        "gerechter Vorteilsausgleich", "Bioprospektierung", "ABS",
+                        "Kapazitätsentwicklung", "Vorteilsausgleich", "Umsetzung", "Einhaltung",
+                        "biologische Vielfalt", "Ressourcen", "nachhaltige Entwicklung"
+                    ]
+                },
+                "bio_innovation_africa": {
+                    "names": [
+                        "Bio-innovation Africa",
+                        "BioInnovation Afrika",
+                        "Bio-Innovation Afrika"
+                    ],
+                    "keywords": [
+                        "Biohandel", "Biodiversität", "nachhaltige Nutzung", "Wertschöpfungsketten",
+                        "Bioökonomie", "biologische Ressourcen", "grünes Geschäft",
+                        "natürliche Inhaltsstoffe", "Innovation in Afrika", "nachhaltige Beschaffung",
+                        "Bioökonomie", "Bio-Innovation", "Wertschöpfung", "Naturprodukte",
+                        "afrikanische Biodiversität", "nachhaltige Entwicklung"
+                    ]
+                }
+            },
+            "French": {
+                "abs_cdi": {
+                    "names": [
+                        "Initiative pour le renforcement des capacités en matière d'APA",
+                        "Initiative APA",
+                        "Accès et Partage des Avantages",
+                        "Initiative sur le développement des capacités pour l'APA",
+                        "Initiative de renforcement des capacités sur l'APA"
+                    ],
+                    "keywords": [
+                        "protocole de Nagoya", "accès et partage des avantages", "ressources génétiques",
+                        "connaissances traditionnelles", "convention sur la diversité biologique", "CDB",
+                        "partage juste et équitable", "bioprospection", "APA",
+                        "renforcement des capacités", "partage des avantages", "mise en œuvre", "conformité",
+                        "diversité biologique", "ressources", "développement durable"
+                    ]
+                },
+                "bio_innovation_africa": {
+                    "names": [
+                        "Bio-innovation Afrique",
+                        "BioInnovation Afrique"
+                    ],
+                    "keywords": [
+                        "biocommerce", "biodiversité", "utilisation durable", "chaînes de valeur",
+                        "bioéconomie", "ressources biologiques", "commerce vert",
+                        "ingrédients naturels", "innovation en Afrique", "approvisionnement durable",
+                        "bio-économie", "bio-innovation", "création de valeur", "produits naturels",
+                        "biodiversité africaine", "développement durable"
+                    ]
+                }
+            }
+        }
+        
+        # Select initiatives based on language
+        self.initiatives = initiatives_by_language.get(self.language, initiatives_by_language["English"])
+        
+        # Define benefit categories with language-specific keywords
+        benefit_categories_by_language = {
+            "English": {
+                "environmental_benefits": [
+                    "biodiversity conservation", "ecosystem restoration", "sustainable use",
+                    "habitat protection", "ecological integrity", "conservation", "protected areas",
+                    "species protection", "environmental sustainability", "ecosystem services",
+                    "natural resources management", "climate adaptation"
                 ],
-                "keywords": [
-                    "nagoya protocol", "access and benefit sharing", "genetic resources", 
-                    "traditional knowledge", "convention on biological diversity", "cbd",
-                    "fair and equitable sharing", "bioprospecting", "ABS", "APA",
-                    "capacity development", "benefit sharing"
+                "economic_benefits": [
+                    "poverty alleviation", "private sector", "technology transfer", 
+                    "sustainable development", "job creation", "employment", "income generation",
+                    "public-private partnerships", "market access", "trade", "investment",
+                    "economic growth", "livelihoods", "business opportunities", "value chains",
+                    "rural development", "economic diversification"
+                ],
+                "social_benefits": [
+                    "indigenous peoples", "local communities", "IPLCs", "capacity building",
+                    "empowerment", "gender equality", "education", "training", "skills development",
+                    "participatory approach", "inclusion", "community development", "knowledge sharing",
+                    "social equity", "cultural preservation", "women empowerment"
+                ],
+                "strategic_benefits": [
+                    "global governance", "policy development", "legislation", "regulations",
+                    "institutional frameworks", "international cooperation", "partnerships",
+                    "stakeholder engagement", "compliance", "legal framework", "policy implementation",
+                    "regional integration", "south-south cooperation", "knowledge transfer"
+                ],
+                "success_examples": [
+                    "case study", "success story", "achievements", "impact", "outcomes",
+                    "value chains", "capacity development tools", "results", "implementation",
+                    "monitoring", "evaluation", "best practices", "lessons learned",
+                    "testimonials", "evidence-based", "demonstration", "pilot projects"
                 ]
             },
-            "bio_innovation_africa": {
-                "names": [
-                    "Bio-innovation Africa",
-                    "BioInnovation Africa"
+            "German": {
+                "environmental_benefits": [
+                    "Biodiversitätsschutz", "Ökosystemwiederherstellung", "nachhaltige Nutzung",
+                    "Habitatschutz", "ökologische Integrität", "Naturschutz", "Schutzgebiete",
+                    "Artenschutz", "Umweltverträglichkeit", "Ökosystemleistungen",
+                    "Bewirtschaftung natürlicher Ressourcen", "Klimaanpassung"
                 ],
-                "keywords": [
-                    "biotrade", "biodiversity", "sustainable use", "value chains",
-                    "bio-economy", "biological resources", "green business", 
-                    "natural ingredients", "africa innovation", "sustainable sourcing"
+                "economic_benefits": [
+                    "Armutsbekämpfung", "Privatsektor", "Technologietransfer", 
+                    "nachhaltige Entwicklung", "Arbeitsplatzschaffung", "Beschäftigung", "Einkommensgenerierung",
+                    "öffentlich-private Partnerschaften", "Marktzugang", "Handel", "Investitionen",
+                    "Wirtschaftswachstum", "Lebensunterhalt", "Geschäftsmöglichkeiten", "Wertschöpfungsketten",
+                    "ländliche Entwicklung", "wirtschaftliche Diversifizierung"
+                ],
+                "social_benefits": [
+                    "indigene Völker", "lokale Gemeinschaften", "IPLCs", "Kapazitätsaufbau",
+                    "Ermächtigung", "Geschlechtergleichstellung", "Bildung", "Ausbildung", "Kompetenzentwicklung",
+                    "partizipativer Ansatz", "Inklusion", "Gemeinschaftsentwicklung", "Wissensaustausch",
+                    "soziale Gerechtigkeit", "Kulturelle Bewahrung", "Stärkung der Frauen"
+                ],
+                "strategic_benefits": [
+                    "globale Governance", "Politikentwicklung", "Gesetzgebung", "Vorschriften",
+                    "institutionelle Rahmenbedingungen", "internationale Zusammenarbeit", "Partnerschaften",
+                    "Stakeholder-Engagement", "Compliance", "rechtlicher Rahmen", "Politikumsetzung",
+                    "regionale Integration", "Süd-Süd-Zusammenarbeit", "Wissenstransfer"
+                ],
+                "success_examples": [
+                    "Fallstudie", "Erfolgsgeschichte", "Errungenschaften", "Auswirkungen", "Ergebnisse",
+                    "Wertschöpfungsketten", "Instrumente zur Kapazitätsentwicklung", "Resultate", "Umsetzung",
+                    "Überwachung", "Evaluierung", "bewährte Praktiken", "Erkenntnisse",
+                    "Testimonials", "evidenzbasiert", "Demonstration", "Pilotprojekte"
+                ]
+            },
+            "French": {
+                "environmental_benefits": [
+                    "conservation de la biodiversité", "restauration des écosystèmes", "utilisation durable",
+                    "protection des habitats", "intégrité écologique", "conservation", "aires protégées",
+                    "protection des espèces", "durabilité environnementale", "services écosystémiques",
+                    "gestion des ressources naturelles", "adaptation au climat"
+                ],
+                "economic_benefits": [
+                    "réduction de la pauvreté", "secteur privé", "transfert de technologie", 
+                    "développement durable", "création d'emplois", "emploi", "génération de revenus",
+                    "partenariats public-privé", "accès aux marchés", "commerce", "investissement",
+                    "croissance économique", "moyens de subsistance", "opportunités commerciales", "chaînes de valeur",
+                    "développement rural", "diversification économique"
+                ],
+                "social_benefits": [
+                    "peuples autochtones", "communautés locales", "PACL", "renforcement des capacités",
+                    "autonomisation", "égalité des sexes", "éducation", "formation", "développement des compétences",
+                    "approche participative", "inclusion", "développement communautaire", "partage des connaissances",
+                    "équité sociale", "préservation culturelle", "autonomisation des femmes"
+                ],
+                "strategic_benefits": [
+                    "gouvernance mondiale", "élaboration de politiques", "législation", "réglementations",
+                    "cadres institutionnels", "coopération internationale", "partenariats",
+                    "engagement des parties prenantes", "conformité", "cadre juridique", "mise en œuvre des politiques",
+                    "intégration régionale", "coopération sud-sud", "transfert de connaissances"
+                ],
+                "success_examples": [
+                    "étude de cas", "histoire de réussite", "réalisations", "impact", "résultats",
+                    "chaînes de valeur", "outils de développement des capacités", "résultats", "mise en œuvre",
+                    "suivi", "évaluation", "meilleures pratiques", "leçons apprises",
+                    "témoignages", "fondé sur des preuves", "démonstration", "projets pilotes"
                 ]
             }
         }
         
-        # Define benefit categories to track
-        self.benefit_categories = {
-            "environmental_benefits": [
-                "biodiversity conservation", "ecosystem restoration", "sustainable use",
-                "habitat protection", "ecological integrity", "conservation", "protected areas",
-                "species protection", "environmental sustainability"
-            ],
-            "economic_benefits": [
-                "poverty alleviation", "private sector", "technology transfer", 
-                "sustainable development", "job creation", "employment", "income generation",
-                "public-private partnerships", "market access", "trade", "investment",
-                "economic growth", "livelihoods", "business opportunities", "value chains"
-            ],
-            "social_benefits": [
-                "indigenous peoples", "local communities", "IPLCs", "capacity building",
-                "empowerment", "gender equality", "education", "training", "skills development",
-                "participatory approach", "inclusion", "community development", "knowledge sharing"
-            ],
-            "strategic_benefits": [
-                "global governance", "policy development", "legislation", "regulations",
-                "institutional frameworks", "international cooperation", "partnerships",
-                "stakeholder engagement", "compliance", "legal framework", "policy implementation"
-            ],
-            "success_examples": [
-                "case study", "success story", "achievements", "impact", "outcomes",
-                "value chains", "capacity development tools", "results", "implementation",
-                "monitoring", "evaluation", "best practices", "lessons learned"
-            ]
-        }
+        # Select benefit categories based on language
+        self.benefit_categories = benefit_categories_by_language.get(
+            self.language, benefit_categories_by_language["English"]
+        )
         
-        # Generate search queries based on initiatives
+        # Generate search queries
         self.search_queries = []
         
         # Add general queries for each initiative
         for initiative_key, initiative_data in self.initiatives.items():
             for name in initiative_data["names"][:2]:  # Use first two names for each initiative
-                self.search_queries.append(f"{name} benefits")
-                self.search_queries.append(f"{name} impact")
-                self.search_queries.append(f"{name} success")
+                # Add language-specific queries
+                if self.language == "English":
+                    self.search_queries.append(f"{name} benefits")
+                    self.search_queries.append(f"{name} impact")
+                    self.search_queries.append(f"{name} success")
+                elif self.language == "German":
+                    self.search_queries.append(f"{name} Vorteile")
+                    self.search_queries.append(f"{name} Auswirkungen")
+                    self.search_queries.append(f"{name} Erfolg")
+                elif self.language == "French":
+                    self.search_queries.append(f"{name} avantages")
+                    self.search_queries.append(f"{name} impact")
+                    self.search_queries.append(f"{name} succès")
                 
                 # Add specific benefit category queries
                 for category, keywords in self.benefit_categories.items():
@@ -144,13 +294,36 @@ class WebExtractor:
                     self.search_queries.append(f"{name} {category_term}")
         
         # Add specific queries for developing countries and specific regions
-        regions = ["Africa", "developing countries", "biodiversity hotspots"]
+        regions_by_language = {
+            "English": ["Africa", "developing countries", "biodiversity hotspots"],
+            "German": ["Afrika", "Entwicklungsländer", "Biodiversitäts-Hotspots"],
+            "French": ["Afrique", "pays en développement", "points chauds de biodiversité"]
+        }
+        
+        regions = regions_by_language.get(self.language, regions_by_language["English"])
+        
         for region in regions:
             for initiative_key, initiative_data in self.initiatives.items():
                 primary_name = initiative_data["names"][0]  # Use primary name
-                self.search_queries.append(f"{primary_name} {region} benefits")
                 
-        logger.info(f"Generated {len(self.search_queries)} search queries")
+                if self.language == "English":
+                    self.search_queries.append(f"{primary_name} {region} benefits")
+                elif self.language == "German":
+                    self.search_queries.append(f"{primary_name} {region} Vorteile")
+                elif self.language == "French":
+                    self.search_queries.append(f"{primary_name} {region} avantages")
+        
+        # Add "in German" or "in French" to non-English queries to help find the right content
+        if self.language == "German":
+            temp_queries = list(self.search_queries)
+            for query in temp_queries[:5]:  # Add to first 5 queries only to avoid too many
+                self.search_queries.append(f"{query} auf Deutsch")
+        elif self.language == "French":
+            temp_queries = list(self.search_queries)
+            for query in temp_queries[:5]:  # Add to first 5 queries only to avoid too many
+                self.search_queries.append(f"{query} en français")
+                
+        logger.info(f"Generated {len(self.search_queries)} search queries in {self.language}")
     
     def generate_search_queries(self, max_queries: Optional[int] = None) -> List[str]:
         """
@@ -855,6 +1028,7 @@ class WebExtractor:
                 "themes": themes,
                 "organization": organization,
                 "sentiment": sentiment,
+                "language": self.language,  # Add language field
                 "initiative": self.initiatives[initiative_key]["names"][0] if initiative_key in self.initiatives else "Unknown Initiative",
                 "initiative_key": initiative_key,
                 "initiative_score": initiative_score,
@@ -867,7 +1041,7 @@ class WebExtractor:
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f}, initiative: {initiative_key})")
+            logger.info(f"Successfully processed {url} (relevance: {relevance_score:.2f}, initiative: {initiative_key}, language: {self.language})")
             return result_data
             
         except Exception as e:
