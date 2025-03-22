@@ -642,6 +642,7 @@ class WebExtractor:
     def identify_initiative(self, content: str) -> Tuple[str, float]:
         """
         Identify which initiative is mentioned in the content and calculate confidence.
+        Only recognizes content that explicitly mentions the initiative names.
         
         Args:
             content: Content text to analyze
@@ -651,40 +652,62 @@ class WebExtractor:
         """
         content_lower = content.lower()
         
-        # Track mentions of each initiative
-        initiative_scores = {}
+        # Define specific initiative names to look for
+        abs_cdi_names = [
+            "abs capacity development initiative",
+            "abs cdi",
+            "abs capacity development initiative for africa",
+            "abs initiative",
+            "initiative pour le renforcement des capacités en matière d'apa",
+            "initiative accès et partage des avantages",
+            "initiative sur le développement des capacités pour l'apa",
+            "initiative de renforcement des capacités sur l'apa",
+            "initiative apa",
+            "initiative de développement des capacités en matière d'accès et de partage des avantages",
+            "initiative für zugang und vorteilsausgleich",
+            "abs-kapazitätenentwicklungsinitiative für afrika",
+            "abs-initiative"
+        ]
         
-        for initiative_key, initiative_data in self.initiatives.items():
-            # Count name mentions (more important)
-            name_count = 0
-            for name in initiative_data["names"]:
-                name_count += content_lower.count(name.lower())
-            
-            # Count keyword mentions (less important)
-            keyword_count = 0
-            for keyword in initiative_data["keywords"]:
-                keyword_count += content_lower.count(keyword.lower())
-            
-            # Calculate score - names are weighted higher than keywords
-            score = (name_count * 3) + keyword_count
-            
-            # Normalize score based on content length
-            content_length = max(1, len(content_lower))
-            normalized_score = min(1.0, (score * 500) / content_length)
-            
-            initiative_scores[initiative_key] = normalized_score
+        bio_innovation_names = [
+            "bio-innovation africa",
+            "bioinnovation africa",
+            "bio-innovation afrique",
+            "bioinnovation afrique",
+            "bio-innovation afrika",
+            "bioinnovation afrika"
+        ]
+        
+        # Count exact matches of initiative names
+        abs_cdi_count = 0
+        for name in abs_cdi_names:
+            abs_cdi_count += content_lower.count(name)
+        
+        bio_innovation_count = 0
+        for name in bio_innovation_names:
+            bio_innovation_count += content_lower.count(name)
+        
+        # Create score mapping
+        initiative_scores = {
+            "abs_cdi": abs_cdi_count,
+            "bio_innovation_africa": bio_innovation_count
+        }
         
         # Find initiative with highest score
-        if not initiative_scores:
+        if not initiative_scores or (abs_cdi_count == 0 and bio_innovation_count == 0):
             return "unknown", 0.0
-            
-        best_initiative = max(initiative_scores.items(), key=lambda x: x[1])
         
-        # Only return initiative if score is above threshold
-        if best_initiative[1] >= 0.1:
-            return best_initiative
+        best_initiative = max(initiative_scores.items(), key=lambda x: x[1])
+        initiative_key, count = best_initiative
+        
+        # Only return initiative if it's explicitly mentioned
+        if count > 0:
+            # Calculate confidence score based on number of mentions
+            content_length = max(1, len(content_lower))
+            confidence_score = min(1.0, (count * 500) / content_length)
+            return initiative_key, confidence_score
         else:
-            return "unknown", best_initiative[1]
+            return "unknown", 0.0
     
     def identify_benefit_categories(self, content: str) -> Dict[str, float]:
         """
