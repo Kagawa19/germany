@@ -641,8 +641,7 @@ class WebExtractor:
     
     def identify_initiative(self, content: str) -> Tuple[str, float]:
         """
-        Identify which initiative is mentioned in the content and calculate confidence.
-        Only recognizes content that explicitly mentions the initiative names.
+        Check if any specific initiative names appear in the content.
         
         Args:
             content: Content text to analyze
@@ -652,16 +651,16 @@ class WebExtractor:
         """
         content_lower = content.lower()
         
-        # Define specific initiative names to look for
-        abs_cdi_names = [
-            "abs capacity development initiative",
-            "abs cdi",
-            "abs capacity development initiative for africa",
+        # List of exact initiative names to check for
+        initiative_names = [
+            "abs capacity development initiative", 
+            "abs cdi", 
+            "abs capacity development initiative for africa", 
             "abs initiative",
-            "initiative pour le renforcement des capacités en matière d'apa",
-            "initiative accès et partage des avantages",
-            "initiative sur le développement des capacités pour l'apa",
-            "initiative de renforcement des capacités sur l'apa",
+            "initiative pour le renforcement des capacités en matière d'apa", 
+            "initiative accès et partage des avantages", 
+            "initiative sur le développement des capacités pour l'apa", 
+            "initiative de renforcement des capacités sur l'apa", 
             "initiative apa",
             "initiative de développement des capacités en matière d'accès et de partage des avantages",
             "initiative für zugang und vorteilsausgleich",
@@ -669,45 +668,14 @@ class WebExtractor:
             "abs-initiative"
         ]
         
-        bio_innovation_names = [
-            "bio-innovation africa",
-            "bioinnovation africa",
-            "bio-innovation afrique",
-            "bioinnovation afrique",
-            "bio-innovation afrika",
-            "bioinnovation afrika"
-        ]
+        # Check if any initiative name is found in the content
+        for name in initiative_names:
+            if name in content_lower:
+                # If found, return "relevant" with a high confidence score
+                return "relevant", 1.0
         
-        # Count exact matches of initiative names
-        abs_cdi_count = 0
-        for name in abs_cdi_names:
-            abs_cdi_count += content_lower.count(name)
-        
-        bio_innovation_count = 0
-        for name in bio_innovation_names:
-            bio_innovation_count += content_lower.count(name)
-        
-        # Create score mapping
-        initiative_scores = {
-            "abs_cdi": abs_cdi_count,
-            "bio_innovation_africa": bio_innovation_count
-        }
-        
-        # Find initiative with highest score
-        if not initiative_scores or (abs_cdi_count == 0 and bio_innovation_count == 0):
-            return "unknown", 0.0
-        
-        best_initiative = max(initiative_scores.items(), key=lambda x: x[1])
-        initiative_key, count = best_initiative
-        
-        # Only return initiative if it's explicitly mentioned
-        if count > 0:
-            # Calculate confidence score based on number of mentions
-            content_length = max(1, len(content_lower))
-            confidence_score = min(1.0, (count * 500) / content_length)
-            return initiative_key, confidence_score
-        else:
-            return "unknown", 0.0
+        # If no names found, return "unknown" with zero confidence
+        return "unknown", 0.0
     
     def identify_benefit_categories(self, content: str) -> Dict[str, float]:
         """
