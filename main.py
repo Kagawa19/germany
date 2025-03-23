@@ -245,7 +245,13 @@ def export_content_by_language(language="All"):
         if language == "All":
             # Get list of available languages
             query = text("SELECT DISTINCT language FROM content_data WHERE language IS NOT NULL")
-            languages = [row[0] for row in pd.read_sql(query, engine)['language']]
+            languages_df = pd.read_sql(query, engine)
+            
+            if languages_df.empty:
+                st.warning("No language data found in the database.")
+                return
+            
+            languages = languages_df['language'].tolist()
             
             if not languages:
                 st.warning("No language data found in the database.")
@@ -267,8 +273,10 @@ def export_content_by_language(language="All"):
 def export_single_language(engine, language):
     """Helper function to export data for a single language"""
     try:
+        logger.info(f"Exporting data for language: {language}")
+        
         # Create query for the selected language
-        query = text(f"""
+        query = text("""
         SELECT 
             id, link, title, date, summary, organization, sentiment, 
             initiative, language, themes
@@ -280,20 +288,27 @@ def export_single_language(engine, language):
         # Execute query with parameter
         df = pd.read_sql(query, engine, params={"language": language})
         
+        logger.info(f"Query returned {len(df)} records for language {language}")
+        
         if df.empty:
             st.warning(f"No data found for language: {language}")
             return
             
-        # Convert themes array to string for CSV export
+        # Convert themes array to string for CSV export if it's a list
         if 'themes' in df.columns:
             df['themes'] = df['themes'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+        
+        # Clean any encoding issues in the dataframe
+        for col in df.columns:
+            if df[col].dtype == 'object':  # Only process string columns
+                df[col] = df[col].astype(str).apply(clean_text)
         
         # Create filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"content_export_{language}_{timestamp}.csv"
         
         # Convert to CSV
-        csv = df.to_csv(index=False)
+        csv = df.to_csv(index=False, encoding='utf-8')
         
         # Create download button
         st.download_button(
@@ -308,6 +323,42 @@ def export_single_language(engine, language):
     except Exception as e:
         st.error(f"Error exporting {language} data: {str(e)}")
         logger.error(f"Error in export_single_language for {language}: {str(e)}")
+
+def clean_text(text):
+    """Clean encoding issues from text"""
+    if not isinstance(text, str):
+        return text
+    
+    # Replace common UTF-8 encoding issues
+    replacements = {
+        'â€™': "'",
+        'â€œ': '"',
+        'â€': '"',
+        'Â': ' ',
+        'â€¦': '...',
+        'â€"': '—',
+        'â€"': '-',
+        'â€˜': "'",
+        'Ã©': 'é',
+        'Ã¨': 'è',
+        'Ã¢': 'â',
+        'Ã»': 'û',
+        'Ã´': 'ô',
+        'Ã®': 'î',
+        'Ã¯': 'ï',
+        'Ã': 'à',
+        'Ã§': 'ç',
+        'Ãª': 'ê',
+        'Ã¹': 'ù',
+        'Ã³': 'ó',
+        'Ã±': 'ñ',
+        'ï»¿': ''
+    }
+    
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    
+    return text
 
 def view_data_page():
     """Display the data viewing and exploration page."""
