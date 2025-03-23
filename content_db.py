@@ -433,87 +433,133 @@ def identify_initiative(content: str) -> Tuple[str, float]:
     else:
         return "unknown", best_initiative[1]
 
-def identify_themes(content: str) -> List[str]:
-    """
-    Identify themes in content using keyword matching.
-    
-    Args:
-        content: Text content to analyze
+def identify_themes(self, content: str) -> List[str]:
+        """
+        Identify diverse themes in content using OpenAI with a data-driven approach.
+        Does not include "ABS Initiative" as a default theme.
         
-    Returns:
-        List of identified themes
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of identified themes
+        """
+        # Skip if content is too short
+        if not content or len(content) < 100:
+            return ["Content Analysis", "Documentation"]
+        
+        # Try to use OpenAI for theme extraction
+        try:
+            from openai import OpenAI
+            import os
+            from dotenv import load_dotenv
+            
+            # Load environment variables and get API key
+            load_dotenv()
+            api_key = os.getenv("OPENAI_API_KEY")
+            
+            # If API key is available, use OpenAI
+            if api_key:
+                client = OpenAI(api_key=api_key)
+                
+                # Prepare content - limit to first 3000 chars to save tokens
+                excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+                
+                # Create a prompt for theme extraction without suggesting ABS Initiative
+                prompt = f"""
+    Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
+
+    Text excerpt:
+    {excerpt}
+
+    Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects being discussed such as "Biodiversity Conservation", "Traditional Knowledge", "Genetic Resources", etc.
+
+    Return ONLY a comma-separated list of identified themes without explanations or additional text.
     """
-    content_lower = content.lower()
-    themes = []
-    
-    # Define theme keywords dictionary
-    theme_keywords = {
-        "Indigenous Peoples": [
-            "indigenous", "native communities", "indigenous rights", 
-            "traditional knowledge", "aboriginal", "local communities"
-        ],
-        "Protected Areas": [
-            "national park", "conservation area", "marine reserve", "protected area",
-            "wildlife refuge", "conservation", "nature reserve"
-        ],
-        "Forest Restoration": [
-            "forest restoration", "land restoration", "reforestation", "afforestation",
-            "rewilding", "forest rehabilitation", "ecological restoration"
-        ],
-        "Marine Conservation": [
-            "marine conservation", "marine protection", "ocean conservation", 
-            "coral reef", "coastal protection", "blue economy"
-        ],
-        "Ecosystem Services": [
-            "ecosystem services", "carbon sequestration", "Amazon basin", 
-            "Congo basin", "rainforest", "biodiversity", "watershed services"
-        ],
-        "Sustainable Agriculture": [
-            "sustainable agriculture", "agroforestry", "organic farming",
-            "permaculture", "sustainable farming", "crop rotation"
-        ],
-        "Sustainable Forestry": [
-            "sustainable forestry", "sustainable timber", "forest management",
-            "reduced impact logging", "FSC certification", "sustainable logging"
-        ],
-        "Aquaculture": [
-            "aquaculture", "fish farming", "sustainable aquaculture",
-            "biodiversity in aquaculture", "responsible aquaculture"
-        ],
-        "Access and Benefit Sharing": [
-            "abs", "access and benefit sharing", "nagoya protocol", 
-            "genetic resources", "bioprospecting", "benefit sharing"
-        ],
-        "Capacity Development": [
-            "capacity development", "capacity building", "training", 
-            "skills development", "knowledge transfer", "institutional strengthening"
-        ],
-        "Bio-innovation": [
-            "bio-innovation", "biotrade", "bio-economy", "biotechnology",
-            "bio-based", "biological resources", "biotrade"
+
+                # Make API call
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,  # Slightly higher temperature for more diversity
+                    max_tokens=100
+                )
+                
+                # Extract themes from response
+                ai_themes_text = response.choices[0].message.content.strip()
+                
+                # Convert to list and clean up each theme
+                ai_themes = [theme.strip() for theme in ai_themes_text.split(',')]
+                
+                # Remove any empty themes
+                ai_themes = [theme for theme in ai_themes if theme]
+                
+                # Ensure we have at least some themes
+                if ai_themes and len(ai_themes) >= 2:
+                    return ai_themes
+        
+        except Exception as e:
+            # Log the error but continue to fallback method
+            logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
+        
+        # Fallback approach without using "ABS Initiative" as default
+        import re
+        from collections import Counter
+        
+        # Define some substantive topics related to biodiversity and conservation
+        potential_topics = [
+            "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
+            "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
+            "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
+            "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
+            "Technology Transfer", "Capacity Building", "International Cooperation",
+            "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
         ]
-    }
-    
-    # Check for each theme's keywords in the content
-    for theme, keywords in theme_keywords.items():
-        for keyword in keywords:
-            if keyword in content_lower:
-                if theme not in themes:
-                    themes.append(theme)
-                break  # Found one keyword for this theme, move to next theme
-    
-    # Check which initiatives are mentioned and add as themes
-    if "abs capacity development initiative" in content_lower or "abs cdi" in content_lower:
-        themes.append("ABS Capacity Development Initiative")
-    
-    if "bio-innovation africa" in content_lower or "bioinnovation africa" in content_lower:
-        themes.append("Bio-innovation Africa")
-    
-    # Add Environmental Sustainability as default theme if nothing else matched
-    if not themes:
-        themes.append("Environmental Sustainability")
-    
-    return themes
+        
+        # Check which topics are present in the content
+        found_topics = []
+        content_lower = content.lower()
+        
+        for topic in potential_topics:
+            if topic.lower() in content_lower:
+                found_topics.append(topic)
+                # Stop once we have 5 topics
+                if len(found_topics) >= 5:
+                    break
+        
+        # If we found specific topics, return them
+        if found_topics:
+            return found_topics
+        
+        # Otherwise use a more general approach - extract key terms
+        # Extract all words and simple phrases
+        text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
+        
+        # Count word frequencies
+        word_counts = Counter(words)
+        
+        # Remove common stopwords
+        stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
+                    "about", "which", "there", "where", "when", "what", "have", "will", "they", 
+                    "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
+                    "capacity", "through", "between", "information", "because", "system", "process"}
+        
+        # Filter out stop words
+        potential_themes = {word: count for word, count in word_counts.items() 
+                        if word not in stopwords and count > 1}
+        
+        # Extract 5 most common potential theme words
+        top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
+        
+        # If we couldn't find good topic words, return generic research categories
+        if not top_words:
+            return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
+        
+        return top_words
+        
 
 def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, Any]]:
     """
