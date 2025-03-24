@@ -185,10 +185,10 @@ def generate_summary(content, max_sentences=5):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": f"Create a concise, informative summary of this text, focusing on key points and main ideas: {content_to_summarize}"}
+                    {"role": "user", "content": f"Please provide a concise summary of the given content, focusing on the following aspects: 1) References to the ABS Capacity Development Initiative (ABS CDI) and related initiatives; 2) Specific projects, events, or activities mentioned, along with their focus areas (e.g., sustainable development, conservation); 3) Countries or regions specified; and 4) Any positive messages or implications about the ABS initiative or its goals. The summary should be written in a flowing, organic manner without explicitly numbering the points.\n\nContent: {content_to_summarize}"}
                 ],
-                temperature=0.3,
-                max_tokens=150
+                temperature=0.5,
+                max_tokens=200
             )
             
             summary = response.choices[0].message.content.strip()

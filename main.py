@@ -1233,8 +1233,8 @@ elif app_mode == "Web Extraction":
     # Extraction options
     col1, col2 = st.columns(2)
     with col1:
-        max_queries = st.slider("Number of search queries to process", 3, 20, 10)
-        max_results_per_query = st.slider("Results per query", 5, 20, 10)
+        max_queries = st.slider("Number of search queries to process", 15, 100, 50)
+        max_results_per_query = st.slider("Results per query", 25, 100, 50)
         logger.debug(f"User set max_queries to: {max_queries}, max_results_per_query to: {max_results_per_query}")
         print(f"User set extraction parameters: {max_queries} queries with {max_results_per_query} results per query")
     
