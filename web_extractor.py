@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
-from content_db import get_db_connection
+from content_db import get_db_connection, store_extract_data
 
 # Configure logging
 logging.basicConfig(
@@ -31,15 +31,8 @@ class WebExtractor:
     def __init__(self, 
                 search_api_key=None,
                 max_workers=5,
-                language="English"):
-        """
-        Initialize WebExtractor with configuration options.
-        
-        Args:
-            search_api_key: API key for search engine (e.g., Serper)
-            max_workers: Number of workers for ThreadPoolExecutor
-            language: Language for search queries (English, German, French)
-        """
+                language="English",
+                generate_summary=None):
         # Load environment variables
         load_dotenv()
         
@@ -52,27 +45,188 @@ class WebExtractor:
         # Set language
         self.language = language
         
+        # Set generate_summary function
+        self.generate_summary = generate_summary
+        
         # Target organizations and domains to prioritize
         self.priority_domains = []
         
         # Configure the specific initiatives to track
         self.configure_initiatives()
+
+    def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
+        """
+        Scrape content, title, date, and clean summary from a webpage.
+        
+        Args:
+            url: URL to scrape
+            search_result_title: Title from search results
+            
+        Returns:
+            Tuple of (content, title, date, clean_summary)
+        """
+        logger.info(f"Scraping webpage: {url}")
+        
+        try:
+            # Check if this is a PDF document
+            if url.lower().endswith('.pdf'):
+                logger.info("PDF document detected, using specialized handling")
+                return self.handle_pdf_document(url, search_result_title)
+            
+            scrape_start_time = time.time()
+            logger.info(f"Sending HTTP request to {url}")
+            
+            # Use our enhanced method to get the page content
+            html_content, success = self.get_page_content(url, timeout=15)
+            
+            if not success:
+                logger.error(f"Failed to retrieve content from {url}")
+                return "", "", None, ""
+            
+            request_time = time.time() - scrape_start_time
+            logger.info(f"Received response in {request_time:.2f} seconds.")
+            
+            # Parse HTML
+            logger.info("Parsing HTML content")
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Extract title first before removing elements
+            title = self.extract_title_from_content(soup, url, search_result_title)
+            
+            # Extract date before removing elements - pass the full HTML text for comprehensive search
+            date = self.extract_date_from_content(html_content, url, soup)
+            
+            # Remove script and style elements
+            logger.info("Removing script, style, and navigation elements")
+            removed_elements = 0
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.extract()
+                removed_elements += 1
+            logger.info(f"Removed {removed_elements} elements from DOM")
+            
+            # Get text content
+            content = soup.get_text(separator="\n")
+            
+            # Clean up the content (remove excessive whitespace)
+            original_length = len(content)
+            content = "\n".join(line.strip() for line in content.split("\n") if line.strip())
+            cleaned_length = len(content)
+            
+            # Generate summary using the provided function
+            if self.generate_summary:
+                logger.info("Generating summary using the provided function")
+                clean_summary = self.generate_summary(content)
+            else:
+                logger.info("No summary generation function provided, using default")
+                clean_summary = content[:500] + "..." if len(content) > 500 else content
+            
+            scrape_time = time.time() - scrape_start_time
+            logger.info(f"Successfully scraped {len(content)} chars from {url} in {scrape_time:.2f} seconds (cleaned from {original_length} to {cleaned_length} chars)")
+            logger.info(f"Extracted title: {title}")
+            logger.info(f"Extracted date: {date}")
+            logger.info(f"Generated clean summary: {len(clean_summary)} chars")
+            
+            return content, title, date, clean_summary
+        except Exception as e:
+            logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
+            return "", "", None, ""
+
+    def clean_and_enhance_summary(content: str, title: str = "", url: str = "") -> str:
+        """
+        Clean and enhance the summary text using OpenAI.
+        This can be integrated into the scrape_webpage method to clean summaries from the start.
+        
+        Args:
+            content: The original content text
+            title: The page title for context
+            url: The URL for context
+            
+        Returns:
+            Cleaned and enhanced summary
+        """
+        # Skip if no content or very short content
+        if not content or len(content) < 100:
+            return content
+            
+        # Clean HTML entities and encoding issues first
+        content = clean_html_entities(content)
+        
+        # Get OpenAI client
+        client = get_openai_client()
+        if not client:
+            logger.warning("OpenAI client not available. Using basic summary extraction.")
+            # Fall back to basic summary extraction - first 500 chars
+            return content[:500] + "..." if len(content) > 500 else content
+        
+        try:
+            # Create a simplified prompt
+            prompt = f"""
+    Create a clear, concise summary of this content about the ABS Initiative. Fix any encoding issues.
+    Only include factual information that is explicitly mentioned in the content.
+
+    Title: {title}
+    URL: {url}
+
+    Content: {content[:3000]}  # Limit content to first 3000 chars to save tokens
+
+    IMPORTANT: Create a coherent, well-formatted summary. Don't mention encoding issues.
+    """
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=300
+            )
+            
+            enhanced_summary = response.choices[0].message.content.strip()
+            logger.info(f"Successfully generated enhanced summary with OpenAI ({len(enhanced_summary)} chars)")
+            return enhanced_summary
+            
+        except Exception as e:
+            logger.error(f"Error using OpenAI for summary enhancement: {str(e)}")
+            # Fall back to basic summary extraction
+            return content[:500] + "..." if len(content) > 500 else content
         
     def configure_initiatives(self):
         """Configure the specific ABS initiative names to search for in different languages."""
         
-        # Define all ABS initiative names in different languages
+        # Define all ABS initiative names in different languages with expanded lists
         self.abs_names = {
             "English": [
                 "ABS Capacity Development Initiative",
                 "ABS CDI",
                 "ABS Capacity Development Initiative for Africa",
-                "ABS Initiative"
+                "ABS Initiative",
+                "Access and Benefit Sharing Initiative",
+                "Access and Benefit Sharing Capacity Development Initiative",
+                "ABS Knowledge Hub",
+                "African ABS Initiative",
+                "International ABS Initiative",
+                "ABS Implementation",
+                "ABS for Development",
+                "ABS Support",
+                "ABS Resources",
+                "Capacity Building in Access and Benefit Sharing",
+                "Biodiversity Access and Benefit Sharing Program"
             ],
             "German": [
                 "Initiative für Zugang und Vorteilsausgleich",
                 "ABS-Kapazitätenentwicklungsinitiative für Afrika",
-                "ABS-Initiative"
+                "ABS-Initiative",
+                "Initiative für biologische Vielfalt",
+                "Zugangs- und Vorteilsausgleichsinitiative",
+                "Kapazitätsentwicklung für ABS",
+                "Afrikanische ABS-Initiative",
+                "Internationale ABS-Initiative",
+                "ABS-Implementierung",
+                "Vorteilsausgleich Initiative",
+                "ABS-Ressourcen",
+                "ABS-Unterstützung",
+                "Kapazitätsaufbau in Zugang und Vorteilsausgleich",
+                "Biologische Vielfalt Zugang und Vorteilsausgleich Programm"
             ],
             "French": [
                 "Initiative pour le renforcement des capacités en matière d'APA",
@@ -80,9 +234,81 @@ class WebExtractor:
                 "Initiative sur le développement des capacités pour l'APA",
                 "Initiative de renforcement des capacités sur l'APA",
                 "Initiative APA",
-                "Initiative de développement des capacités en matière d'accès et de partage des avantages"
+                "Initiative de développement des capacités en matière d'accès et de partage des avantages",
+                "Pôle de connaissances APA",
+                "Centre de renforcement des capacités sur l'APA",
+                "Initiative APA Afrique",
+                "Initiative Africaine APA",
+                "APA pour le développement",
+                "Mise en œuvre de l'APA",
+                "Ressources APA",
+                "Soutien APA",
+                "Renforcement des capacités en accès et partage des avantages",
+                "Programme de diversité biologique Accès et Partage des Avantages"
             ]
         }
+        
+        # Define common words to use for partial matching
+        self.common_terms = {
+            "English": [
+                "ABS", "Initiative", "capacity", "development", "benefit", 
+                "sharing", "access", "support", "resources", "implementation", 
+                "genetic", "CBD", "GIZ", "knowledge", "program", "biodiversity"
+            ],
+            "German": [
+                "ABS", "Initiative", "Kapazität", "Entwicklung", "Vorteil", 
+                "Ausgleich", "Zugang", "Unterstützung", "Ressourcen", 
+                "Implementierung", "genetisch", "CBD", "GIZ", "Wissen", 
+                "Programm", "Biodiversität"
+            ],
+            "French": [
+                "APA", "Initiative", "capacité", "développement", "avantage", 
+                "partage", "accès", "soutien", "ressources", "mise en œuvre", 
+                "génétique", "CBD", "GIZ", "connaissance", "programme", "biodiversité"
+            ]
+        }
+        
+        # Update related organizations
+        self.related_orgs = [
+            "GIZ", "BMZ", "SCBD", "CBD", "UNDP", "UNEP", 
+            "African Union", "EU", "European Union", 
+            "Swiss SECO", "Norwegian NORAD", 
+            "COMIFAC", "SADC", "ECOWAS", "SIDA"
+        ]
+        
+        # Expand context terms with more specific ABS-related terminology
+        self.context_terms = {
+            "English": [
+                "biodiversity", "genetic resources", "traditional knowledge", 
+                "Nagoya Protocol", "indigenous communities", "conservation", 
+                "sustainable development", "bioprospecting", 
+                "benefit-sharing mechanism", "biotrade", 
+                "natural resources management", "capacity building", 
+                "stakeholder engagement", "legal framework", 
+                "access and benefit sharing", "biological diversity"
+            ],
+            "German": [
+                "Biodiversität", "genetische Ressourcen", "traditionelles Wissen", 
+                "Nagoya-Protokoll", "indigene Gemeinschaften", "Konservierung", 
+                "nachhaltige Entwicklung", "Bioprospektierung", 
+                "Vorteilsausgleichsmechanismus", "Biohandel", 
+                "Naturressourcenmanagement", "Kapazitätsaufbau", 
+                "Stakeholder-Engagement", "rechtlicher Rahmen", 
+                "Zugang und Vorteilsausgleich", "biologische Vielfalt"
+            ],
+            "French": [
+                "biodiversité", "ressources génétiques", "connaissances traditionnelles", 
+                "Protocole de Nagoya", "communautés autochtones", "conservation", 
+                "développement durable", "bioprospection", 
+                "mécanisme de partage des avantages", "biocommerce", 
+                "gestion des ressources naturelles", "renforcement des capacités", 
+                "engagement des parties prenantes", "cadre juridique", 
+                "accès et partage des avantages", "diversité biologique"
+            ]
+        }
+        
+        # Generate search queries
+        self.search_queries = []
         
         # Get the names for the selected language
         language_names = self.abs_names.get(self.language, self.abs_names["English"])
@@ -93,18 +319,15 @@ class WebExtractor:
         else:
             all_names = language_names
         
-        # Generate search queries
-        self.search_queries = []
-        
         # Create simple search queries for each initiative name
         for name in all_names:
             self.search_queries.append(name)
         
         logger.info(f"Generated {len(self.search_queries)} search queries for ABS initiatives in {self.language}")
-    
+
     def generate_search_queries(self, max_queries: Optional[int] = None) -> List[str]:
         """
-        Generate a list of search queries based on configured initiatives.
+        Generate a comprehensive list of search queries based on configured initiatives.
         
         Args:
             max_queries: Maximum number of queries to generate (None for all)
@@ -112,33 +335,80 @@ class WebExtractor:
         Returns:
             List of search query strings
         """
-        # Start with basic queries - exact initiative names
+        # Start with full initiative names
         queries = list(self.search_queries)
         
-        # Add exact match queries with quotes for more precise results
-        for name in self.abs_names.get(self.language, self.abs_names["English"]):
-            # Add quoted version for exact match
-            queries.append(f'"{name}"')
+        # Get language-specific terms
+        current_lang_terms = self.common_terms.get(self.language, self.common_terms["English"])
+        context_terms = self.context_terms.get(self.language, self.context_terms["English"])
         
-        # Add filetype searches to find documents about the ABS Initiative
-        main_names = ["ABS Initiative", "ABS Capacity Development Initiative"]
-        if self.language == "German":
-            main_names.append("ABS-Initiative")
-        elif self.language == "French":
-            main_names.append("Initiative APA")
-            
-        for name in main_names:
-            queries.append(f'filetype:pdf "{name}"')
-            queries.append(f'filetype:doc "{name}"')
+        # Define core initiative-specific terms to add more context
+        initiative_context_terms = {
+            "English": [
+                "biodiversity", "genetic resources", "benefit sharing", 
+                "capacity development", "access and benefit", 
+                "sustainable development", "conservation"
+            ],
+            "German": [
+                "Biodiversität", "genetische Ressourcen", "Vorteilsausgleich", 
+                "Kapazitätsentwicklung", "Zugang und Vorteil", 
+                "nachhaltige Entwicklung", "Naturschutz"
+            ],
+            "French": [
+                "biodiversité", "ressources génétiques", "partage des avantages", 
+                "développement des capacités", "accès et partage", 
+                "développement durable", "conservation"
+            ]
+        }
+        
+        # Add more specific queries with context
+        additional_queries = []
+        for base_name in self.search_queries:
+            for context in initiative_context_terms.get(self.language, initiative_context_terms["English"]):
+                additional_queries.append(f'"{base_name}" {context}')
+                additional_queries.append(f"{context} {base_name}")
+        
+        # Add organization-related searches
+        for org in self.related_orgs[:5]:
+            for base_name in self.search_queries[:3]:
+                additional_queries.append(f"{org} {base_name}")
+        
+        # Add quotes around full initiative names for exact matching
+        quoted_names = [f'"{name}"' for name in self.search_queries]
+        
+        # Combine all queries
+        queries.extend(additional_queries)
+        queries.extend(quoted_names)
+        
+        # Remove any duplicates that might have been created
+        queries = list(dict.fromkeys(queries))
+        
+        # Add more precise filtering to avoid programming-related results
+        precise_queries = []
+        for query in queries:
+            # Add additional context to differentiate from programming terms
+            precise_queries.append(f"{query} initiative")
+            precise_queries.append(f"{query} biodiversity")
+            precise_queries.append(f"{query} genetic resources")
+        
+        # Combine and remove duplicates
+        queries.extend(precise_queries)
+        queries = list(dict.fromkeys(queries))
         
         # Limit the number of queries if specified
         if max_queries:
             queries = queries[:max_queries]
-                
-        logger.info(f"Generated {len(queries)} search queries for {self.language}")
+        
+        logger.info(f"Generated {len(queries)} expanded search queries for {self.language}")
+        
+        # Log a sample of queries for verification
+        sample_size = min(5, len(queries))
+        logger.debug(f"Sample queries: {', '.join(queries[:sample_size])}")
+        
         return queries
+            
     
-    def search_web(self, query: str, num_results: int = 5) -> List[Dict]:
+    def search_web(self, query: str, num_results: int = 20) -> List[Dict]:
         """
         Search the web using the given query via Serper API.
         
@@ -202,7 +472,7 @@ class WebExtractor:
     def extract_date_from_content(self, html_content: str, url: str, soup: BeautifulSoup) -> Optional[str]:
         """
         Extract publication date from content using multiple strategies.
-        Uses regex patterns instead of AI to save costs.
+        Uses regex patterns and fallback options to maximize date extraction.
         
         Args:
             html_content: Raw HTML content
@@ -214,7 +484,7 @@ class WebExtractor:
         """
         logger.info(f"Extracting date from webpage: {url}")
         
-        # Strategy 1: Look for meta tags with date information
+        # Strategy 1: Check for common meta tags with date information
         date_meta_tags = [
             "article:published_time", "og:published_time", "publication_date", 
             "date", "pubdate", "publishdate", "datePublished", "DC.date.issued",
@@ -229,20 +499,20 @@ class WebExtractor:
                 logger.info(f"Found date in meta tag {tag_name}: {date_str}")
                 return date_str
         
-        # Strategy 2: Look for time elements
+        # Strategy 2: Look for time elements with datetime attribute or text content
         time_elements = soup.find_all("time")
         for time_element in time_elements:
             if time_element.get("datetime"):
                 date_str = time_element.get("datetime")
-                logger.info(f"Found date in time element: {date_str}")
+                logger.info(f"Found date in time element datetime attribute: {date_str}")
                 return date_str
             elif time_element.text.strip():
                 date_str = time_element.text.strip()
-                logger.info(f"Found date in time element text: {date_str}")
+                logger.info(f"Found date in time element text content: {date_str}")
                 return date_str
         
-        # Strategy 3: Check for data attributes
-        date_attrs = ["data-date", "data-published", "data-timestamp"]
+        # Strategy 3: Check for common data attributes that may contain date
+        date_attrs = ["data-date", "data-published", "data-timestamp", "data-publishdate", "data-pubdate"]
         for attr in date_attrs:
             elements = soup.find_all(attrs={attr: True})
             if elements:
@@ -274,7 +544,7 @@ class WebExtractor:
             except Exception as e:
                 logger.debug(f"Error parsing JSON-LD: {str(e)}")
                 
-        # Strategy 5: Look for common date patterns in the HTML
+        # Strategy 5: Look for common date patterns in the HTML using regex
         date_patterns = [
             r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})',
             r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})',
@@ -289,7 +559,6 @@ class WebExtractor:
             r'(\d{2}-\d{2}-\d{4})'
         ]
         
-        # Check in the raw HTML
         for pattern in date_patterns:
             matches = re.search(pattern, html_content, re.IGNORECASE)
             if matches:
@@ -297,16 +566,33 @@ class WebExtractor:
                 logger.info(f"Found date using regex pattern in HTML: {date_str}")
                 return date_str
         
-        # Strategy 6: Look for date classes
-        date_classes = ["date", "published", "timestamp", "post-date", "article-date"]
+        # Strategy 6: Look for common date-related class names
+        date_classes = ["date", "published", "timestamp", "post-date", "article-date", "pubdate", "publishdate"]
         for cls in date_classes:
             elements = soup.find_all(class_=lambda c: c and cls in c.lower())
             if elements:
                 for element in elements:
                     text = element.text.strip()
-                    if text and re.search(r'\d{4}', text):  # Has a year
+                    if text and re.search(r'\d{4}', text):  # Ensure it has a year
                         logger.info(f"Found date in element with class '{cls}': {text}")
                         return text
+        
+        # Fallback 1: Extract year from URL if available
+        url_year_match = re.search(r'/(\d{4})/', url)
+        if url_year_match:
+            year = url_year_match.group(1)
+            logger.info(f"Extracted year from URL: {year}")
+            return f"{year}-01-01"  # Assume January 1st if only year is available
+        
+        # Fallback 2: Check for copyright year in the footer
+        footer_elements = soup.select("footer, div.footer, span.copyright")
+        for footer in footer_elements:
+            text = footer.text.strip()
+            year_match = re.search(r'(?:©|Copyright)\s*(\d{4})', text)
+            if year_match:
+                year = year_match.group(1)
+                logger.info(f"Found copyright year in footer: {year}")
+                return f"{year}-01-01"  # Assume January 1st if only year is available
         
         logger.info("No date information found")
         return None
@@ -358,78 +644,7 @@ class WebExtractor:
         logger.info(f"Using domain as fallback title: {domain}")
         return domain
     
-    def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
-        """
-        Scrape content, title, date, and clean summary from a webpage.
-        
-        Args:
-            url: URL to scrape
-            search_result_title: Title from search results
-            
-        Returns:
-            Tuple of (content, title, date, clean_summary)
-        """
-        logger.info(f"Scraping webpage: {url}")
-        
-        try:
-            # Check if this is a PDF document
-            if url.lower().endswith('.pdf'):
-                logger.info("PDF document detected, using specialized handling")
-                return self.handle_pdf_document(url, search_result_title)
-            
-            scrape_start_time = time.time()
-            logger.info(f"Sending HTTP request to {url}")
-            
-            # Use our enhanced method to get the page content
-            html_content, success = self.get_page_content(url, timeout=15)
-            
-            if not success:
-                logger.error(f"Failed to retrieve content from {url}")
-                return "", "", None, ""
-            
-            request_time = time.time() - scrape_start_time
-            logger.info(f"Received response in {request_time:.2f} seconds.")
-            
-            # Parse HTML
-            logger.info("Parsing HTML content")
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Extract title first before removing elements
-            title = self.extract_title_from_content(soup, url, search_result_title)
-            
-            # Extract date before removing elements - pass the full HTML text for comprehensive search
-            date = self.extract_date_from_content(html_content, url, soup)
-            
-            # Remove script and style elements
-            logger.info("Removing script, style, and navigation elements")
-            removed_elements = 0
-            for script in soup(["script", "style", "nav", "footer", "header"]):
-                script.extract()
-                removed_elements += 1
-            logger.info(f"Removed {removed_elements} elements from DOM")
-            
-            # Get text content
-            content = soup.get_text(separator="\n")
-            
-            # Clean up the content (remove excessive whitespace)
-            original_length = len(content)
-            content = "\n".join(line.strip() for line in content.split("\n") if line.strip())
-            cleaned_length = len(content)
-            
-            # Create clean summary using OpenAI
-            logger.info("Generating clean summary from content")
-            clean_summary = clean_and_enhance_summary(content, title, url)
-            
-            scrape_time = time.time() - scrape_start_time
-            logger.info(f"Successfully scraped {len(content)} chars from {url} in {scrape_time:.2f} seconds (cleaned from {original_length} to {cleaned_length} chars)")
-            logger.info(f"Extracted title: {title}")
-            logger.info(f"Extracted date: {date}")
-            logger.info(f"Generated clean summary: {len(clean_summary)} chars")
-            
-            return content, title, date, clean_summary
-        except Exception as e:
-            logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
-            return "", "", None, ""
+    
         
     def get_page_content(self, url, timeout=15, max_retries=2):
         """
@@ -500,64 +715,7 @@ class WebExtractor:
 
 
     # Helper function for clean_and_enhance_summary that should be added to the WebExtractor class
-    def clean_and_enhance_summary(content: str, title: str = "", url: str = "") -> str:
-        """
-        Clean and enhance the summary text using OpenAI.
-        This can be integrated into the scrape_webpage method to clean summaries from the start.
-        
-        Args:
-            content: The original content text
-            title: The page title for context
-            url: The URL for context
-            
-        Returns:
-            Cleaned and enhanced summary
-        """
-        # Skip if no content or very short content
-        if not content or len(content) < 100:
-            return content
-            
-        # Clean HTML entities and encoding issues first
-        content = clean_html_entities(content)
-        
-        # Get OpenAI client
-        client = get_openai_client()
-        if not client:
-            logger.warning("OpenAI client not available. Using basic summary extraction.")
-            # Fall back to basic summary extraction - first 500 chars
-            return content[:500] + "..." if len(content) > 500 else content
-        
-        try:
-            # Create a simplified prompt
-            prompt = f"""
-    Create a clear, concise summary of this content about the ABS Initiative. Fix any encoding issues.
-    Only include factual information that is explicitly mentioned in the content.
-
-    Title: {title}
-    URL: {url}
-
-    Content: {content[:3000]}  # Limit content to first 3000 chars to save tokens
-
-    IMPORTANT: Create a coherent, well-formatted summary. Don't mention encoding issues.
-    """
-
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_tokens=300
-            )
-            
-            enhanced_summary = response.choices[0].message.content.strip()
-            logger.info(f"Successfully generated enhanced summary with OpenAI ({len(enhanced_summary)} chars)")
-            return enhanced_summary
-            
-        except Exception as e:
-            logger.error(f"Error using OpenAI for summary enhancement: {str(e)}")
-            # Fall back to basic summary extraction
-            return content[:500] + "..." if len(content) > 500 else content
+    
     
     def identify_initiative(self, content: str) -> Tuple[str, float]:
         """
@@ -1113,7 +1271,8 @@ class WebExtractor:
             
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
-        Process a single search result to extract and analyze content.
+        Process a single search result to extract and analyze content,
+        without filtering based on content length or initiative mentions.
         
         Args:
             result: The search result dict with link, title, etc.
@@ -1135,20 +1294,29 @@ class WebExtractor:
             # Extract content from URL using scrape_webpage method - now returns clean summary
             content, extracted_title, date, clean_summary = self.scrape_webpage(url, title)
             
-            if not content or len(content) < 100:
-                logger.warning(f"Insufficient content from {url} (length: {len(content) if content else 0})")
-                return None
+            # Even if content is minimal, continue processing (no filtering by content length)
+            if not content:
+                content = ""  # Ensure content is at least an empty string, not None
+                logger.info(f"Minimal or no content from {url}, but continuing processing")
             
-            # Identify which initiative is mentioned
+            # Get initiative info but don't filter on it
             initiative_key, initiative_score = self.identify_initiative(content)
             
-            # Skip if no ABS initiative is mentioned
-            if initiative_key == "unknown" or initiative_score < 0.1:
-                logger.info(f"No ABS initiative mentioned in content from {url}")
-                return None
+            # Always default to 'abs_initiative' if none found to avoid filtering out content
+            if initiative_key == "unknown":
+                initiative_key = "abs_initiative"
+                initiative_score = 0.1  # Minimum score to ensure inclusion
+                logger.info(f"No specific initiative detected in {url}, defaulting to generic ABS Initiative")
             
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
+            
+            # Identify multiple themes from the content instead of using a static theme
+            themes = self.identify_themes(content)
+            
+            # Ensure we have at least one theme if identify_themes returned empty
+            if not themes:
+                themes = ["ABS Initiative"]
             
             # Format the result
             result_data = {
@@ -1156,17 +1324,18 @@ class WebExtractor:
                 "link": url,
                 "date": date,
                 "content": content,
-                "summary": clean_summary,  # Use our enhanced clean summary
-                "themes": ["ABS Initiative"],  # Simplified theme
+                "summary": clean_summary or content[:200],  # Use first 200 chars if no summary
+                "themes": themes,
                 "organization": organization,
                 "sentiment": "Neutral",  # Default sentiment
-                "language": self.language,  # Add language field
-                "initiative": "ABS Initiative",  # Simplified initiative name
+                "language": self.language,
+                "initiative": "ABS Initiative",
                 "initiative_key": initiative_key,
+                "initiative_score": initiative_score,  # Include score for reference
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, language: {self.language})")
+            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f}, language: {self.language})")
             return result_data
                 
         except Exception as e:
@@ -1228,7 +1397,6 @@ class WebExtractor:
                 logger.error(f"Database error: Failed to fetch existing URLs - {str(e)}")
                 print(f"\n⚠️ Warning: Could not fetch existing URLs from database")
                 print(f"   Error details: {str(e)}")
-                # Continue with empty set if database query fails
             
             # Generate search queries
             queries = self.generate_search_queries(max_queries)
@@ -1242,13 +1410,6 @@ class WebExtractor:
             logger.info("Starting with empty processed_urls set - no in-memory URL history")
             print("🔄 Starting with fresh URL tracking - no previous history carried over")
             
-            logger.info(f"Search plan: Processing {len(queries)} queries with {self.max_workers} workers")
-            
-            query_header = f"\n{'-'*60}\n🔍 SEARCH QUERIES: Processing {len(queries)} queries\n{'-'*60}"
-            print(query_header)
-            
-            results_per_query = 5 if max_results_per_query is None else max_results_per_query
-            
             # Use ThreadPoolExecutor for parallel processing of search results
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 for i, query in enumerate(queries):
@@ -1259,7 +1420,7 @@ class WebExtractor:
                     print(f"   '{query_preview}'")
                     
                     # Search the web
-                    results = self.search_web(query, num_results=results_per_query)
+                    results = self.search_web(query, num_results=max_results_per_query or 100)
                     logger.info(f"Query {i+1} returned {len(results)} results")
                     print(f"   Found {len(results)} search results")
                     
@@ -1277,20 +1438,13 @@ class WebExtractor:
                             continue
                             
                         # Note: We check if URL is in processed_urls BEFORE we add it to the set
-                        if url in processed_urls:
-                            logger.info(f"Skipping URL already processed in this run: {url}")
-                            skipped_urls += 1
-                            skipped_total += 1
-                            continue
-                            
-                        if url in existing_urls:
-                            logger.info(f"Skipping URL already in database: {url}")
+                        if url in processed_urls or url in existing_urls:
+                            logger.info(f"Skipping URL already processed: {url}")
                             skipped_urls += 1
                             skipped_total += 1
                             continue
                         
                         # Important: Only mark URL as processed AFTER we've decided to process it
-                        # This prevents the bug where URLs are logged as "already processed" but were never processed
                         logger.info(f"Processing new URL: {url}")
                         processed_urls.add(url)
                         new_urls += 1
@@ -1307,30 +1461,19 @@ class WebExtractor:
                     if skipped_urls > 0:
                         print(f"   Skipped {skipped_urls} already processed URLs")
                     
-                    # Collect results as they complete
-                    completed = 0
+                    # Immediately store results as they are processed
                     for future in as_completed(future_to_result):
                         result_data = future.result()
-                        completed += 1
                         
                         if result_data:
+                            # Store results immediately after processing
+                            store_extract_data([result_data])
                             all_results.append(result_data)
-                            logger.info(f"Processed result: '{result_data.get('title', 'Untitled')}' with relevance {result_data.get('relevance_score', 0):.2f}")
-                        else:
-                            logger.warning("Received empty result from processing")
-                        
-                        # Show progress
-                        if completed % 5 == 0 or completed == len(future_to_result):
-                            print(f"   Progress: {completed}/{len(future_to_result)} URLs processed")
                     
                     # Add small delay between queries to be respectful
-                    if i < len(queries) - 1:  # Don't delay after the last query
-                        logger.info("Adding delay between queries (1 second)")
-                        print("\n   ⏱️ Waiting 1 second before next query...")
-                        time.sleep(1)
+                    time.sleep(1)
             
             # Sort results by relevance score (descending)
-            logger.info("Sorting results by relevance score")
             all_results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
             
             duration = time.time() - start_time
@@ -1356,67 +1499,6 @@ class WebExtractor:
             
             logger.info(f"Web content extraction completed in {duration:.2f} seconds. Status: {status}. {status_message}")
             
-            # Format summary header based on status
-            if status == "success":
-                status_emoji = "✅"
-            elif status == "warning":
-                status_emoji = "⚠️"
-            else:
-                status_emoji = "❌"
-                
-            summary_header = f"\n{'='*60}\n{' '*15}EXTRACTION SUMMARY {status_emoji}\n{'='*60}"
-            print(summary_header)
-            print(f"⏱️ Time: {duration:.2f} seconds")
-            print(f"📊 Status: {status.upper()}")
-            print(f"📝 Details: {status_message}")
-            if len(all_results) > 0:
-                print(f"🔍 Found {len(all_results)} new results")
-            if skipped_total > 0:
-                print(f"⏭️ Skipped {skipped_total} already processed URLs")
-                if len(existing_urls) == 0:
-                    print(f"⚠️ WARNING: Database integrity issue - URLs were skipped but database appears empty")
-            print(f"{'-'*60}")
-            
-            # Log summary for each result
-            if all_results:
-                print("\n📋 RESULTS SUMMARY:")
-                for i, result in enumerate(all_results):
-                    relevance = result.get("relevance_score", 0)
-                    initiative = result.get("initiative", "Unknown Initiative")
-                    
-                    # Determine relevance category and emoji
-                    if relevance > 0.7:
-                        relevance_status = "HIGH RELEVANCE"
-                        rel_emoji = "🌟"
-                    elif relevance > 0.4:
-                        relevance_status = "MEDIUM RELEVANCE"
-                        rel_emoji = "⭐"
-                    else:
-                        relevance_status = "LOW RELEVANCE"
-                        rel_emoji = "⚪"
-                    
-                    logger.info(f"Result {i+1}: {result['title']} - {relevance_status} ({relevance:.2f})")
-                    
-                    # Format result information with emojis and structure
-                    print(f"\n{i+1}. {rel_emoji} [{relevance_status}] {result['title']}")
-                    print(f"   🔗 URL: {result['link']}")
-                    print(f"   📅 Date: {result['date'] if result['date'] else 'Not found'}")
-                    print(f"   🏢 Initiative: {initiative}")
-                    print(f"   📊 Relevance: {relevance:.2f}")
-                    print(f"   🏷️ Themes: {', '.join(result['themes']) if result['themes'] else 'None'}")
-                    
-                    # Show benefit categories
-                    if result.get('benefit_categories'):
-                        top_benefits = sorted(result['benefit_categories'].items(), key=lambda x: x[1], reverse=True)[:3]
-                        benefit_str = ", ".join([f"{k.replace('_', ' ').title()} ({v:.2f})" for k, v in top_benefits])
-                        print(f"   💼 Top Benefits: {benefit_str}")
-                    
-                    # Show number of benefit examples
-                    if result.get('benefit_examples'):
-                        print(f"   📝 Benefit Examples: {len(result['benefit_examples'])}")
-                    
-                    print(f"   📏 Length: {len(result['content'])} chars")
-            
             # Return a dictionary with status and results
             return {
                 "status": status,
@@ -1424,7 +1506,7 @@ class WebExtractor:
                 "execution_time": f"{duration:.2f} seconds",
                 "results": all_results,
                 "skipped_urls": skipped_total,
-                "database_urls_count": len(existing_urls)  # Add this for better debugging
+                "database_urls_count": len(existing_urls)
             }
             
         except Exception as e:
@@ -1432,15 +1514,6 @@ class WebExtractor:
             error_traceback = traceback.format_exc()
             logger.error(f"Critical error in extraction process: {error_type}: {str(e)}")
             logger.error(f"Traceback: {error_traceback}")
-            
-            # Format error message with visual separator
-            error_header = f"\n{'!'*60}\n{' '*15}EXTRACTION ERROR ❌\n{'!'*60}"
-            print(error_header)
-            print(f"❌ Error Type: {error_type}")
-            print(f"❌ Error Message: {str(e)}")
-            print(f"\n⚙️ Traceback:")
-            print(error_traceback)
-            print(f"{'!'*60}")
             
             # Return error information
             return {

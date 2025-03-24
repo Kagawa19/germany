@@ -7,6 +7,7 @@ import time
 import os
 import logging
 import json
+from content_db import generate_summary
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
@@ -91,11 +92,12 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         logging.info(f"Initializing WebExtractor with language: {language}")
         print(f"🔍 Initializing web content extractor for {language} content...")
 
-        # Initialize WebExtractor with language parameter - create fresh instance every time
+        # Initialize WebExtractor with language parameter and generate_summary function
         extractor = WebExtractor(
             search_api_key=SERPER_API_KEY,
             max_workers=10,
-            language=language
+            language=language,
+            generate_summary=generate_summary
         )
         
         # Store in session state for reference
@@ -185,7 +187,6 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     
                 else:
                     # Case 2: Success but no new results
-                    # This is the critical part that was missing
                     message = results.get('message', 'No new content found')
                     skipped = results.get('skipped_urls', 0)
                     
@@ -230,7 +231,6 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed: {str(e)}")
             print(f"❌ Critical error during web extraction in {language}: {str(e)}")
-
 
 def export_content_by_language(language="All"):
     """
@@ -1233,8 +1233,8 @@ elif app_mode == "Web Extraction":
     # Extraction options
     col1, col2 = st.columns(2)
     with col1:
-        max_queries = st.slider("Number of search queries to process", 10, 60, 30)
-        max_results_per_query = st.slider("Results per query", 8, 15, 25)
+        max_queries = st.slider("Number of search queries to process", 3, 20, 10)
+        max_results_per_query = st.slider("Results per query", 5, 20, 10)
         logger.debug(f"User set max_queries to: {max_queries}, max_results_per_query to: {max_results_per_query}")
         print(f"User set extraction parameters: {max_queries} queries with {max_results_per_query} results per query")
     

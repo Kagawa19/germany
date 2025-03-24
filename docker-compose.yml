@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -14,6 +12,7 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - PYDEVD_DISABLE_FILE_VALIDATION=1  # Added to disable validation
     volumes:
       - ./:/app
     ports:
@@ -23,8 +22,8 @@ services:
     networks:
       - app-network
     restart: unless-stopped
-    # Enable debug mode
-    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "main.py"]
+    # Updated command with -Xfrozen_modules=off flag
+    command: ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "main.py"]
 
   postgres:
     # Postgres config remains unchanged

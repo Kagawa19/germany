@@ -163,7 +163,7 @@ def is_high_quality_content(content, title, url):
 def generate_summary(content, max_sentences=5):
     """
     Generate a summary from content using OpenAI.
-    Only processes high-quality content.
+    Processes all content types, not just PDFs.
     
     Args:
         content: Content text to summarize
@@ -175,40 +175,17 @@ def generate_summary(content, max_sentences=5):
     if not content or len(content) < 100:
         return content
     
-    # Check title and URL if available from context
-    title = ""
-    url = ""
-    # These could be passed as additional parameters or retrieved from thread-local storage
-    
-    # Check content quality
-    if not is_high_quality_content(content, title, url):
-        logger.info("Content didn't pass quality check for summary generation")
-        return content
+    # Reduce content length if too long
+    content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
     
     client = get_openai_client()
     if client:
         try:
-            # Extract sections most relevant to initiatives
-            relevant_paragraphs = []
-            paragraphs = content.split('\n\n')
-            for para in paragraphs:
-                para_lower = para.lower()
-                if any(term in para_lower for term in ["abs", "capacity development", "bio-innovation", "africa", "nagoya", "benefit sharing"]):
-                    relevant_paragraphs.append(para)
-            
-            # Use either initiative-focused paragraphs or first part of content
-            if relevant_paragraphs and len(' '.join(relevant_paragraphs)) >= 300:
-                content_to_summarize = ' '.join(relevant_paragraphs[:3])  # Top 3 most relevant paragraphs
-                logger.info(f"Using {len(relevant_paragraphs)} initiative-specific paragraphs for summary")
-            else:
-                # Use only first 3000 chars to save on token costs
-                content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
-            
             logger.info("Generating summary using OpenAI")
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": f"Summarize this content, focusing particularly on ABS Capacity Development Initiative, Bio-innovation Africa, or other initiatives mentioned: {content_to_summarize}"}
+                    {"role": "user", "content": f"Create a concise, informative summary of this text, focusing on key points and main ideas: {content_to_summarize}"}
                 ],
                 temperature=0.3,
                 max_tokens=150
@@ -221,7 +198,8 @@ def generate_summary(content, max_sentences=5):
         except Exception as e:
             logger.error(f"Error using OpenAI for summary: {str(e)}")
     
-    return content
+    # Fallback: use first 500 chars if OpenAI fails
+    return content[:500] + "..." if len(content) > 500 else content
 
 def analyze_sentiment(content: str) -> str:
     """
@@ -1168,79 +1146,68 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     # Clean up malformed strings
     date_str = re.sub(r'[{}();"]', '', date_str)
     
-    # Extensive date parsing patterns
+    # Special handling for common date formats and metadata
+    def clean_and_parse_date(input_str):
+        # Try standard date-like formats
+        formats_to_try = [
+            '%Y-%m-%d',      # YYYY-MM-DD
+            '%d-%m-%Y',      # DD-MM-YYYY
+            '%m-%d-%Y',      # MM-DD-YYYY
+            '%Y/%m/%d',      # YYYY/MM/DD
+            '%d/%m/%Y',      # DD/MM/YYYY
+            '%m/%d/%Y',      # MM/DD/YYYY
+            '%d.%m.%Y',      # DD.MM.YYYY
+            '%B %d, %Y',     # Month DD, YYYY
+            '%d %B %Y',      # DD Month YYYY
+            '%b %d, %Y',     # Mon DD, YYYY
+            '%d %b %Y',      # DD Mon YYYY
+        ]
+        
+        for fmt in formats_to_try:
+            try:
+                parsed_date = datetime.strptime(input_str, fmt)
+                
+                # Validate year is reasonable
+                current_year = datetime.now().year
+                if 1900 <= parsed_date.year <= (current_year + 10):
+                    return parsed_date.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        
+        return None
+    
+    # First, try direct parsing
+    parsed_result = clean_and_parse_date(date_str)
+    if parsed_result:
+        return parsed_result
+    
+    # If direct parsing fails, try extracting date-like substrings
     date_patterns = [
-        # ISO and standard formats
-        r'(\d{4}-\d{2}-\d{2})',  # YYYY-MM-DD
-        r'(\d{4}/\d{2}/\d{2})',  # YYYY/MM/DD
-        r'(\d{2}-\d{2}-\d{4})',  # DD-MM-YYYY
-        r'(\d{2}/\d{2}/\d{4})',  # DD/MM/YYYY
-        
-        # Verbose date formats
-        r'(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})',
-        r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+(\d{4})',
-        
-        # ISO 8601 with time
-        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})',
-        
-        # Localized formats
-        r'(\d{2}\.\d{2}\.\d{4})',  # German format DD.MM.YYYY
+        r'\b(\d{4}-\d{2}-\d{2})\b',     # YYYY-MM-DD
+        r'\b(\d{1,2}/\d{1,2}/\d{4})\b', # DD/MM/YYYY or MM/DD/YYYY
+        r'\b(\d{1,2}-\d{1,2}-\d{4})\b', # DD-MM-YYYY or MM-DD-YYYY
+        r'\b(\d{4}/\d{2}/\d{2})\b',     # YYYY/MM/DD
+        # Add month name variations
+        r'\b([A-Za-z]+ \d{1,2}, \d{4})\b',  # Month DD, YYYY
+        r'\b(\d{1,2} [A-Za-z]+ \d{4})\b'   # DD Month YYYY
     ]
     
-    # Preferred date parsing formats
-    parse_formats = [
-        '%Y-%m-%d',
-        '%Y/%m/%d', 
-        '%d-%m-%Y', 
-        '%d/%m/%Y',
-        '%d.%m.%Y',
-        '%Y-%m-%dT%H:%M:%S',
-        '%B %d, %Y',
-        '%d %B %Y',
-        '%b %d, %Y',
-        '%d %b %Y'
-    ]
-    
-    # First, try regex extraction
     for pattern in date_patterns:
         match = re.search(pattern, date_str, re.IGNORECASE)
         if match:
-            date_str = match.group(0)  # Use the entire matched string
-            break
+            potential_date = match.group(1)
+            parsed_result = clean_and_parse_date(potential_date)
+            if parsed_result:
+                return parsed_result
     
-    # Try parsing with different formats
-    for fmt in parse_formats:
-        try:
-            parsed_date = datetime.strptime(date_str, fmt)
-            
-            # Additional validation
-            current_year = datetime.now().year
-            if parsed_date.year < 1900 or parsed_date.year > (current_year + 10):
-                continue
-            
-            return parsed_date.strftime('%Y-%m-%d')
-        except ValueError:
-            continue
-    
-    # Fallback: attempt to extract year, month, day
+    # Fallback: extract year if nothing else works
     year_match = re.search(r'\b(19\d{2}|20\d{2})\b', date_str)
     if year_match:
         year = int(year_match.group(1))
-        if 1900 <= year <= (datetime.now().year + 10):
-            # Try to find month and day
-            month_match = re.search(r'\b(0?[1-9]|1[0-2])\b', date_str)
-            day_match = re.search(r'\b(0?[1-9]|[12]\d|3[01])\b', date_str)
-            
-            if month_match and day_match:
-                month = int(month_match.group(1))
-                day = int(day_match.group(1))
-                
-                try:
-                    return datetime(year, month, day).strftime('%Y-%m-%d')
-                except ValueError:
-                    pass
+        if 1900 <= year <= datetime.now().year:
+            return f"{year}-01-01"  # Use January 1st as a fallback
     
-    # Final fallback: log and return None
+    # Final fallback
     logger.warning(f"Could not parse date string: {date_str}")
     return None
 

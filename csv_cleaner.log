@@ -224,3 +224,44 @@
 2025-03-23 14:08:23,563 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
 2025-03-23 14:08:23,566 - CSV_Cleaner - INFO - Enhanced summary: 503 chars → 369 chars
 2025-03-23 14:08:24,579 - CSV_Cleaner - INFO - Saved enhanced CSV to clean.csv
+2025-03-24 11:43:02,908 - CSV_Cleaner - INFO - Processing summaries in l.csv
+2025-03-24 11:43:02,908 - CSV_Cleaner - INFO - Cleaning CSV file: l.csv
+2025-03-24 11:43:02,918 - CSV_Cleaner - INFO - Read CSV with 170 rows and 10 columns
+2025-03-24 11:43:02,920 - CSV_Cleaner - INFO - Cleaning column: link
+2025-03-24 11:43:02,922 - CSV_Cleaner - INFO - Cleaning column: title
+2025-03-24 11:43:02,923 - CSV_Cleaner - INFO - Cleaning column: summary
+2025-03-24 11:43:02,925 - CSV_Cleaner - INFO - Cleaning column: organization
+2025-03-24 11:43:02,926 - CSV_Cleaner - INFO - Cleaning column: sentiment
+2025-03-24 11:43:02,927 - CSV_Cleaner - INFO - Cleaning column: initiative
+2025-03-24 11:43:02,928 - CSV_Cleaner - INFO - Cleaning column: language
+2025-03-24 11:43:02,930 - CSV_Cleaner - INFO - Cleaning column: themes
+2025-03-24 11:43:02,975 - CSV_Cleaner - INFO - Saved cleaned CSV to cleaned_temp.csv
+2025-03-24 11:43:05,063 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:05,081 - CSV_Cleaner - INFO - Enhanced summary: 568 chars → 568 chars
+2025-03-24 11:43:12,646 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:12,648 - CSV_Cleaner - INFO - Enhanced summary: 560 chars → 560 chars
+2025-03-24 11:43:14,883 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:14,884 - CSV_Cleaner - INFO - Enhanced summary: 559 chars → 499 chars
+2025-03-24 11:43:16,139 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:16,141 - CSV_Cleaner - INFO - Enhanced summary: 603 chars → 472 chars
+2025-03-24 11:43:20,573 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:20,583 - CSV_Cleaner - INFO - Enhanced summary: 461 chars → 459 chars
+2025-03-24 11:43:23,647 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:23,649 - CSV_Cleaner - INFO - Enhanced summary: 749 chars → 536 chars
+2025-03-24 11:43:26,897 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:26,907 - CSV_Cleaner - INFO - Enhanced summary: 630 chars → 461 chars
+2025-03-24 11:43:28,226 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:28,231 - CSV_Cleaner - INFO - Enhanced summary: 574 chars → 574 chars
+2025-03-24 11:43:30,886 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:30,887 - CSV_Cleaner - INFO - Enhanced summary: 760 chars → 594 chars
+2025-03-24 11:43:32,557 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:32,591 - CSV_Cleaner - INFO - Enhanced summary: 693 chars → 533 chars
+2025-03-24 11:43:35,262 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:35,263 - CSV_Cleaner - INFO - Enhanced summary: 765 chars → 765 chars
+2025-03-24 11:43:36,485 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:36,487 - CSV_Cleaner - INFO - Enhanced summary: 673 chars → 552 chars
+2025-03-24 11:43:37,837 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:37,838 - CSV_Cleaner - INFO - Enhanced summary: 681 chars → 681 chars
+2025-03-24 11:43:39,660 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-24 11:43:39,662 - CSV_Cleaner - INFO - Enhanced summary: 748 chars → 643 chars
+2025-03-24 11:43:40,671 - CSV_Cleaner - INFO - Saved enhanced CSV to o.csv
