@@ -56,14 +56,14 @@ class WebExtractor:
 
     def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
         """
-        Scrape content, title, date, and clean summary from a webpage.
+        Scrape content, title, and date from a webpage (no summary generation).
         
         Args:
             url: URL to scrape
             search_result_title: Title from search results
-            
+                
         Returns:
-            Tuple of (content, title, date, clean_summary)
+            Tuple of (content, title, date, None)
         """
         logger.info(f"Scraping webpage: {url}")
         
@@ -81,7 +81,7 @@ class WebExtractor:
             
             if not success:
                 logger.error(f"Failed to retrieve content from {url}")
-                return "", "", None, ""
+                return "", "", None, None
             
             request_time = time.time() - scrape_start_time
             logger.info(f"Received response in {request_time:.2f} seconds.")
@@ -112,24 +112,19 @@ class WebExtractor:
             content = "\n".join(line.strip() for line in content.split("\n") if line.strip())
             cleaned_length = len(content)
             
-            # Generate summary using the provided function
-            if self.generate_summary:
-                logger.info("Generating summary using the provided function")
-                clean_summary = self.generate_summary(content)
-            else:
-                logger.info("No summary generation function provided, using default")
-                clean_summary = content[:500] + "..." if len(content) > 500 else content
-            
+            # Log stats about the content
             scrape_time = time.time() - scrape_start_time
             logger.info(f"Successfully scraped {len(content)} chars from {url} in {scrape_time:.2f} seconds (cleaned from {original_length} to {cleaned_length} chars)")
             logger.info(f"Extracted title: {title}")
             logger.info(f"Extracted date: {date}")
-            logger.info(f"Generated clean summary: {len(clean_summary)} chars")
             
-            return content, title, date, clean_summary
+            # No summary generation here - return None for the summary
+            # This will be handled in process_search_result after embedding generation
+            return content, title, date, None
+            
         except Exception as e:
             logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
-            return "", "", None, ""
+            return "", "", None, None
 
     def clean_and_enhance_summary(content: str, title: str = "", url: str = "") -> str:
         """
@@ -1482,11 +1477,169 @@ class WebExtractor:
             return main_domain
         except:
             return "Unknown"
+        
+    def generate_summary(self, content, title="", url="", embedding=None):
+        """
+        Generate a clean, validated summary from content using OpenAI.
+        
+        Args:
+            content: Content text to summarize
+            title: Content title for context
+            url: Source URL for context
+            embedding: Optional embedding vector for content
+            
+        Returns:
+            Validated summary text
+        """
+        if not content or len(content) < 100:
+            return content[:200] + "..." if len(content) > 200 else content
+        
+        # Reduce content length if too long
+        content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
+        
+        client = get_openai_client()
+        if client:
+            try:
+                logger.info("Generating summary using OpenAI")
+                
+                # Use a more explicit prompt focused on ABS Initiative
+                prompt = f"""
+    Provide a factual summary of the following content about the ABS Initiative or related programs.
+    Focus only on explicitly stated information about:
+    1. The ABS Capacity Development Initiative
+    2. Bio-innovation Africa
+    3. Access and Benefit Sharing activities
+    4. Specific projects, events, or outcomes mentioned
+
+    Title: {title}
+    URL: {url}
+
+    Content: {content_to_summarize}
+
+    IMPORTANT: Include ONLY factual information explicitly mentioned in the content. 
+    DO NOT add any speculative or interpretive information. 
+    If information seems unclear or ambiguous, exclude it from the summary.
+    """
+
+                # Generate the initial summary
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=200
+                )
+                
+                summary = response.choices[0].message.content.strip()
+                
+                # Now validate the summary against the original content
+                validation_result = self.validate_summary(summary, content_to_summarize)
+                
+                if not validation_result['valid']:
+                    logger.info(f"Summary validation failed: {validation_result['issues']}")
+                    
+                    # Regenerate with more specific instructions
+                    validation_prompt = f"""
+    The previous summary contained potential inaccuracies. Please create a new summary addressing these issues:
+    {', '.join(validation_result['issues'])}
+
+    Original content: {content_to_summarize}
+
+    Create a STRICTLY FACTUAL summary focusing ONLY on information explicitly stated in the content.
+    """
+                    
+                    validation_response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "user", "content": validation_prompt}
+                        ],
+                        temperature=0.2,
+                        max_tokens=200
+                    )
+                    
+                    summary = validation_response.choices[0].message.content.strip()
+                
+                logger.info(f"Successfully generated validated summary ({len(summary)} chars)")
+                return summary
+            
+            except Exception as e:
+                logger.error(f"Error using OpenAI for summary: {str(e)}")
+        
+        # Fallback: use first 500 chars if OpenAI fails
+        return content[:500] + "..." if len(content) > 500 else content
+
+    def validate_summary(self, summary, original_content):
+        """
+        Validate that a summary contains only information present in the original content.
+        
+        Args:
+            summary: Generated summary to validate
+            original_content: Original content to check against
+            
+        Returns:
+            Dictionary with validation results
+        """
+        client = get_openai_client()
+        if not client:
+            # If we can't validate, assume it's valid but log a warning
+            logger.warning("Cannot validate summary: OpenAI client not available")
+            return {"valid": True, "issues": []}
+        
+        try:
+            # Create a validation prompt
+            validation_prompt = f"""
+    Your task is to verify if the summary below contains ONLY information that is explicitly stated in the original content.
+
+    Summary to validate:
+    {summary}
+
+    Original content:
+    {original_content}
+
+    Check for these issues:
+    1. Hallucinations - information in the summary not present in the original
+    2. Misrepresentations - information that distorts what's in the original
+    3. Omissions of critical context that change meaning
+
+    Return a JSON object with the following structure:
+    {{
+    "valid": true/false,
+    "issues": ["specific issue 1", "specific issue 2", ...],
+    "explanation": "Brief explanation of validation result"
+    }}
+    """
+
+            # Make API call for validation
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": validation_prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.2,
+                max_tokens=300
+            )
+            
+            # Parse response
+            validation_result = json.loads(response.choices[0].message.content)
+            logger.info(f"Summary validation result: {validation_result['valid']}")
+            
+            if not validation_result['valid']:
+                issues = validation_result.get('issues', [])
+                logger.warning(f"Summary validation issues: {issues}")
+            
+            return validation_result
+            
+        except Exception as e:
+            logger.error(f"Error validating summary: {str(e)}")
+            # If validation fails, assume the summary is valid but log the error
+            return {"valid": True, "issues": []}
             
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
         Process a single search result to extract and analyze content.
-        Enhanced with embedding generation and improved content analysis.
+        Proper sequence: extract -> embeddings -> summary -> analysis
         
         Args:
             result: The search result dict with link, title, etc.
@@ -1505,75 +1658,62 @@ class WebExtractor:
         logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
         
         try:
-            # Extract content from URL using scrape_webpage method - now returns clean summary
-            content, extracted_title, date, clean_summary = self.scrape_webpage(url, title)
+            # Extract content from URL - returns None for summary
+            content, extracted_title, date, _ = self.scrape_webpage(url, title)
             
-            # Even if content is minimal, continue processing (no filtering by content length)
+            # Skip if no content
             if not content:
-                content = ""  # Ensure content is at least an empty string, not None
-                logger.info(f"Minimal or no content from {url}, but continuing processing")
+                logger.info(f"No content extracted from {url}, skipping")
+                return None
             
-            # Get initiative info but don't filter on it
+            # Get initiative info
             initiative_key, initiative_score = self.identify_initiative(content)
             
-            # Always default to 'abs_initiative' if none found to avoid filtering out content
+            # Default to 'abs_initiative' if none found
             if initiative_key == "unknown":
                 initiative_key = "abs_initiative"
-                initiative_score = 0.1  # Minimum score to ensure inclusion
-                logger.info(f"No specific initiative detected in {url}, defaulting to generic ABS Initiative")
-            
+                initiative_score = 0.1
+                
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
             
-            # Generate embeddings if content is substantial enough
+            # Generate embeddings FIRST, before other analysis
             embedding = []
             if len(content) > 300:
                 embedding = self.generate_embedding(content)
             
-            # Identify multiple themes from the content
-            themes = self.identify_themes(content)
+            # Generate summary using embeddings
+            clean_summary = self.generate_summary(content, extracted_title, url, embedding)
             
-            # Ensure we have at least one theme if identify_themes returned empty
+            # Identify themes using embeddings
+            themes = self.identify_themes(content, embedding)
+            
+            # Ensure we have at least one theme
             if not themes:
                 themes = ["ABS Initiative"]
             
-            # Analyze sentiment
-            sentiment = self.analyze_sentiment(content)
+            # Analyze sentiment using embeddings
+            sentiment = self.analyze_sentiment(content, embedding)
             
-            # If summary is missing or too short, generate one
-            if not clean_summary or len(clean_summary) < 50:
-                clean_summary = self.generate_summary(content, extracted_title, url)
-            
-            # Calculate a relevance score
-            relevance_score = 0.0
-            if hasattr(self, '_calculate_relevance_score'):  # Only call if method exists
-                relevance_score = self._calculate_relevance_score({
-                    "content": content,
-                    "link": url,
-                    "title": title,
-                    "initiative_score": initiative_score
-                })
-            
-            # Format the result
+            # Format the result with all processed data
             result_data = {
                 "title": extracted_title or title,
                 "link": url,
                 "date": date,
                 "content": content,
-                "summary": clean_summary or content[:200],  # Use first 200 chars if no summary
+                "summary": clean_summary,
                 "themes": themes,
                 "organization": organization,
                 "sentiment": sentiment,
                 "language": self.language,
                 "initiative": "ABS Initiative",
                 "initiative_key": initiative_key,
-                "initiative_score": initiative_score,  # Include score for reference
-                "embedding": embedding,  # Add embedding vector for semantic search
-                "relevance_score": relevance_score,  # Add calculated relevance score
+                "initiative_score": initiative_score,
+                "embedding": embedding,
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f}, language: {self.language})")
+            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f})")
             return result_data
                 
         except Exception as e:
