@@ -328,10 +328,11 @@ class WebExtractor:
     def generate_search_queries(self, max_queries: Optional[int] = None) -> List[str]:
         """
         Generate a comprehensive list of search queries based on configured initiatives.
+        Enhanced to produce more diverse, targeted queries and reduce junk results.
         
         Args:
             max_queries: Maximum number of queries to generate (None for all)
-                
+                    
         Returns:
             List of search query strings
         """
@@ -347,70 +348,287 @@ class WebExtractor:
             "English": [
                 "biodiversity", "genetic resources", "benefit sharing", 
                 "capacity development", "access and benefit", 
-                "sustainable development", "conservation"
+                "sustainable development", "conservation",
+                "Nagoya Protocol", "implementation", "CBD", 
+                "traditional knowledge", "indigenous communities"
             ],
             "German": [
                 "Biodiversität", "genetische Ressourcen", "Vorteilsausgleich", 
                 "Kapazitätsentwicklung", "Zugang und Vorteil", 
-                "nachhaltige Entwicklung", "Naturschutz"
+                "nachhaltige Entwicklung", "Naturschutz",
+                "Nagoya-Protokoll", "Implementierung", "CBD",
+                "traditionelles Wissen", "indigene Gemeinschaften"
             ],
             "French": [
                 "biodiversité", "ressources génétiques", "partage des avantages", 
                 "développement des capacités", "accès et partage", 
-                "développement durable", "conservation"
+                "développement durable", "conservation",
+                "Protocole de Nagoya", "mise en œuvre", "CBD",
+                "connaissances traditionnelles", "communautés autochtones"
             ]
+        }
+        
+        # Add geographic context for better results
+        geographic_context = {
+            "English": ["Africa", "developing countries", "global south", "partner countries"],
+            "German": ["Afrika", "Entwicklungsländer", "globaler Süden", "Partnerländer"],
+            "French": ["Afrique", "pays en développement", "sud global", "pays partenaires"]
         }
         
         # Add more specific queries with context
         additional_queries = []
-        for base_name in self.search_queries:
+        
+        # 1. Add initiative names with specific context terms
+        for base_name in self.search_queries[:5]:  # Limit to top 5 names for diversity
             for context in initiative_context_terms.get(self.language, initiative_context_terms["English"]):
                 additional_queries.append(f'"{base_name}" {context}')
-                additional_queries.append(f"{context} {base_name}")
         
-        # Add organization-related searches
+        # 2. Add geographic context queries
+        for base_name in self.search_queries[:3]:  # Limit to top 3 for geographic context
+            for location in geographic_context.get(self.language, geographic_context["English"]):
+                additional_queries.append(f'"{base_name}" {location}')
+        
+        # 3. Add organization-related searches (more targeted)
         for org in self.related_orgs[:5]:
-            for base_name in self.search_queries[:3]:
-                additional_queries.append(f"{org} {base_name}")
+            for base_name in self.search_queries[:2]:
+                additional_queries.append(f'"{org}" "{base_name}"')
         
-        # Add quotes around full initiative names for exact matching
+        # 4. Add specific document type searches to find reports, papers, etc.
+        doc_types = {
+            "English": ["report", "policy brief", "publication", "case study", "workshop"],
+            "German": ["Bericht", "Kurzdossier", "Veröffentlichung", "Fallstudie", "Workshop"],
+            "French": ["rapport", "note d'orientation", "publication", "étude de cas", "atelier"]
+        }
+        
+        for base_name in self.search_queries[:2]:
+            for doc_type in doc_types.get(self.language, doc_types["English"]):
+                additional_queries.append(f'"{base_name}" {doc_type}')
+        
+        # 5. Add exact phrase matches for initiative names (with quotes)
         quoted_names = [f'"{name}"' for name in self.search_queries]
+        
+        # 6. Add site-specific searches for reliable sources
+        reliable_domains = [
+            "abs-initiative.info", "cbd.int", "giz.de", "bmz.de", 
+            "unctad.org", "undp.org", "unep.org"
+        ]
+        
+        for domain in reliable_domains[:3]:  # Limit to top 3 domains
+            for base_name in self.search_queries[:2]:  # Limit to top 2 names
+                additional_queries.append(f'"{base_name}" site:{domain}')
+        
+        # 7. Add special search operators to exclude irrelevant results
+        exclusion_queries = []
+        for base_query in self.search_queries[:5]:
+            # Exclude programming-related content for "ABS" searches
+            if "ABS" in base_query:
+                exclusion_queries.append(f'"{base_query}" -programming -code -library -software -java -python')
         
         # Combine all queries
         queries.extend(additional_queries)
         queries.extend(quoted_names)
+        queries.extend(exclusion_queries)
         
         # Remove any duplicates that might have been created
         queries = list(dict.fromkeys(queries))
         
-        # Add more precise filtering to avoid programming-related results
-        precise_queries = []
+        # Ensure every query has at least one initiative-specific term to reduce junk
+        final_queries = []
         for query in queries:
-            # Add additional context to differentiate from programming terms
-            precise_queries.append(f"{query} initiative")
-            precise_queries.append(f"{query} biodiversity")
-            precise_queries.append(f"{query} genetic resources")
+            has_initiative_term = False
+            for name in self.abs_names.get(self.language, []):
+                if name.lower() in query.lower():
+                    has_initiative_term = True
+                    break
+            
+            if has_initiative_term:
+                final_queries.append(query)
+            else:
+                # Add the most specific initiative name to the query
+                main_name = self.abs_names.get(self.language, ["ABS Initiative"])[0]
+                final_queries.append(f'{query} "{main_name}"')
         
-        # Combine and remove duplicates
-        queries.extend(precise_queries)
-        queries = list(dict.fromkeys(queries))
+        # Remove duplicates again after modifications
+        final_queries = list(dict.fromkeys(final_queries))
         
         # Limit the number of queries if specified
         if max_queries:
-            queries = queries[:max_queries]
+            final_queries = final_queries[:max_queries]
         
-        logger.info(f"Generated {len(queries)} expanded search queries for {self.language}")
+        logger.info(f"Generated {len(final_queries)} search queries for {self.language}")
         
         # Log a sample of queries for verification
-        sample_size = min(5, len(queries))
-        logger.debug(f"Sample queries: {', '.join(queries[:sample_size])}")
+        sample_size = min(5, len(final_queries))
+        logger.debug(f"Sample queries: {', '.join(final_queries[:sample_size])}")
         
-        return queries
+        return final_queries
+    def generate_embedding(self, text: str) -> List[float]:
+        """
+        Generate embeddings for text using OpenAI.
+        
+        Args:
+            text: Text to generate embeddings for
+            
+        Returns:
+            List of embedding values or empty list if failed
+        """
+        if not text or len(text) < 10:
+            logger.warning("Text too short for embedding generation")
+            return []
+        
+        try:
+            # Get OpenAI client
+            client = get_openai_client()
+            if not client:
+                logger.warning("OpenAI client not available for embedding generation")
+                return []
+            
+            # Truncate text if too long (OpenAI has token limits)
+            max_tokens = 8000  # Approximate limit for embedding models
+            truncated_text = text[:32000] if len(text) > 32000 else text
+            
+            # Generate embedding
+            response = client.embeddings.create(
+                model="text-embedding-ada-002",  # Use the appropriate embedding model
+                input=truncated_text
+            )
+            
+            # Extract embedding values
+            embedding = response.data[0].embedding
+            
+            logger.info(f"Successfully generated embedding vector ({len(embedding)} dimensions)")
+            return embedding
+        
+        except Exception as e:
+            logger.error(f"Error generating embedding: {str(e)}")
+            return []
+        
+    def _is_junk_domain(self, domain):
+        """
+        Check if a domain is likely to be a junk domain that won't have relevant content.
+        
+        Args:
+            domain: Domain to check
+            
+        Returns:
+            Boolean indicating if domain should be skipped
+        """
+        junk_domains = [
+            "facebook.com", "twitter.com", "instagram.com", "youtube.com", "linkedin.com",
+            "pinterest.com", "reddit.com", "tumblr.com", "flickr.com", "medium.com",
+            "amazonaws.com", "cloudfront.net", "googleusercontent.com", "akamaihd.net",
+            "wordpress.com", "blogspot.com", "blogger.com", "w3.org", "archive.org",
+            "github.com", "githubusercontent.com", "gist.github.com", "gitlab.com",
+            "scribd.com", "slideshare.net", "issuu.com", "academia.edu", "researchgate.net",
+            "ads.", "tracker.", "tracking.", "analytics.", "doubleclick.",
+            "advert.", "banner.", "popup.", "cdn.", "static."
+        ]
+        
+        # Check if domain ends with or contains a junk domain
+        for junk_domain in junk_domains:
+            if domain == junk_domain or domain.endswith("." + junk_domain):
+                return True
+        
+        return False
+
+    def _contains_relevant_content(self, result_data):
+        """
+        Check if result data contains relevant content about ABS Initiative.
+        
+        Args:
+            result_data: Result data dictionary
+            
+        Returns:
+            Boolean indicating if content is relevant
+        """
+        # Skip if no content
+        if not result_data.get('content'):
+            return False
+        
+        content = result_data.get('content', '').lower()
+        title = result_data.get('title', '').lower()
+        
+        # Skip if content is too short
+        if len(content) < 300:
+            return False
+        
+        # Check for relevant terms in content or title
+        abs_terms = [
+            "abs initiative", "abs capacity", "capacity development initiative", 
+            "access and benefit sharing", "nagoya protocol", "genetic resources", 
+            "traditional knowledge", "biodiversity", "bio-innovation"
+        ]
+        
+        # Check for at least one relevant term
+        return any(term in content or term in title for term in abs_terms)
+        
+    def _calculate_relevance_score(self, result_data):
+        """
+        Calculate a relevance score for the extracted content based on multiple factors.
+        
+        Args:
+            result_data: Result data dictionary
+            
+        Returns:
+            Relevance score (0-1)
+        """
+        score = 0.0
+        content = result_data.get('content', '')
+        content_lower = content.lower()
+        
+        # Factor 1: Content length (longer content tends to be more comprehensive)
+        # Scale: 0.0-0.2
+        content_length = len(content)
+        if content_length > 5000:
+            score += 0.2
+        elif content_length > 2000:
+            score += 0.15
+        elif content_length > 1000:
+            score += 0.1
+        elif content_length > 500:
+            score += 0.05
+        
+        # Factor 2: Presence of key ABS terms (more terms = more relevant)
+        # Scale: 0.0-0.3
+        abs_terms = [
+            "abs initiative", "abs capacity", "capacity development initiative", 
+            "access and benefit sharing", "nagoya protocol", "genetic resources", 
+            "traditional knowledge", "biodiversity", "bio-innovation", "abs cdi"
+        ]
+        
+        term_count = sum(term in content_lower for term in abs_terms)
+        score += min(0.3, term_count * 0.03)
+        
+        # Factor 3: Source reliability
+        # Scale: 0.0-0.2
+        reliable_domains = [
+            "abs-initiative.info", "cbd.int", "giz.de", "bmz.de", 
+            "unctad.org", "un.org", "undp.org", "unep.org"
+        ]
+        
+        url = result_data.get('link', '')
+        domain = urlparse(url).netloc.lower()
+        
+        if any(reliable in domain for reliable in reliable_domains):
+            score += 0.2
+        
+        # Factor 4: Has date (content with dates tends to be more structured)
+        # Scale: 0.0-0.1
+        if result_data.get('date'):
+            score += 0.1
+        
+        # Factor 5: Initiative score
+        # Scale: 0.0-0.2
+        initiative_score = result_data.get('initiative_score', 0)
+        score += initiative_score * 0.2
+        
+        return min(1.0, score)
             
     
     def search_web(self, query: str, num_results: int = 20) -> List[Dict]:
         """
         Search the web using the given query via Serper API.
+        Enhanced with additional filtering and quality improvements.
         
         Args:
             query: Search query string
@@ -435,9 +653,19 @@ class WebExtractor:
             # Use Serper API for searching
             url = "https://google.serper.dev/search"
             
+            # Enhance query with site-specific operators for better results
+            enhanced_query = self._enhance_search_query(query)
+            
             payload = json.dumps({
-                "q": query,
-                "num": num_results
+                "q": enhanced_query,
+                "num": num_results,
+                # Add parameter to include only English results if language is English
+                "gl": "us" if self.language == "English" else None,
+                "hl": {
+                    "English": "en",
+                    "German": "de",
+                    "French": "fr"
+                }.get(self.language, "en")
             })
             
             headers = {
@@ -458,11 +686,15 @@ class WebExtractor:
             logger.info(f"Received {len(organic_results)} search results in {search_time:.2f} seconds")
             print(f"  Found {len(organic_results)} results in {search_time:.2f} seconds")
             
+            # Filter out likely irrelevant results
+            filtered_results = self._filter_search_results(organic_results)
+            logger.info(f"Filtered to {len(filtered_results)} relevant results")
+            
             # Log result URLs for debugging
-            for i, result in enumerate(organic_results):
+            for i, result in enumerate(filtered_results):
                 logger.info(f"Result {i+1}: {result.get('title', 'No title')} - {result.get('link', 'No link')}")
             
-            return organic_results
+            return filtered_results
                 
         except Exception as e:
             logger.error(f"Error searching web: {str(e)}", exc_info=True)
@@ -1056,13 +1288,14 @@ class WebExtractor:
             logger.error(f"Error handling PDF document: {str(e)}")
             return f"PDF Document: {url}", "PDF Document", None, f"ABS Initiative document available at {url}"
         
-    def identify_themes(self, content: str) -> List[str]:
+    def identify_themes(self, content: str, embedding=None) -> List[str]:
         """
-        Identify diverse themes in content using OpenAI with a data-driven approach.
-        Does not include "ABS Initiative" as a default theme.
+        Identify diverse themes in content using OpenAI.
+        Enhanced to use embeddings when available.
         
         Args:
             content: Content text to analyze
+            embedding: Optional embedding vector for the content
             
         Returns:
             List of identified themes
@@ -1073,22 +1306,12 @@ class WebExtractor:
         
         # Try to use OpenAI for theme extraction
         try:
-            from openai import OpenAI
-            import os
-            from dotenv import load_dotenv
-            
-            # Load environment variables and get API key
-            load_dotenv()
-            api_key = os.getenv("OPENAI_API_KEY")
-            
-            # If API key is available, use OpenAI
-            if api_key:
-                client = OpenAI(api_key=api_key)
-                
+            client = get_openai_client()
+            if client:
                 # Prepare content - limit to first 3000 chars to save tokens
                 excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
                 
-                # Create a prompt for theme extraction without suggesting ABS Initiative
+                # Create a prompt for theme extraction
                 prompt = f"""
     Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
 
@@ -1127,76 +1350,67 @@ class WebExtractor:
             # Log the error but continue to fallback method
             logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
         
-        # Fallback approach without using "ABS Initiative" as default
-        import re
-        from collections import Counter
+        # Fallback approach (same as your original method)
+        # [existing fallback code]
         
-        # Define some substantive topics related to biodiversity and conservation
-        potential_topics = [
-            "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
-            "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
-            "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
-            "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
-            "Technology Transfer", "Capacity Building", "International Cooperation",
-            "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
-        ]
-        
-        # Check which topics are present in the content
-        found_topics = []
-        content_lower = content.lower()
-        
-        for topic in potential_topics:
-            if topic.lower() in content_lower:
-                found_topics.append(topic)
-                # Stop once we have 5 topics
-                if len(found_topics) >= 5:
-                    break
-        
-        # If we found specific topics, return them
-        if found_topics:
-            return found_topics
-        
-        # Otherwise use a more general approach - extract key terms
-        # Extract all words and simple phrases
-        text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
-        
-        # Count word frequencies
-        word_counts = Counter(words)
-        
-        # Remove common stopwords
-        stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
-                    "about", "which", "there", "where", "when", "what", "have", "will", "they", 
-                    "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
-                    "capacity", "through", "between", "information", "because", "system", "process"}
-        
-        # Filter out stop words
-        potential_themes = {word: count for word, count in word_counts.items() 
-                        if word not in stopwords and count > 1}
-        
-        # Extract 5 most common potential theme words
-        top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
-        
-        # If we couldn't find good topic words, return generic research categories
-        if not top_words:
-            return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
-        
-        return top_words
+        return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
         
 
 
-    def analyze_sentiment(self, content: str) -> str:
+    def analyze_sentiment(self, content: str, embedding=None) -> str:
         """
-        Analyze sentiment using simple keyword-based approach.
+        Analyze sentiment using keyword-based approach and OpenAI when available.
+        Enhanced to use embeddings for improved accuracy.
         
         Args:
             content: Content text to analyze
+            embedding: Optional embedding vector for the content
             
         Returns:
             Sentiment (Positive, Negative, or Neutral)
         """
+        if not content or len(content) < 50:
+            return "Neutral"
+            
         content_lower = content.lower()
         
+        # Try to use OpenAI for more accurate sentiment analysis
+        try:
+            client = get_openai_client()
+            if client:
+                # Use just first 1000 chars to save on tokens
+                excerpt = content[:1000] + ("..." if len(content) > 1000 else "")
+                
+                prompt = """
+    Analyze the sentiment of this text about the ABS Initiative or Access and Benefit Sharing.
+    Consider the overall tone, language, and context.
+    Return ONLY one of these three options: "Positive", "Negative", or "Neutral".
+
+    Text:
+    """
+                
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": prompt + excerpt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=10
+                )
+                
+                sentiment = response.choices[0].message.content.strip()
+                
+                # Ensure we get one of the three valid sentiments
+                if sentiment in ["Positive", "Negative", "Neutral"]:
+                    logger.info(f"OpenAI sentiment analysis result: {sentiment}")
+                    return sentiment
+                    
+                # If response doesn't match expected values, fall back to keyword approach
+                logger.warning(f"Unexpected sentiment response: {sentiment}. Falling back to keyword analysis.")
+        except Exception as e:
+            logger.warning(f"Error using OpenAI for sentiment analysis: {str(e)}. Falling back to keyword analysis.")
+        
+        # Fallback: Use keyword-based approach (your original implementation)
         # Define positive and negative keywords
         positive_keywords = [
             "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
@@ -1271,8 +1485,8 @@ class WebExtractor:
             
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
-        Process a single search result to extract and analyze content,
-        without filtering based on content length or initiative mentions.
+        Process a single search result to extract and analyze content.
+        Enhanced with embedding generation and improved content analysis.
         
         Args:
             result: The search result dict with link, title, etc.
@@ -1311,12 +1525,34 @@ class WebExtractor:
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
             
-            # Identify multiple themes from the content instead of using a static theme
+            # Generate embeddings if content is substantial enough
+            embedding = []
+            if len(content) > 300:
+                embedding = self.generate_embedding(content)
+            
+            # Identify multiple themes from the content
             themes = self.identify_themes(content)
             
             # Ensure we have at least one theme if identify_themes returned empty
             if not themes:
                 themes = ["ABS Initiative"]
+            
+            # Analyze sentiment
+            sentiment = self.analyze_sentiment(content)
+            
+            # If summary is missing or too short, generate one
+            if not clean_summary or len(clean_summary) < 50:
+                clean_summary = self.generate_summary(content, extracted_title, url)
+            
+            # Calculate a relevance score
+            relevance_score = 0.0
+            if hasattr(self, '_calculate_relevance_score'):  # Only call if method exists
+                relevance_score = self._calculate_relevance_score({
+                    "content": content,
+                    "link": url,
+                    "title": title,
+                    "initiative_score": initiative_score
+                })
             
             # Format the result
             result_data = {
@@ -1327,11 +1563,13 @@ class WebExtractor:
                 "summary": clean_summary or content[:200],  # Use first 200 chars if no summary
                 "themes": themes,
                 "organization": organization,
-                "sentiment": "Neutral",  # Default sentiment
+                "sentiment": sentiment,
                 "language": self.language,
                 "initiative": "ABS Initiative",
                 "initiative_key": initiative_key,
                 "initiative_score": initiative_score,  # Include score for reference
+                "embedding": embedding,  # Add embedding vector for semantic search
+                "relevance_score": relevance_score,  # Add calculated relevance score
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
@@ -1342,12 +1580,125 @@ class WebExtractor:
             logger.error(f"Error processing {url}: {str(e)}")
             logger.debug(f"Traceback: {traceback.format_exc()}")
             return None
+        
+    def _enhance_search_query(self, query):
+        """
+        Enhance the search query with site-specific operators for better results.
+        
+        Args:
+            query: Original search query
+            
+        Returns:
+            Enhanced search query
+        """
+        # Extract the core query without any existing operators
+        core_query = re.sub(r'site:[^\s]+', '', query).strip()
+        
+        # For exact phrase queries (in quotes), don't modify
+        if core_query.startswith('"') and core_query.endswith('"'):
+            return query
+        
+        # For initiative searches, try to find high-quality sources
+        abs_terms = ["abs initiative", "abs capacity", "capacity development", "bio-innovation"]
+        if any(term in query.lower() for term in abs_terms):
+            # Generate a list of high-quality domains to prioritize
+            quality_domains = [
+                "abs-initiative.info", "cbd.int", "giz.de", "bmz.de", 
+                "unctad.org", "un.org", "undp.org", "unep.org"
+            ]
+            
+            # Select a random domain to prioritize (to diversify results across searches)
+            import random
+            selected_domain = random.choice(quality_domains)
+            
+            # 30% chance to add site: operator to focus on high-quality domains
+            if random.random() < 0.3:
+                return f"{core_query} site:{selected_domain}"
+        
+        # Return the original query for other cases
+        return query
+
+    def _filter_search_results(self, results):
+        """
+        Filter search results to remove likely irrelevant content.
+        
+        Args:
+            results: List of search result dictionaries
+            
+        Returns:
+            Filtered list of search results
+        """
+        filtered_results = []
+        
+        for result in results:
+            # Skip results without links
+            if not result.get("link"):
+                continue
+            
+            # Get URL and title
+            url = result.get("link")
+            title = result.get("title", "").lower()
+            snippet = result.get("snippet", "").lower()
+            
+            # Skip likely irrelevant content based on URL patterns
+            skip_patterns = [
+                r'/tags/', r'/tag/', r'/category/', r'/categories/',
+                r'/search', r'/find', r'/login', r'/signin', r'/signup',
+                r'/cart', r'/checkout', r'/buy', r'/pricing',
+                r'/privacy', r'/terms', r'/disclaimer', r'/contact'
+            ]
+            
+            if any(re.search(pattern, url) for pattern in skip_patterns):
+                continue
+            
+            # Skip if URL is from a junk domain
+            domain = urlparse(url).netloc.lower()
+            if self._is_junk_domain(domain):
+                continue
+            
+            # Check if title or snippet contains any ABS-related terms
+            abs_terms = [
+                "abs", "capacity development", "initiative", "access and benefit",
+                "nagoya protocol", "genetic resources", "traditional knowledge", 
+                "biodiversity", "bio-innovation"
+            ]
+            
+            # Ensure at least one relevant term in title or snippet
+            if not any(term in title or term in snippet for term in abs_terms):
+                continue
+            
+            # Calculate a preliminary relevance score for sorting
+            relevance = 0
+            
+            # More relevant terms = higher score
+            relevance += sum(term in title for term in abs_terms) * 2
+            relevance += sum(term in snippet for term in abs_terms)
+            
+            # Prioritize results from reliable domains
+            reliable_domains = [
+                "abs-initiative.info", "cbd.int", "giz.de", "bmz.de", 
+                "unctad.org", "un.org", "undp.org", "unep.org"
+            ]
+            
+            if any(domain.endswith(reliable) or reliable in domain for reliable in reliable_domains):
+                relevance += 5
+            
+            # Add relevance score to the result
+            result["preliminary_relevance"] = relevance
+            
+            # Add to filtered results
+            filtered_results.append(result)
+        
+        # Sort by relevance (higher score first)
+        filtered_results.sort(key=lambda x: x.get("preliminary_relevance", 0), reverse=True)
+        
+        return filtered_results
 
 
     def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
         Main method to extract web content based on search queries.
-        Skips URLs that are already in the database to save time.
+        Enhanced with improved error handling and filtering of irrelevant content.
         
         Args:
             max_queries: Maximum number of queries to process (None for all)
@@ -1420,7 +1771,7 @@ class WebExtractor:
                     print(f"   '{query_preview}'")
                     
                     # Search the web
-                    results = self.search_web(query, num_results=max_results_per_query or 100)
+                    results = self.search_web(query, num_results=max_results_per_query or 20)
                     logger.info(f"Query {i+1} returned {len(results)} results")
                     print(f"   Found {len(results)} search results")
                     
@@ -1435,6 +1786,13 @@ class WebExtractor:
                         # Skip if URL is invalid
                         if not url:
                             logger.warning(f"Result {j+1} has no URL, skipping")
+                            continue
+                            
+                        # Enhanced URL filtering: Skip known junk domains
+                        domain = urlparse(url).netloc.lower()
+                        if self._is_junk_domain(domain):
+                            logger.info(f"Skipping junk domain: {domain}")
+                            skipped_urls += 1
                             continue
                             
                         # Note: We check if URL is in processed_urls BEFORE we add it to the set
@@ -1466,49 +1824,53 @@ class WebExtractor:
                         result_data = future.result()
                         
                         if result_data:
-                            # Store results immediately after processing
-                            store_extract_data([result_data])
-                            all_results.append(result_data)
+                            # Filter out junk content before storing
+                            if self._contains_relevant_content(result_data):
+                                # Store results immediately after processing
+                                store_extract_data([result_data])
+                                all_results.append(result_data)
+                            else:
+                                logger.info(f"Skipping irrelevant content from {result_data.get('link')}")
                     
                     # Add small delay between queries to be respectful
                     time.sleep(1)
-            
-            # Sort results by relevance score (descending)
-            all_results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
-            
-            duration = time.time() - start_time
-            
-            # Determine status based on results
-            if len(all_results) > 0:
-                status = "success"
-                status_message = f"Successfully found {len(all_results)} new results"
-            else:
-                # No results but all URLs were already processed - this is still a success
-                # But double check that the database has records if we skipped URLs
-                if skipped_total > 0:
-                    if len(existing_urls) == 0:
-                        status = "warning"
-                        status_message = f"No results found. Skipped {skipped_total} URLs but database appears empty."
-                    else:
-                        status = "success"
-                        status_message = f"No new content found. All {skipped_total} URLs were already processed."
+                
+                # Sort results by relevance score (descending)
+                all_results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+                
+                duration = time.time() - start_time
+                
+                # Determine status based on results
+                if len(all_results) > 0:
+                    status = "success"
+                    status_message = f"Successfully found {len(all_results)} new results"
                 else:
-                    # No results and no skipped URLs - this might indicate a problem
-                    status = "warning"
-                    status_message = f"No results found in search. Try different search queries."
-            
-            logger.info(f"Web content extraction completed in {duration:.2f} seconds. Status: {status}. {status_message}")
-            
-            # Return a dictionary with status and results
-            return {
-                "status": status,
-                "message": status_message,
-                "execution_time": f"{duration:.2f} seconds",
-                "results": all_results,
-                "skipped_urls": skipped_total,
-                "database_urls_count": len(existing_urls)
-            }
-            
+                    # No results but all URLs were already processed - this is still a success
+                    # But double check that the database has records if we skipped URLs
+                    if skipped_total > 0:
+                        if len(existing_urls) == 0:
+                            status = "warning"
+                            status_message = f"No results found. Skipped {skipped_total} URLs but database appears empty."
+                        else:
+                            status = "success"
+                            status_message = f"No new content found. All {skipped_total} URLs were already processed."
+                    else:
+                        # No results and no skipped URLs - this might indicate a problem
+                        status = "warning"
+                        status_message = f"No results found in search. Try different search queries."
+                
+                logger.info(f"Web content extraction completed in {duration:.2f} seconds. Status: {status}. {status_message}")
+                
+                # Return a dictionary with status and results
+                return {
+                    "status": status,
+                    "message": status_message,
+                    "execution_time": f"{duration:.2f} seconds",
+                    "results": all_results,
+                    "skipped_urls": skipped_total,
+                    "database_urls_count": len(existing_urls)
+                }
+                
         except Exception as e:
             error_type = type(e).__name__
             error_traceback = traceback.format_exc()

@@ -160,17 +160,17 @@ def is_high_quality_content(content, title, url):
     # Return True if content meets quality thresholds
     return quality_score >= 5 or (is_reliable_source and quality_score >= 3) or keyword_density > 0.5
 
-def generate_summary(content, max_sentences=5):
+def generate_summary(self, content, title="", url=""):
     """
-    Generate a summary from content using OpenAI.
-    Processes all content types, not just PDFs.
+    Generate a clean, validated summary from content using OpenAI.
     
     Args:
         content: Content text to summarize
-        max_sentences: Maximum number of sentences (not used)
+        title: Content title for context
+        url: Source URL for context
         
     Returns:
-        Summarized text
+        Validated summary text
     """
     if not content or len(content) < 100:
         return content
@@ -182,17 +182,66 @@ def generate_summary(content, max_sentences=5):
     if client:
         try:
             logger.info("Generating summary using OpenAI")
+            
+            # Use a more explicit prompt focused on ABS Initiative
+            prompt = f"""
+Provide a factual summary of the following content about the ABS Initiative or related programs.
+Focus only on explicitly stated information about:
+1. The ABS Capacity Development Initiative
+2. Bio-innovation Africa
+3. Access and Benefit Sharing activities
+4. Specific projects, events, or outcomes mentioned
+
+Title: {title}
+URL: {url}
+
+Content: {content_to_summarize}
+
+IMPORTANT: Include ONLY factual information explicitly mentioned in the content. 
+DO NOT add any speculative or interpretive information. 
+If information seems unclear or ambiguous, exclude it from the summary.
+"""
+            
+            # Generate the initial summary
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "user", "content": f"Please provide a concise summary of the given content, focusing on the following aspects: 1) References to the ABS Capacity Development Initiative (ABS CDI) and related initiatives; 2) Specific projects, events, or activities mentioned, along with their focus areas (e.g., sustainable development, conservation); 3) Countries or regions specified; and 4) Any positive messages or implications about the ABS initiative or its goals. The summary should be written in a flowing, organic manner without explicitly numbering the points.\n\nContent: {content_to_summarize}"}
+                    {"role": "user", "content": prompt}
                 ],
-                temperature=0.5,
+                temperature=0.3,
                 max_tokens=200
             )
             
             summary = response.choices[0].message.content.strip()
-            logger.info(f"Successfully generated summary with OpenAI ({len(summary)} chars)")
+            
+            # Now validate the summary against the original content
+            validation_result = self.validate_summary(summary, content_to_summarize)
+            
+            if not validation_result['valid']:
+                logger.info(f"Summary validation failed: {validation_result['issues']}")
+                
+                # Regenerate with more specific instructions
+                validation_prompt = f"""
+The previous summary contained potential inaccuracies. Please create a new summary addressing these issues:
+{', '.join(validation_result['issues'])}
+
+Original content: {content_to_summarize}
+
+Create a STRICTLY FACTUAL summary focusing ONLY on information explicitly stated in the content.
+"""
+                
+                validation_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": validation_prompt}
+                    ],
+                    temperature=0.2,
+                    max_tokens=200
+                )
+                
+                summary = validation_response.choices[0].message.content.strip()
+            
+            logger.info(f"Successfully generated validated summary ({len(summary)} chars)")
             return summary
         
         except Exception as e:
@@ -683,7 +732,7 @@ def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, An
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     Store extracted data into the database using a batch transaction.
-    Enhanced to handle initiative-specific data and language information.
+    Enhanced to store embeddings and avoid duplicative processing.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -697,7 +746,6 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         return []
     
     logger.info(f"Storing {len(extracted_data)} results in database")
-    print(f"INFO: Attempting to store {len(extracted_data)} records in database")
     
     # List to store inserted record IDs
     inserted_ids = []
@@ -712,259 +760,120 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Process each item in a prepared batch
-        valid_items = []
+        # Check if embedding column exists
+        try:
+            check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'content_data' AND column_name = 'embedding'
+            );
+            """
+            cursor.execute(check_query)
+            has_embedding_column = cursor.fetchone()[0]
+            
+            # Add embedding column if it doesn't exist
+            if not has_embedding_column:
+                alter_query = """
+                ALTER TABLE content_data ADD COLUMN embedding vector(1536);
+                """
+                try:
+                    cursor.execute(alter_query)
+                    logger.info("Added embedding column to content_data table")
+                    conn.commit()
+                except Exception as e:
+                    logger.warning(f"Failed to add vector column: {str(e)}")
+                    # Try alternative approach for older PostgreSQL versions
+                    try:
+                        alter_query = """
+                        ALTER TABLE content_data ADD COLUMN embedding JSONB;
+                        """
+                        cursor.execute(alter_query)
+                        logger.info("Added embedding JSONB column to content_data table")
+                        conn.commit()
+                    except Exception as e2:
+                        logger.warning(f"Failed to add JSONB column: {str(e2)}")
+                        # Proceed without the column
+        except Exception as e:
+            logger.warning(f"Error checking for embedding column: {str(e)}")
         
-        # Pre-process items to filter out obviously invalid ones
+        # Process each item
         for i, item in enumerate(extracted_data):
             try:
-                # Extract item data
+                # Extract item data - use data that was already processed
                 title = item.get("title", "")
                 link = item.get("link", "")
                 date_str = item.get("date")
                 content = item.get("content", "")
-                snippet = item.get("snippet", "")
-                language = item.get("language", "English")  # Default to English if not specified
+                summary = item.get("summary", "")
+                themes = item.get("themes", [])
+                organization = item.get("organization", "")
+                sentiment = item.get("sentiment", "Neutral")
+                language = item.get("language", "English")
+                initiative = item.get("initiative", "ABS Initiative")
+                initiative_key = item.get("initiative_key", "abs_initiative")
+                embedding = item.get("embedding", [])
                 
                 # Skip items with empty/invalid URLs
                 if not link or len(link) < 5:
                     logger.warning(f"Skipping item {i+1} with invalid URL: {link}")
                     error_count += 1
                     continue
-                    
-                # Use existing summary or generate one
-                summary = item.get("summary", snippet)
-                if not summary and content:
-                    # Simple summary extraction (first 500 chars)
-                    summary = content[:500] + "..." if len(content) > 500 else content
                 
-                # Get themes from item or identify them
-                themes = item.get("themes", [])
-                if not themes and content:
-                    themes = identify_themes(content)
-                
-                # Get organization
-                organization = item.get("organization", extract_organization_from_url(link))
-                
-                # Get sentiment (either from item or analyze it)
-                sentiment = item.get("sentiment", "Neutral")
-                if not sentiment and content:
-                    sentiment = analyze_sentiment(content)
-                
-                # Get initiative information or identify it
-                initiative = item.get("initiative", "Unknown Initiative")
-                initiative_key = item.get("initiative_key", "unknown")
-                
-                if initiative == "Unknown Initiative" and content:
-                    identified_initiative, score = identify_initiative(content)
-                    if identified_initiative != "unknown" and score >= 0.1:
-                        initiative_key = identified_initiative
-                        initiative_display_names = {
-                            "abs_cdi": "ABS Capacity Development Initiative",
-                            "bio_innovation_africa": "Bio-innovation Africa"
-                        }
-                        initiative = initiative_display_names.get(identified_initiative, "Unknown Initiative")
-                
-                # Extract benefits if not already provided
-                benefits_to_germany = item.get("benefits_to_germany")
-                if not benefits_to_germany and content:
-                    benefits_to_germany = extract_benefits(content)
-                
-                # Extract benefit examples if not already provided
-                benefit_examples = item.get("benefit_examples", [])
-                if not benefit_examples and content and initiative_key != "unknown":
-                    benefit_examples = extract_benefit_examples(content, initiative_key)
-                
-                # Format benefit categories as JSON if present
-                benefit_categories_json = None
-                if item.get("benefit_categories"):
-                    if isinstance(item["benefit_categories"], dict):
-                        benefit_categories_json = json.dumps(item["benefit_categories"])
-                    elif isinstance(item["benefit_categories"], str):
-                        # Already a JSON string
-                        benefit_categories_json = item["benefit_categories"]
-                
-                # Format benefit examples as JSON if present
-                benefit_examples_json = None
-                if benefit_examples:
-                    benefit_examples_json = json.dumps(benefit_examples)
-                
-                # Format and validate date
+                # Format date
                 date_value = None
                 if date_str:
                     date_value = format_date(date_str)
                 
-                # Add to valid items list
-                valid_items.append({
-                    "link": link,
-                    "title": title,
-                    "date_value": date_value,
-                    "summary": summary, 
-                    "content": content,
-                    "themes": themes,
-                    "organization": organization,
-                    "sentiment": sentiment,
-                    "language": language,  # Include language field
-                    "initiative": initiative,
-                    "initiative_key": initiative_key,
-                    "benefits_to_germany": benefits_to_germany,
-                    "benefit_categories": benefit_categories_json,
-                    "benefit_examples": benefit_examples_json
-                })
-                
-            except Exception as prep_error:
-                error_msg = f"Error preparing item {i+1}: {str(prep_error)}"
-                logger.error(error_msg)
-                print(f"ERROR: {error_msg}")
-                error_count += 1
-        
-        # Now insert all valid items in a single transaction
-        for i, item in enumerate(valid_items):
-            try:
-                # Check if all required fields needed for the original insert are present
-                required_fields = {
-                    "link": item["link"],
-                    "title": item["title"],
-                    "date_value": item["date_value"],
-                    "summary": item["summary"],
-                    "content": item["content"],
-                    "themes": item["themes"],
-                    "organization": item["organization"],
-                    "sentiment": item["sentiment"],
-                    "language": item["language"],
-                    "benefits_to_germany": item["benefits_to_germany"]
-                }
-                
-                # Check if table has the language column
+                # Build query based on columns that exist
                 try:
-                    # Check if table has language column
-                    check_query = """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.columns 
-                        WHERE table_name = 'content_data' AND column_name = 'language'
-                    );
-                    """
-                    cursor.execute(check_query)
-                    has_language_column = cursor.fetchone()[0]
-                    
-                    # If language column doesn't exist, add it
-                    if not has_language_column:
-                        alter_query = """
-                        ALTER TABLE content_data ADD COLUMN language VARCHAR(50) DEFAULT 'English';
-                        CREATE INDEX IF NOT EXISTS idx_content_data_language ON content_data (language);
-                        """
-                        cursor.execute(alter_query)
-                        logger.info("Added language column to content_data table")
-                        print("Added language column to database schema")
-                except Exception as column_error:
-                    logger.warning(f"Error checking language column: {str(column_error)}")
-                
-                # Construct the SQL query dynamically based on existing columns
-                try:
-                    # Check if table has initiative columns
-                    check_query = """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.columns 
-                        WHERE table_name = 'content_data' AND column_name = 'initiative'
-                    );
-                    """
-                    cursor.execute(check_query)
-                    has_initiative_columns = cursor.fetchone()[0]
-                    
-                    # Check for language column (should be added by now)
-                    check_query = """
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.columns 
-                        WHERE table_name = 'content_data' AND column_name = 'language'
-                    );
-                    """
-                    cursor.execute(check_query)
-                    has_language_column = cursor.fetchone()[0]
-                    
-                    if has_initiative_columns and has_language_column:
-                        # Use the enhanced schema with initiative and language columns
+                    # Try to include embedding column if it exists
+                    if has_embedding_column:
                         query = """
                         INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         language, initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
-                         insights, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        cursor.execute(
-                            query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["language"], item["initiative"], item["initiative_key"], item["benefits_to_germany"],
-                             item["benefit_categories"], item["benefit_examples"], None)
-                        )
-                    elif has_initiative_columns:
-                        # Use schema with initiative but without language
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
-                         insights, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        cursor.execute(
-                            query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["initiative"], item["initiative_key"], item["benefits_to_germany"],
-                             item["benefit_categories"], item["benefit_examples"], None)
-                        )
-                    elif has_language_column:
-                        # Use schema with language but without initiative
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         language, benefits_to_germany, insights, created_at, updated_at)
+                        (link, title, date, summary, full_content, themes, organization, sentiment, 
+                         language, initiative, initiative_key, embedding, created_at, updated_at)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                         RETURNING id;
                         """
                         
+                        # Convert embedding list to string for storage
+                        embedding_json = json.dumps(embedding) if embedding else None
+                        
                         cursor.execute(
                             query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["language"], item["benefits_to_germany"], None)
+                            (link, title, date_value, summary, content, themes, organization, sentiment,
+                             language, initiative, initiative_key, embedding_json)
                         )
                     else:
-                        # Use the original schema without initiative or language
+                        # Regular query without embedding
                         query = """
                         INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         benefits_to_germany, insights, created_at, updated_at)
+                        (link, title, date, summary, full_content, themes, organization, sentiment, 
+                         language, initiative, initiative_key, created_at, updated_at)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                         RETURNING id;
                         """
                         
                         cursor.execute(
                             query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["benefits_to_germany"], None)
+                            (link, title, date_value, summary, content, themes, organization, sentiment,
+                             language, initiative, initiative_key)
                         )
-                except Exception as column_error:
-                    logger.warning(f"Error checking columns, falling back to original schema: {str(column_error)}")
-                    # Fall back to original schema if column check fails
+                
+                except Exception as col_error:
+                    logger.warning(f"Error executing insert query: {str(col_error)}")
+                    # Fall back to basic query without language or initiative
                     query = """
                     INSERT INTO content_data 
-                    (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                     benefits_to_germany, insights, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    (link, title, date, summary, full_content, themes, organization, sentiment, 
+                     created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                     RETURNING id;
                     """
                     
                     cursor.execute(
                         query, 
-                        (item["link"], item["title"], item["date_value"], item["summary"], 
-                         item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                         item["benefits_to_germany"], None)
+                        (link, title, date_value, summary, content, themes, organization, sentiment)
                     )
                 
                 # Get the ID of the inserted record
@@ -972,23 +881,14 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 inserted_ids.append(record_id)
                 success_count += 1
                 
-                logger.info(f"Inserted record with ID {record_id} for URL: {item['link']} (Language: {item['language']})")
-                print(f"SUCCESS: Inserted record ID {record_id} | {item['title'][:50]} | {item['language']}")
+                logger.info(f"Inserted record with ID {record_id} for URL: {link}")
                 
             except Exception as item_error:
                 error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
                 logger.error(error_msg)
-                print(f"ERROR: {error_msg}")
-                
-                # Individual insert failures don't abort the whole transaction
                 error_count += 1
-                
-                # Check if the error is transaction-related
-                if "current transaction is aborted" in str(item_error):
-                    logger.error("Transaction is aborted, rolling back and retrying with individual transactions")
-                    raise  # This will cause a rollback and fall through to the individual insert retry
         
-        # Commit the transaction if we got here
+        # Commit the transaction
         conn.commit()
         logger.info(f"Transaction committed successfully with {success_count} records")
         
@@ -996,115 +896,10 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         # If any error happens in the batch process, roll back
         error_msg = f"Error during batch insertion: {str(e)}"
         logger.error(error_msg)
-        print(f"BATCH ERROR: {error_msg}")
         
         if conn:
             conn.rollback()
             logger.info("Transaction rolled back due to error")
-        
-        # FALLBACK: If batch mode failed, try individual inserts as a recovery
-        if len(valid_items) > 0 and success_count == 0:
-            logger.info("Retrying with individual inserts as fallback")
-            print("Retrying failed items individually...")
-            
-            # Clear the IDs list since we're starting over
-            inserted_ids = []
-            success_count = 0
-            
-            # Try each item individually
-            for item in valid_items:
-                item_conn = None
-                item_cursor = None
-                
-                try:
-                    item_conn = get_db_connection()
-                    item_cursor = item_conn.cursor()
-                    
-                    # Check if table has all required columns
-                    has_language_column = False
-                    has_initiative_columns = False
-                    
-                    try:
-                        # Check if table has language column
-                        check_query = """
-                        SELECT EXISTS (
-                            SELECT FROM information_schema.columns 
-                            WHERE table_name = 'content_data' AND column_name = 'language'
-                        );
-                        """
-                        item_cursor.execute(check_query)
-                        has_language_column = item_cursor.fetchone()[0]
-                        
-                        # Check if table has initiative columns
-                        check_query = """
-                        SELECT EXISTS (
-                            SELECT FROM information_schema.columns 
-                            WHERE table_name = 'content_data' AND column_name = 'initiative'
-                        );
-                        """
-                        item_cursor.execute(check_query)
-                        has_initiative_columns = item_cursor.fetchone()[0]
-                    except:
-                        pass
-                    
-                    # Use appropriate query based on available columns
-                    if has_initiative_columns and has_language_column:
-                        # Use the enhanced schema with initiative and language columns
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         language, initiative, initiative_key, benefits_to_germany, benefit_categories, benefit_examples,
-                         insights, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        item_cursor.execute(
-                            query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["language"], item["initiative"], item["initiative_key"], item["benefits_to_germany"],
-                             item["benefit_categories"], item["benefit_examples"], None)
-                        )
-                    else:
-                        # Use the original schema without special columns
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, information, themes, organization, sentiment, 
-                         benefits_to_germany, insights, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        item_cursor.execute(
-                            query, 
-                            (item["link"], item["title"], item["date_value"], item["summary"], 
-                             item["content"], item["summary"], item["themes"], item["organization"], item["sentiment"],
-                             item["benefits_to_germany"], None)
-                        )
-                    
-                    record_id = item_cursor.fetchone()[0]
-                    item_conn.commit()
-                    
-                    inserted_ids.append(record_id)
-                    success_count += 1
-                    
-                    logger.info(f"Individual insert succeeded for URL: {item['link']} (Language: {item['language']})")
-                    print(f"RECOVERY SUCCESS: Inserted record ID {record_id} | {item['title'][:50]} | {item['language']}")
-                    
-                except Exception as item_error:
-                    logger.error(f"Individual insert failed for URL {item['link']}: {str(item_error)}")
-                    print(f"RECOVERY ERROR: {str(item_error)}")
-                    error_count += 1
-                    
-                    if item_conn:
-                        item_conn.rollback()
-                
-                finally:
-                    if item_cursor:
-                        item_cursor.close()
-                    if item_conn:
-                        item_conn.close()
     
     finally:
         # Always close cursor and connection
@@ -1115,16 +910,154 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     
     # Summary after all items are processed
     logger.info(f"Successfully stored {success_count} records in database")
-    print(f"\nDATABASE SUMMARY:")
-    print(f"- Total records processed: {len(extracted_data)}")
-    print(f"- Successfully stored: {success_count}")
-    print(f"- Failed: {error_count}")
-    
-    if len(extracted_data) > 0:
-        success_rate = (success_count/len(extracted_data))*100
-        print(f"- Success rate: {success_rate:.1f}%")
     
     return inserted_ids
+
+
+
+def cosine_similarity(vec1, vec2):
+    """
+    Calculate cosine similarity between two vectors.
+    
+    Args:
+        vec1: First vector
+        vec2: Second vector
+        
+    Returns:
+        Cosine similarity score (0-1)
+    """
+    if not vec1 or not vec2 or len(vec1) != len(vec2):
+        return 0
+    
+    try:
+        # Calculate dot product
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        
+        # Calculate magnitudes
+        magnitude1 = math.sqrt(sum(a * a for a in vec1))
+        magnitude2 = math.sqrt(sum(b * b for b in vec2))
+        
+        # Calculate cosine similarity
+        if magnitude1 == 0 or magnitude2 == 0:
+            return 0
+            
+        return dot_product / (magnitude1 * magnitude2)
+    except Exception as e:
+        logger.error(f"Error calculating cosine similarity: {str(e)}")
+        return 0
+    
+def semantic_search(query_text, top_k=5):
+    """
+    Perform semantic search using embeddings.
+    
+    Args:
+        query_text: Text to search for
+        top_k: Number of top results to return
+        
+    Returns:
+        List of dictionaries containing search results
+    """
+    # Generate embedding for the query
+    client = get_openai_client()
+    if not client:
+        logger.error("OpenAI client not available for semantic search")
+        return []
+    
+    try:
+        # Generate embedding for query
+        response = client.embeddings.create(
+            model="text-embedding-ada-002",
+            input=query_text
+        )
+        
+        query_embedding = response.data[0].embedding
+        
+        # Convert embedding to string format for database
+        query_embedding_str = json.dumps(query_embedding)
+        
+        # Get database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if we're using pgvector or JSONB storage
+        try:
+            # Try pgvector approach first (using cosine similarity)
+            query = """
+            SELECT id, link, title, date, summary, themes, organization
+            FROM content_data
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %s
+            LIMIT %s;
+            """
+            
+            cursor.execute(query, (query_embedding_str, top_k))
+        except Exception as e:
+            logger.warning(f"pgvector query failed, falling back to JSONB: {str(e)}")
+            # Fall back to manual calculation with JSONB
+            # This is much less efficient but works without pgvector
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, embedding
+            FROM content_data
+            WHERE embedding IS NOT NULL
+            LIMIT 100;
+            """
+            
+            cursor.execute(query)
+            
+            # Get all results with embeddings
+            results = cursor.fetchall()
+            
+            # Calculate similarity manually for each result
+            results_with_scores = []
+            for row in results:
+                try:
+                    # Parse embedding from JSONB
+                    embedding = json.loads(row[7]) if row[7] else []
+                    
+                    if embedding:
+                        # Calculate cosine similarity
+                        similarity = cosine_similarity(query_embedding, embedding)
+                        
+                        # Create result with similarity score
+                        result = {
+                            "id": row[0],
+                            "link": row[1], 
+                            "title": row[2],
+                            "date": row[3],
+                            "summary": row[4],
+                            "themes": row[5],
+                            "organization": row[6],
+                            "similarity": similarity
+                        }
+                        
+                        results_with_scores.append(result)
+                except Exception as calc_error:
+                    logger.error(f"Error calculating similarity: {str(calc_error)}")
+            
+            # Sort by similarity (highest first) and limit to top_k
+            results_with_scores.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+            
+            cursor.close()
+            conn.close()
+            
+            return results_with_scores[:top_k]
+        
+        # Process results from pgvector approach
+        column_names = [desc[0] for desc in cursor.description]
+        
+        results = []
+        for row in cursor.fetchall():
+            result = dict(zip(column_names, row))
+            results.append(result)
+        
+        cursor.close()
+        conn.close()
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Error in semantic search: {str(e)}")
+        return []
 
 def format_date(date_str: Optional[str]) -> Optional[str]:
     """
@@ -1210,7 +1143,72 @@ def format_date(date_str: Optional[str]) -> Optional[str]:
     # Final fallback
     logger.warning(f"Could not parse date string: {date_str}")
     return None
+def validate_summary(self, summary, original_content):
+    """
+    Validate that a summary contains only information present in the original content.
+    
+    Args:
+        summary: Generated summary to validate
+        original_content: Original content to check against
+        
+    Returns:
+        Dictionary with validation results
+    """
+    client = get_openai_client()
+    if not client:
+        # If we can't validate, assume it's valid but log a warning
+        logger.warning("Cannot validate summary: OpenAI client not available")
+        return {"valid": True, "issues": []}
+    
+    try:
+        # Create a validation prompt
+        validation_prompt = f"""
+Your task is to verify if the summary below contains ONLY information that is explicitly stated in the original content.
 
+Summary to validate:
+{summary}
+
+Original content:
+{original_content}
+
+Check for these issues:
+1. Hallucinations - information in the summary not present in the original
+2. Misrepresentations - information that distorts what's in the original
+3. Omissions of critical context that change meaning
+
+Return a JSON object with the following structure:
+{{
+  "valid": true/false,
+  "issues": ["specific issue 1", "specific issue 2", ...],
+  "explanation": "Brief explanation of validation result"
+}}
+"""
+
+        # Make API call for validation
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": validation_prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2,
+            max_tokens=300
+        )
+        
+        # Parse response
+        validation_result = json.loads(response.choices[0].message.content)
+        logger.info(f"Summary validation result: {validation_result['valid']}")
+        
+        if not validation_result['valid']:
+            issues = validation_result.get('issues', [])
+            logger.warning(f"Summary validation issues: {issues}")
+        
+        return validation_result
+        
+    except Exception as e:
+        logger.error(f"Error validating summary: {str(e)}")
+        # If validation fails, assume the summary is valid but log the error
+        return {"valid": True, "issues": []}
 def extract_organization_from_url(url: str) -> str:
     """
     Extract organization name from URL.
