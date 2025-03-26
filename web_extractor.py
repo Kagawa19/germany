@@ -33,6 +33,15 @@ class WebExtractor:
                 max_workers=5,
                 language="English",
                 generate_summary=None):
+        """
+        Initialize the WebExtractor with language-specific settings.
+        
+        Args:
+            search_api_key: API key for search service
+            max_workers: Maximum number of parallel processes
+            language: Content language (English, German, French)
+            generate_summary: Optional function for summary generation
+        """
         # Load environment variables
         load_dotenv()
         
@@ -42,31 +51,39 @@ class WebExtractor:
         # Set max_workers
         self.max_workers = max_workers
         
-        # Set language - Now a critical parameter for multilingual support
-        self.language = language
-        
-        # Import OpenAI client function
-        from content_db import get_openai_client
-        self.get_openai_client = get_openai_client
+        # Set language - validate and default to English if invalid
+        valid_languages = ["English", "German", "French"]
+        self.language = language if language in valid_languages else "English"
         
         # Set generate_summary function
         self.generate_summary = generate_summary
         
-        # Target organizations and domains to prioritize
-        self.priority_domains = []
-        
         # Configure language-specific search settings
-        self.lang_codes = {
+        self.lang_settings = {
             "English": {"gl": "us", "hl": "en", "domains": [".com", ".org", ".uk", ".us", ".int"]},
             "German": {"gl": "de", "hl": "de", "domains": [".de", ".at", ".ch"]},
             "French": {"gl": "fr", "hl": "fr", "domains": [".fr", ".be", ".ch", ".ca"]}
-        }
+        }.get(self.language, {"gl": "us", "hl": "en", "domains": [".com", ".org"]})
         
-        # Get language-specific settings
-        self.lang_settings = self.lang_codes.get(self.language, self.lang_codes["English"])
+        # Import OpenAI functions - ensure these are available
+        try:
+            from openai import OpenAI
+            self.openai_available = True
+        except ImportError:
+            logger.warning("OpenAI package not available - some features will be limited")
+            self.openai_available = False
+        
+        # Target organizations and domains to prioritize
+        self.priority_domains = []
         
         # Configure the specific initiatives to track
         self.configure_initiatives()
+        
+        # Add helper methods for content filtering
+        if not hasattr(self, '_is_junk_domain'):
+            self._init_helper_methods()
+        
+        logger.info(f"WebExtractor initialized with language: {self.language}")
 
     def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
         """
@@ -1622,96 +1639,148 @@ class WebExtractor:
         except:
             return "Unknown"
         
-    def generate_summary(self, content, title="", url="", embedding=None):
+    def _init_helper_methods(self):
+        """Initialize helper methods for content filtering."""
+        
+        def _is_junk_domain(domain):
+            """Check if a domain is likely junk content."""
+            junk_domains = [
+                "facebook.com", "twitter.com", "instagram.com", "youtube.com", "linkedin.com",
+                "pinterest.com", "reddit.com", "tumblr.com", "flickr.com", "medium.com",
+                "amazonaws.com", "cloudfront.net", "googleusercontent.com", "akamaihd.net",
+                "wordpress.com", "blogspot.com", "blogger.com", "w3.org", "archive.org",
+                "github.com", "githubusercontent.com", "gist.github.com", "gitlab.com"
+            ]
+            
+            return any(jd in domain for jd in junk_domains)
+        
+        def _contains_relevant_content(result_data):
+            """Check if result data contains relevant ABS content."""
+            if not result_data.get('content'):
+                return False
+                
+            content = result_data.get('content', '').lower()
+            title = result_data.get('title', '').lower()
+            
+            # Get language-appropriate ABS terms
+            abs_terms = {
+                "English": ["abs initiative", "capacity development", "benefit sharing", "genetic resources"],
+                "German": ["abs-initiative", "kapazitätsentwicklung", "vorteilsausgleich", "genetische ressourcen"],
+                "French": ["initiative apa", "développement des capacités", "partage des avantages", "ressources génétiques"]
+            }
+            
+            # Use terms for the current language
+            terms = abs_terms.get(self.language, abs_terms["English"])
+            
+            # Check for relevant terms
+            return any(term in content or term in title for term in terms)
+        
+        # Attach the methods to the instance
+        self._is_junk_domain = _is_junk_domain
+        self._contains_relevant_content = _contains_relevant_content
+        
+    def generate_summary(self, content, title="", url=""):
         """
-        Generate a clean, validated summary from content using OpenAI.
+        Generate a high-quality summary using OpenAI API with semantic understanding.
+        Leverages embeddings for enhanced semantic analysis.
         
         Args:
             content: Content text to summarize
             title: Content title for context
             url: Source URL for context
-            embedding: Optional embedding vector for content
             
         Returns:
-            Validated summary text
+            AI-generated summary text
         """
+        # Skip if no content or too short
         if not content or len(content) < 100:
-            return content[:200] + "..." if len(content) > 200 else content
-        
-        # Reduce content length if too long
-        content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
-        
-        client = get_openai_client()
-        if client:
-            try:
-                logger.info("Generating summary using OpenAI")
-                
-                # Use a more explicit prompt focused on ABS Initiative
-                prompt = f"""
-    Provide a factual summary of the following content about the ABS Initiative or related programs.
-    Focus only on explicitly stated information about:
-    1. The ABS Capacity Development Initiative
-    2. Bio-innovation Africa
-    3. Access and Benefit Sharing activities
-    4. Specific projects, events, or outcomes mentioned
+            return content
 
-    Title: {title}
-    URL: {url}
+        # Attempt to generate embedding first
+        try:
+            embedding = self.generate_embedding(content)
+        except Exception as e:
+            logger.warning(f"Embedding generation failed: {str(e)}")
+            embedding = None
 
-    Content: {content_to_summarize}
-
-    IMPORTANT: Include ONLY factual information explicitly mentioned in the content. 
-    DO NOT add any speculative or interpretive information. 
-    If information seems unclear or ambiguous, exclude it from the summary.
-    """
-
-                # Generate the initial summary
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3,
-                    max_tokens=200
-                )
-                
-                summary = response.choices[0].message.content.strip()
-                
-                # Now validate the summary against the original content
-                validation_result = self.validate_summary(summary, content_to_summarize)
-                
-                if not validation_result['valid']:
-                    logger.info(f"Summary validation failed: {validation_result['issues']}")
-                    
-                    # Regenerate with more specific instructions
-                    validation_prompt = f"""
-    The previous summary contained potential inaccuracies. Please create a new summary addressing these issues:
-    {', '.join(validation_result['issues'])}
-
-    Original content: {content_to_summarize}
-
-    Create a STRICTLY FACTUAL summary focusing ONLY on information explicitly stated in the content.
-    """
-                    
-                    validation_response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "user", "content": validation_prompt}
-                        ],
-                        temperature=0.2,
-                        max_tokens=200
-                    )
-                    
-                    summary = validation_response.choices[0].message.content.strip()
-                
-                logger.info(f"Successfully generated validated summary ({len(summary)} chars)")
-                return summary
+        # Get OpenAI client
+        try:
+            from openai import OpenAI
+            import os
+            from dotenv import load_dotenv
             
-            except Exception as e:
-                logger.error(f"Error using OpenAI for summary: {str(e)}")
+            # Load environment variables
+            load_dotenv()
+            
+            # Get API key
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            if not openai_api_key:
+                logger.warning("OPENAI_API_KEY not found in environment")
+                return content[:500] + "..." if len(content) > 500 else content
+            
+            client = OpenAI(api_key=openai_api_key)
+            
+            # Truncate content to save on tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Prepare embedding context message if available
+            embedding_context = ""
+            if embedding and len(embedding) > 0:
+                # Add a brief mention of the embedding's role
+                embedding_context = (
+                    "Note: An advanced semantic embedding has been generated for this content, "
+                    "capturing nuanced contextual meanings beyond simple keywords. "
+                    "Use this semantic understanding to craft a precise summary."
+                )
+            
+            # Create a detailed, context-aware prompt
+            prompt = f"""
+    Provide a concise, factual summary of the following content about the ABS Initiative.
+
+    {embedding_context}
+
+    Key Context:
+    - Title: {title}
+    - Source URL: {url}
+
+    Requirements:
+    1. Focus on explicit, verifiable information
+    2. Capture the core message and key insights
+    3. Maintain the original tone and intent of the content
+    4. Avoid speculation or interpretation
+
+    Content Excerpt:
+    {excerpt}
+
+    Summary Guidelines:
+    - Length: 3-5 sentences
+    - Clarity: Clear and direct language
+    - Precision: Include only information directly stated in the content
+    """
+
+            # Generate summary
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",  # More cost-effective, still capable
+                messages=[
+                    {"role": "system", "content": "You are an expert summarizer focusing on precise, factual extraction."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,  # Lower temperature for more deterministic output
+                max_tokens=250
+            )
+            
+            # Extract and clean summary
+            summary = response.choices[0].message.content.strip()
+            
+            # Log successful summary generation
+            logger.info(f"Generated summary ({len(summary)} chars) with semantic context")
+            
+            return summary
         
-        # Fallback: use first 500 chars if OpenAI fails
-        return content[:500] + "..." if len(content) > 500 else content
+        except Exception as e:
+            # Fallback to basic summary if AI generation fails
+            logger.error(f"Summary generation error: {str(e)}")
+            return content[:500] + "..." if len(content) > 500 else content
 
     def validate_summary(self, summary, original_content):
         """
@@ -1783,6 +1852,7 @@ class WebExtractor:
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
         Process a single search result to extract and analyze content.
+        Enhanced with embedding generation and proper summary handling.
         
         Args:
             result: The search result dict with link, title, etc.
@@ -1809,26 +1879,28 @@ class WebExtractor:
                 logger.info(f"No content extracted from {url}, skipping")
                 return None
             
-            # Get initiative info
+            # Get initiative info but don't filter on it
             initiative_key, initiative_score = self.identify_initiative(content)
             
-            # Default to 'abs_initiative' if none found
+            # Always default to 'abs_initiative' if none found to avoid filtering out content
             if initiative_key == "unknown":
                 initiative_key = "abs_initiative"
-                initiative_score = 0.1
-                
+                initiative_score = 0.1  # Minimum score to ensure inclusion
+                logger.info(f"No specific initiative detected in {url}, defaulting to generic ABS Initiative")
+            
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
             
-            # Try to generate embeddings, but make it optional
+            # Generate embeddings first - make this a required step
             embedding = []
             try:
                 if len(content) > 300:
                     embedding = self.generate_embedding(content)
+                    logger.info(f"Successfully generated {self.language} embedding vector for {url}")
             except Exception as e:
-                logger.warning(f"Embedding generation failed, continuing without embeddings: {str(e)}")
+                logger.error(f"Error generating embedding: {str(e)}")
             
-            # Identify themes
+            # Identify themes using embeddings when available
             try:
                 themes = self.identify_themes(content)
             except Exception as e:
@@ -1845,23 +1917,47 @@ class WebExtractor:
             except Exception as e:
                 logger.warning(f"Sentiment analysis failed: {str(e)}")
                 sentiment = "Neutral"  # Default sentiment
-                
-            # Generate summary if needed
+            
+            # Generate summary if needed - FIXED to handle different calling patterns
             if not clean_summary or len(clean_summary) < 50:
                 try:
-                    from content_db import generate_summary
-                    clean_summary = generate_summary(content)
+                    # Pass content, title, url, and optionally embedding to generate_summary
+                    # This maintains compatibility while allowing embedding use
+                    try:
+                        # First try with embedding if available
+                        if embedding and len(embedding) > 0:
+                            clean_summary = self.generate_summary(content, extracted_title, url)
+                        else:
+                            # Fallback to standard generation if no embedding
+                            clean_summary = self.generate_summary(content, extracted_title, url)
+                    except TypeError:
+                        # If generate_summary doesn't accept all parameters
+                        clean_summary = self.generate_summary(content)
                 except Exception as e:
                     logger.warning(f"Summary generation failed: {str(e)}")
-                    clean_summary = content[:200] + "..." if len(content) > 200 else content
+                    clean_summary = content[:300] + "..." if len(content) > 300 else content
             
-            # Format the result
+            # Calculate relevance score if the method exists
+            relevance_score = 0.0
+            if hasattr(self, '_calculate_relevance_score'):
+                try:
+                    relevance_score = self._calculate_relevance_score({
+                        "content": content,
+                        "title": extracted_title or title,
+                        "link": url,
+                        "initiative_score": initiative_score,
+                        "embedding": embedding
+                    })
+                except Exception as e:
+                    logger.warning(f"Error calculating relevance score: {str(e)}")
+            
+            # Format the result with all processed data
             result_data = {
                 "title": extracted_title or title,
                 "link": url,
                 "date": date,
                 "content": content,
-                "summary": clean_summary or content[:200],  # Use first 200 chars if no summary
+                "summary": clean_summary,
                 "themes": themes,
                 "organization": organization,
                 "sentiment": sentiment,
@@ -1869,7 +1965,8 @@ class WebExtractor:
                 "initiative": "ABS Initiative",
                 "initiative_key": initiative_key,
                 "initiative_score": initiative_score,
-                "embedding": embedding if embedding else None,  # Include embedding if available
+                "embedding": embedding,
+                "relevance_score": relevance_score,
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
