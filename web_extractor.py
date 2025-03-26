@@ -42,8 +42,12 @@ class WebExtractor:
         # Set max_workers
         self.max_workers = max_workers
         
-        # Set language
+        # Set language - Now a critical parameter for multilingual support
         self.language = language
+        
+        # Import OpenAI client function
+        from content_db import get_openai_client
+        self.get_openai_client = get_openai_client
         
         # Set generate_summary function
         self.generate_summary = generate_summary
@@ -51,12 +55,18 @@ class WebExtractor:
         # Target organizations and domains to prioritize
         self.priority_domains = []
         
+        # Configure language-specific search settings
+        self.lang_codes = {
+            "English": {"gl": "us", "hl": "en", "domains": [".com", ".org", ".uk", ".us", ".int"]},
+            "German": {"gl": "de", "hl": "de", "domains": [".de", ".at", ".ch"]},
+            "French": {"gl": "fr", "hl": "fr", "domains": [".fr", ".be", ".ch", ".ca"]}
+        }
+        
+        # Get language-specific settings
+        self.lang_settings = self.lang_codes.get(self.language, self.lang_codes["English"])
+        
         # Configure the specific initiatives to track
         self.configure_initiatives()
-        
-        # Import OpenAI client function - add this line
-        from content_db import get_openai_client
-        self.get_openai_client = get_openai_client
 
     def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
         """
@@ -464,6 +474,7 @@ class WebExtractor:
     def generate_embedding(self, text: str) -> List[float]:
         """
         Generate embeddings for text using OpenAI.
+        Support multilingual content.
         
         Args:
             text: Text to generate embeddings for
@@ -472,15 +483,15 @@ class WebExtractor:
             List of embedding values or empty list if failed
         """
         if not text or len(text) < 10:
-            logger.warning("Text too short for embedding generation")
+            logger.warning(f"Text too short for {self.language} embedding generation")
             return []
         
         try:
-            # Get OpenAI client - use the instance method
+            # Get OpenAI client
             from content_db import get_openai_client
             client = get_openai_client()
             if not client:
-                logger.warning("OpenAI client not available for embedding generation")
+                logger.warning(f"OpenAI client not available for {self.language} embedding generation")
                 return []
             
             # Truncate text if too long (OpenAI has token limits)
@@ -489,18 +500,18 @@ class WebExtractor:
             
             # Generate embedding
             response = client.embeddings.create(
-                model="text-embedding-ada-002",  # Use the appropriate embedding model
+                model="text-embedding-ada-002",  # This model supports multilingual text
                 input=truncated_text
             )
             
             # Extract embedding values
             embedding = response.data[0].embedding
             
-            logger.info(f"Successfully generated embedding vector ({len(embedding)} dimensions)")
+            logger.info(f"Successfully generated {self.language} embedding vector ({len(embedding)} dimensions)")
             return embedding
         
         except Exception as e:
-            logger.error(f"Error generating embedding: {str(e)}")
+            logger.error(f"Error generating {self.language} embedding: {str(e)}")
             return []
         
     def _is_junk_domain(self, domain):
@@ -628,7 +639,7 @@ class WebExtractor:
     def search_web(self, query: str, num_results: int = 20) -> List[Dict]:
         """
         Search the web using the given query via Serper API.
-        Enhanced with additional filtering and quality improvements.
+        Enhanced with language-specific parameters for better results.
         
         Args:
             query: Search query string
@@ -638,8 +649,8 @@ class WebExtractor:
             List of dictionaries containing search results
         """
         query_preview = query[:50] + "..." if len(query) > 50 else query
-        logger.info(f"Searching web for: '{query_preview}' (limit: {num_results} results)")
-        print(f"  Searching for: '{query_preview}'...")
+        logger.info(f"Searching web for: '{query_preview}' (limit: {num_results} results, language: {self.language})")
+        print(f"  Searching for: '{query_preview}' in {self.language}...")
         
         if not self.search_api_key:
             error_msg = "Cannot search web: API_KEY not set"
@@ -653,19 +664,33 @@ class WebExtractor:
             # Use Serper API for searching
             url = "https://google.serper.dev/search"
             
-            # Enhance query with site-specific operators for better results
-            enhanced_query = self._enhance_search_query(query)
+            # Language-specific search parameters
+            gl_params = {
+                "English": "us",
+                "German": "de", 
+                "French": "fr"
+            }
             
+            hl_params = {
+                "English": "en",
+                "German": "de",
+                "French": "fr"
+            }
+            
+            # Enhanced query with language-specific location filters
+            if self.language in ["German", "French"]:
+                # For non-English languages, prioritize regional results
+                enhanced_query = self._enhance_search_query(query)
+            else:
+                # For English, use the original query
+                enhanced_query = query
+            
+            # Create payload with language-specific parameters
             payload = json.dumps({
                 "q": enhanced_query,
                 "num": num_results,
-                # Add parameter to include only English results if language is English
-                "gl": "us" if self.language == "English" else None,
-                "hl": {
-                    "English": "en",
-                    "German": "de",
-                    "French": "fr"
-                }.get(self.language, "en")
+                "gl": gl_params.get(self.language, "us"),  # Geographic location
+                "hl": hl_params.get(self.language, "en")   # Interface language
             })
             
             headers = {
@@ -686,9 +711,9 @@ class WebExtractor:
             logger.info(f"Received {len(organic_results)} search results in {search_time:.2f} seconds")
             print(f"  Found {len(organic_results)} results in {search_time:.2f} seconds")
             
-            # Filter out likely irrelevant results
+            # Filter results to remove junk and irrelevant content
             filtered_results = self._filter_search_results(organic_results)
-            logger.info(f"Filtered to {len(filtered_results)} relevant results")
+            logger.info(f"Filtered to {len(filtered_results)} relevant {self.language} results")
             
             # Log result URLs for debugging
             for i, result in enumerate(filtered_results):
@@ -1290,7 +1315,7 @@ class WebExtractor:
         
     def identify_themes(self, content: str) -> List[str]:
         """
-        Identify diverse themes in content using OpenAI with a data-driven approach.
+        Identify diverse themes in content using OpenAI, with language-specific handling.
         
         Args:
             content: Content text to analyze
@@ -1312,17 +1337,42 @@ class WebExtractor:
                 # Prepare content - limit to first 3000 chars to save tokens
                 excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
                 
-                # Create a prompt for theme extraction without suggesting ABS Initiative
-                prompt = f"""
-    Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
+                # Language-specific prompts
+                prompts = {
+                    "English": f"""
+    Analyze this text and identify the main substantive themes it discusses about ABS Initiative or Access and Benefit Sharing. Focus on the actual subject matter.
 
     Text excerpt:
     {excerpt}
 
-    Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects being discussed such as "Biodiversity Conservation", "Traditional Knowledge", "Genetic Resources", etc.
+    Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects like "Biodiversity Conservation".
 
     Return ONLY a comma-separated list of identified themes without explanations or additional text.
+    """,
+                    "German": f"""
+    Analysieren Sie diesen Text und identifizieren Sie die wichtigsten inhaltlichen Themen, die er über die ABS-Initiative oder Zugang und Vorteilsausgleich diskutiert. Konzentrieren Sie sich auf die tatsächlichen Inhalte.
+
+    Textauszug:
+    {excerpt}
+
+    Extrahieren Sie genau 5 spezifische, inhaltliche Themen aus diesem Text. Verwenden Sie KEINE generischen Themen wie "ABS-Initiative" oder "Kapazitätsentwicklung", es sei denn, sie werden selbst als Themen ausführlich behandelt. Konzentrieren Sie sich auf tatsächliche Themen wie "Biodiversitätsschutz".
+
+    Geben Sie NUR eine durch Kommas getrennte Liste der identifizierten Themen ohne Erklärungen oder zusätzlichen Text zurück.
+    """,
+                    "French": f"""
+    Analysez ce texte et identifiez les principaux thèmes substantiels qu'il aborde concernant l'Initiative APA ou l'Accès et le Partage des Avantages. Concentrez-vous sur le sujet réel.
+
+    Extrait de texte:
+    {excerpt}
+
+    Extrayez exactement 5 thèmes spécifiques et substantiels de ce contenu. N'utilisez PAS de thèmes génériques comme "Initiative APA" ou "Développement des capacités" à moins qu'ils ne soient discutés en détail en tant que sujets eux-mêmes. Concentrez-vous sur les sujets réels comme "Conservation de la biodiversité".
+
+    Retournez UNIQUEMENT une liste de thèmes identifiés séparés par des virgules, sans explications ni texte supplémentaire.
     """
+                }
+                
+                # Select prompt based on language
+                prompt = prompts.get(self.language, prompts["English"])
 
                 # Make API call
                 response = client.chat.completions.create(
@@ -1330,7 +1380,7 @@ class WebExtractor:
                     messages=[
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.7,  # Slightly higher temperature for more diversity
+                    temperature=0.7,
                     max_tokens=100
                 )
                 
@@ -1348,22 +1398,29 @@ class WebExtractor:
                     return ai_themes
         
         except Exception as e:
-            # Log the error but continue to fallback method
-            logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
+            logger.warning(f"Error using OpenAI for {self.language} theme extraction: {str(e)}. Falling back to simple content analysis.")
         
-        # Fallback approach without using "ABS Initiative" as default
-        import re
-        from collections import Counter
+        # Language-specific fallback topics
+        language_topics = {
+            "English": [
+                "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
+                "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
+                "Legal Framework", "Compliance", "Implementation", "Benefit Sharing"
+            ],
+            "German": [
+                "Biodiversität", "Naturschutz", "Nachhaltige Entwicklung", "Genetische Ressourcen",
+                "Traditionelles Wissen", "Indigene Rechte", "Politikentwicklung", 
+                "Rechtlicher Rahmen", "Einhaltung", "Umsetzung", "Vorteilsausgleich"
+            ],
+            "French": [
+                "Biodiversité", "Conservation", "Développement Durable", "Ressources Génétiques",
+                "Connaissances Traditionnelles", "Droits Autochtones", "Développement Politique", 
+                "Cadre Juridique", "Conformité", "Mise en Œuvre", "Partage des Avantages"
+            ]
+        }
         
-        # Define some substantive topics related to biodiversity and conservation
-        potential_topics = [
-            "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
-            "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
-            "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
-            "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
-            "Technology Transfer", "Capacity Building", "International Cooperation",
-            "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
-        ]
+        # Get topics for current language
+        potential_topics = language_topics.get(self.language, language_topics["English"])
         
         # Check which topics are present in the content
         found_topics = []
@@ -1380,38 +1437,20 @@ class WebExtractor:
         if found_topics:
             return found_topics
         
-        # Otherwise use a more general approach - extract key terms
-        # Extract all words and simple phrases
-        text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
+        # Default fallback by language
+        language_defaults = {
+            "English": ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"],
+            "German": ["Politikanalyse", "Forschungsergebnisse", "Umweltstudien", "Internationale Beziehungen", "Ressourcenmanagement"],
+            "French": ["Analyse Politique", "Résultats de Recherche", "Études Environnementales", "Relations Internationales", "Gestion des Ressources"]
+        }
         
-        # Count word frequencies
-        word_counts = Counter(words)
-        
-        # Remove common stopwords
-        stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
-                    "about", "which", "there", "where", "when", "what", "have", "will", "they", 
-                    "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
-                    "capacity", "through", "between", "information", "because", "system", "process"}
-        
-        # Filter out stop words
-        potential_themes = {word: count for word, count in word_counts.items() 
-                        if word not in stopwords and count > 1}
-        
-        # Extract 5 most common potential theme words
-        top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
-        
-        # If we couldn't find good topic words, return generic research categories
-        if not top_words:
-            return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
-        
-        return top_words
+        return language_defaults.get(self.language, language_defaults["English"])
         
 
 
     def analyze_sentiment(self, content: str) -> str:
         """
-        Analyze sentiment using simple keyword-based approach.
+        Analyze sentiment using AI, with language-specific handling.
         
         Args:
             content: Content text to analyze
@@ -1428,18 +1467,41 @@ class WebExtractor:
                 # Use just first 1000 chars to save on tokens
                 excerpt = content[:1000] + ("..." if len(content) > 1000 else "")
                 
-                prompt = """
+                # Language-specific prompts
+                prompts = {
+                    "English": f"""
     Analyze the sentiment of this text about the ABS Initiative or Access and Benefit Sharing.
     Consider the overall tone, language, and context.
     Return ONLY one of these three options: "Positive", "Negative", or "Neutral".
 
     Text:
+    {excerpt}
+    """,
+                    "German": f"""
+    Analysieren Sie die Stimmung dieses Textes über die ABS-Initiative oder Zugang und Vorteilsausgleich.
+    Berücksichtigen Sie den Gesamtton, die Sprache und den Kontext.
+    Geben Sie NUR eine dieser drei Optionen zurück: "Positive", "Negative", oder "Neutral".
+
+    Text:
+    {excerpt}
+    """,
+                    "French": f"""
+    Analysez le sentiment de ce texte concernant l'Initiative APA ou l'Accès et le Partage des Avantages.
+    Tenez compte du ton général, du langage et du contexte.
+    Retournez UNIQUEMENT l'une de ces trois options: "Positive", "Negative", ou "Neutral".
+
+    Texte:
+    {excerpt}
     """
+                }
+                
+                # Select prompt based on language
+                prompt = prompts.get(self.language, prompts["English"])
                 
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "user", "content": prompt + excerpt}
+                        {"role": "user", "content": prompt}
                     ],
                     temperature=0.3,
                     max_tokens=10
@@ -1449,26 +1511,57 @@ class WebExtractor:
                 
                 # Ensure we get one of the three valid sentiments
                 if sentiment in ["Positive", "Negative", "Neutral"]:
-                    logger.info(f"OpenAI sentiment analysis result: {sentiment}")
+                    logger.info(f"OpenAI {self.language} sentiment analysis result: {sentiment}")
                     return sentiment
         except Exception as e:
-            logger.warning(f"Error using OpenAI for sentiment analysis: {str(e)}. Falling back to keyword analysis.")
+            logger.warning(f"Error using OpenAI for {self.language} sentiment analysis: {str(e)}. Falling back to keyword analysis.")
         
-        # Fallback to keyword-based approach if OpenAI fails
+        # Language-specific keywords for sentiment analysis
+        language_keywords = {
+            "English": {
+                "positive": [
+                    "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
+                    "advantage", "effective", "efficiently", "progress", "achievement", "sustainable",
+                    "solution", "opportunity", "promising", "innovative", "advanced", "partnership"
+                ],
+                "negative": [
+                    "failure", "failed", "problem", "challenge", "difficult", "negative", "risk",
+                    "threat", "damage", "harmful", "pollution", "degradation", "unsustainable",
+                    "danger", "crisis", "emergency", "concern", "alarming", "devastating"
+                ]
+            },
+            "German": {
+                "positive": [
+                    "erfolg", "erfolgreich", "vorteilhaft", "vorteil", "positiv", "verbessern", "verbesserung",
+                    "nutzen", "effektiv", "effizient", "fortschritt", "leistung", "nachhaltig",
+                    "lösung", "chance", "vielversprechend", "innovativ", "fortschrittlich", "partnerschaft"
+                ],
+                "negative": [
+                    "scheitern", "gescheitert", "problem", "herausforderung", "schwierig", "negativ", "risiko",
+                    "bedrohung", "schaden", "schädlich", "verschmutzung", "degradierung", "nicht nachhaltig",
+                    "gefahr", "krise", "notfall", "bedenken", "alarmierend", "verheerend"
+                ]
+            },
+            "French": {
+                "positive": [
+                    "succès", "réussite", "bénéfique", "avantage", "positif", "améliorer", "amélioration",
+                    "atout", "efficace", "efficacement", "progrès", "réalisation", "durable",
+                    "solution", "opportunité", "prometteur", "innovant", "avancé", "partenariat"
+                ],
+                "negative": [
+                    "échec", "échoué", "problème", "défi", "difficile", "négatif", "risque",
+                    "menace", "dommage", "nuisible", "pollution", "dégradation", "non durable",
+                    "danger", "crise", "urgence", "préoccupation", "alarmant", "dévastateur"
+                ]
+            }
+        }
+        
+        # Get keywords for current language
+        keywords = language_keywords.get(self.language, language_keywords["English"])
+        positive_keywords = keywords["positive"]
+        negative_keywords = keywords["negative"]
+        
         content_lower = content.lower()
-        
-        # Define positive and negative keywords
-        positive_keywords = [
-            "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
-            "advantage", "effective", "efficiently", "progress", "achievement", "sustainable",
-            "solution", "opportunity", "promising", "innovative", "advanced", "partnership"
-        ]
-        
-        negative_keywords = [
-            "failure", "failed", "problem", "challenge", "difficult", "negative", "risk",
-            "threat", "damage", "harmful", "pollution", "degradation", "unsustainable",
-            "danger", "crisis", "emergency", "concern", "alarming", "devastating"
-        ]
         
         # Count occurrences
         positive_count = sum(content_lower.count(keyword) for keyword in positive_keywords)
@@ -1828,6 +1921,7 @@ class WebExtractor:
     def _filter_search_results(self, results):
         """
         Filter search results to remove likely irrelevant content.
+        Modified to consider language-specific patterns.
         
         Args:
             results: List of search result dictionaries
@@ -1836,6 +1930,22 @@ class WebExtractor:
             Filtered list of search results
         """
         filtered_results = []
+        
+        # Language-specific keywords for filtering
+        language_keywords = {
+            "English": ["abs", "capacity development", "initiative", "access and benefit", 
+                        "nagoya protocol", "genetic resources", "traditional knowledge"],
+            "German": ["abs", "kapazitätsentwicklung", "initiative", "zugang und vorteilsausgleich", 
+                    "nagoya-protokoll", "genetische ressourcen", "traditionelles wissen"],
+            "French": ["apa", "développement des capacités", "initiative", "accès et partage", 
+                    "protocole de nagoya", "ressources génétiques", "connaissances traditionnelles"]
+        }
+        
+        # Get keywords for current language
+        current_keywords = language_keywords.get(self.language, language_keywords["English"])
+        
+        # Language specific domains
+        preferred_domains = self.lang_settings["domains"]
         
         for result in results:
             # Skip results without links
@@ -1863,32 +1973,21 @@ class WebExtractor:
             if self._is_junk_domain(domain):
                 continue
             
-            # Check if title or snippet contains any ABS-related terms
-            abs_terms = [
-                "abs", "capacity development", "initiative", "access and benefit",
-                "nagoya protocol", "genetic resources", "traditional knowledge", 
-                "biodiversity", "bio-innovation"
-            ]
-            
+            # Check if title or snippet contains any language-specific keywords
             # Ensure at least one relevant term in title or snippet
-            if not any(term in title or term in snippet for term in abs_terms):
+            if not any(term in title or term in snippet for term in current_keywords):
                 continue
             
             # Calculate a preliminary relevance score for sorting
             relevance = 0
             
             # More relevant terms = higher score
-            relevance += sum(term in title for term in abs_terms) * 2
-            relevance += sum(term in snippet for term in abs_terms)
+            relevance += sum(term in title for term in current_keywords) * 2
+            relevance += sum(term in snippet for term in current_keywords)
             
-            # Prioritize results from reliable domains
-            reliable_domains = [
-                "abs-initiative.info", "cbd.int", "giz.de", "bmz.de", 
-                "unctad.org", "un.org", "undp.org", "unep.org"
-            ]
-            
-            if any(domain.endswith(reliable) or reliable in domain for reliable in reliable_domains):
-                relevance += 5
+            # Bonus for language-appropriate domains
+            if any(domain.endswith(tld) for tld in preferred_domains):
+                relevance += 2
             
             # Add relevance score to the result
             result["preliminary_relevance"] = relevance
@@ -1900,7 +1999,6 @@ class WebExtractor:
         filtered_results.sort(key=lambda x: x.get("preliminary_relevance", 0), reverse=True)
         
         return filtered_results
-
 
     def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
         """
