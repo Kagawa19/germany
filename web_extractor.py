@@ -53,6 +53,10 @@ class WebExtractor:
         
         # Configure the specific initiatives to track
         self.configure_initiatives()
+        
+        # Import OpenAI client function - add this line
+        from content_db import get_openai_client
+        self.get_openai_client = get_openai_client
 
     def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
         """
@@ -472,7 +476,8 @@ class WebExtractor:
             return []
         
         try:
-            # Get OpenAI client
+            # Get OpenAI client - use the instance method
+            from content_db import get_openai_client
             client = get_openai_client()
             if not client:
                 logger.warning("OpenAI client not available for embedding generation")
@@ -1283,14 +1288,12 @@ class WebExtractor:
             logger.error(f"Error handling PDF document: {str(e)}")
             return f"PDF Document: {url}", "PDF Document", None, f"ABS Initiative document available at {url}"
         
-    def identify_themes(self, content: str, embedding=None) -> List[str]:
+    def identify_themes(self, content: str) -> List[str]:
         """
-        Identify diverse themes in content using OpenAI.
-        Enhanced to use embeddings when available.
+        Identify diverse themes in content using OpenAI with a data-driven approach.
         
         Args:
             content: Content text to analyze
-            embedding: Optional embedding vector for the content
             
         Returns:
             List of identified themes
@@ -1301,12 +1304,15 @@ class WebExtractor:
         
         # Try to use OpenAI for theme extraction
         try:
+            from content_db import get_openai_client
             client = get_openai_client()
+            
+            # If API key is available, use OpenAI
             if client:
                 # Prepare content - limit to first 3000 chars to save tokens
                 excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
                 
-                # Create a prompt for theme extraction
+                # Create a prompt for theme extraction without suggesting ABS Initiative
                 prompt = f"""
     Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
 
@@ -1345,33 +1351,79 @@ class WebExtractor:
             # Log the error but continue to fallback method
             logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
         
-        # Fallback approach (same as your original method)
-        # [existing fallback code]
+        # Fallback approach without using "ABS Initiative" as default
+        import re
+        from collections import Counter
         
-        return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
+        # Define some substantive topics related to biodiversity and conservation
+        potential_topics = [
+            "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
+            "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
+            "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
+            "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
+            "Technology Transfer", "Capacity Building", "International Cooperation",
+            "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
+        ]
+        
+        # Check which topics are present in the content
+        found_topics = []
+        content_lower = content.lower()
+        
+        for topic in potential_topics:
+            if topic.lower() in content_lower:
+                found_topics.append(topic)
+                # Stop once we have 5 topics
+                if len(found_topics) >= 5:
+                    break
+        
+        # If we found specific topics, return them
+        if found_topics:
+            return found_topics
+        
+        # Otherwise use a more general approach - extract key terms
+        # Extract all words and simple phrases
+        text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
+        
+        # Count word frequencies
+        word_counts = Counter(words)
+        
+        # Remove common stopwords
+        stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
+                    "about", "which", "there", "where", "when", "what", "have", "will", "they", 
+                    "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
+                    "capacity", "through", "between", "information", "because", "system", "process"}
+        
+        # Filter out stop words
+        potential_themes = {word: count for word, count in word_counts.items() 
+                        if word not in stopwords and count > 1}
+        
+        # Extract 5 most common potential theme words
+        top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
+        
+        # If we couldn't find good topic words, return generic research categories
+        if not top_words:
+            return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
+        
+        return top_words
         
 
 
-    def analyze_sentiment(self, content: str, embedding=None) -> str:
+    def analyze_sentiment(self, content: str) -> str:
         """
-        Analyze sentiment using keyword-based approach and OpenAI when available.
-        Enhanced to use embeddings for improved accuracy.
+        Analyze sentiment using simple keyword-based approach.
         
         Args:
             content: Content text to analyze
-            embedding: Optional embedding vector for the content
             
         Returns:
             Sentiment (Positive, Negative, or Neutral)
         """
-        if not content or len(content) < 50:
-            return "Neutral"
-            
-        content_lower = content.lower()
-        
-        # Try to use OpenAI for more accurate sentiment analysis
         try:
+            # Try using OpenAI for more accurate sentiment analysis
+            from content_db import get_openai_client
             client = get_openai_client()
+            
             if client:
                 # Use just first 1000 chars to save on tokens
                 excerpt = content[:1000] + ("..." if len(content) > 1000 else "")
@@ -1399,13 +1451,12 @@ class WebExtractor:
                 if sentiment in ["Positive", "Negative", "Neutral"]:
                     logger.info(f"OpenAI sentiment analysis result: {sentiment}")
                     return sentiment
-                    
-                # If response doesn't match expected values, fall back to keyword approach
-                logger.warning(f"Unexpected sentiment response: {sentiment}. Falling back to keyword analysis.")
         except Exception as e:
             logger.warning(f"Error using OpenAI for sentiment analysis: {str(e)}. Falling back to keyword analysis.")
         
-        # Fallback: Use keyword-based approach (your original implementation)
+        # Fallback to keyword-based approach if OpenAI fails
+        content_lower = content.lower()
+        
         # Define positive and negative keywords
         positive_keywords = [
             "success", "successful", "beneficial", "benefit", "positive", "improve", "improvement",
@@ -1639,7 +1690,6 @@ class WebExtractor:
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
         Process a single search result to extract and analyze content.
-        Proper sequence: extract -> embeddings -> summary -> analysis
         
         Args:
             result: The search result dict with link, title, etc.
@@ -1658,8 +1708,8 @@ class WebExtractor:
         logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
         
         try:
-            # Extract content from URL - returns None for summary
-            content, extracted_title, date, _ = self.scrape_webpage(url, title)
+            # Extract content from URL using scrape_webpage method
+            content, extracted_title, date, clean_summary = self.scrape_webpage(url, title)
             
             # Skip if no content
             if not content:
@@ -1677,31 +1727,48 @@ class WebExtractor:
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
             
-            # Generate embeddings FIRST, before other analysis
+            # Try to generate embeddings, but make it optional
             embedding = []
-            if len(content) > 300:
-                embedding = self.generate_embedding(content)
+            try:
+                if len(content) > 300:
+                    embedding = self.generate_embedding(content)
+            except Exception as e:
+                logger.warning(f"Embedding generation failed, continuing without embeddings: {str(e)}")
             
-            # Generate summary using embeddings
-            clean_summary = self.generate_summary(content, extracted_title, url, embedding)
-            
-            # Identify themes using embeddings
-            themes = self.identify_themes(content, embedding)
+            # Identify themes
+            try:
+                themes = self.identify_themes(content)
+            except Exception as e:
+                logger.warning(f"Theme identification failed: {str(e)}")
+                themes = ["ABS Initiative"]  # Default theme
             
             # Ensure we have at least one theme
             if not themes:
                 themes = ["ABS Initiative"]
             
-            # Analyze sentiment using embeddings
-            sentiment = self.analyze_sentiment(content, embedding)
+            # Analyze sentiment
+            try:
+                sentiment = self.analyze_sentiment(content)
+            except Exception as e:
+                logger.warning(f"Sentiment analysis failed: {str(e)}")
+                sentiment = "Neutral"  # Default sentiment
+                
+            # Generate summary if needed
+            if not clean_summary or len(clean_summary) < 50:
+                try:
+                    from content_db import generate_summary
+                    clean_summary = generate_summary(content)
+                except Exception as e:
+                    logger.warning(f"Summary generation failed: {str(e)}")
+                    clean_summary = content[:200] + "..." if len(content) > 200 else content
             
-            # Format the result with all processed data
+            # Format the result
             result_data = {
                 "title": extracted_title or title,
                 "link": url,
                 "date": date,
                 "content": content,
-                "summary": clean_summary,
+                "summary": clean_summary or content[:200],  # Use first 200 chars if no summary
                 "themes": themes,
                 "organization": organization,
                 "sentiment": sentiment,
@@ -1709,11 +1776,11 @@ class WebExtractor:
                 "initiative": "ABS Initiative",
                 "initiative_key": initiative_key,
                 "initiative_score": initiative_score,
-                "embedding": embedding,
+                "embedding": embedding if embedding else None,  # Include embedding if available
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f})")
+            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f}, language: {self.language})")
             return result_data
                 
         except Exception as e:

@@ -66,11 +66,20 @@ def get_db_connection():
 # Initialize OpenAI client
 def get_openai_client():
     """Get or initialize OpenAI client."""
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not openai_api_key:
-        return None
-    
     try:
+        from openai import OpenAI
+        import os
+        from dotenv import load_dotenv
+        
+        # Load environment variables
+        load_dotenv()
+        
+        # Get API key
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            logger.warning("OPENAI_API_KEY not found in environment variables")
+            return None
+        
         return OpenAI(api_key=openai_api_key)
     except Exception as e:
         logger.error(f"Error initializing OpenAI client: {str(e)}")
@@ -732,7 +741,7 @@ def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, An
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     Store extracted data into the database using a batch transaction.
-    Enhanced to store embeddings and avoid duplicative processing.
+    Fixed with better error handling and embedding handling.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -752,167 +761,140 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     success_count = 0
     error_count = 0
     
-    conn = None
-    cursor = None
-    
-    try:
-        # Get database connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    # Process each item with individual transactions to avoid cascading failures
+    for i, item in enumerate(extracted_data):
+        conn = None
+        cursor = None
         
-        # Check if embedding column exists
         try:
-            check_query = """
-            SELECT EXISTS (
-                SELECT FROM information_schema.columns 
-                WHERE table_name = 'content_data' AND column_name = 'embedding'
-            );
-            """
-            cursor.execute(check_query)
-            has_embedding_column = cursor.fetchone()[0]
+            # Extract item data
+            title = item.get("title", "")
+            link = item.get("link", "")
+            date_str = item.get("date")
+            content = item.get("content", "")
+            summary = item.get("summary", "")
+            themes = item.get("themes", [])
+            organization = item.get("organization", "")
+            sentiment = item.get("sentiment", "Neutral")
+            language = item.get("language", "English")
+            initiative = item.get("initiative", "ABS Initiative")
+            initiative_key = item.get("initiative_key", "abs_initiative")
             
-            # Add embedding column if it doesn't exist
-            if not has_embedding_column:
-                alter_query = """
-                ALTER TABLE content_data ADD COLUMN embedding vector(1536);
+            # Skip items with empty/invalid URLs
+            if not link or len(link) < 5:
+                logger.warning(f"Skipping item {i+1} with invalid URL: {link}")
+                error_count += 1
+                continue
+            
+            # Format date
+            date_value = None
+            if date_str:
+                date_value = format_date(date_str)
+            
+            # Get database connection - separate connection for each item
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Check if embedding column exists
+            has_embedding_column = False
+            try:
+                check_query = """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns 
+                    WHERE table_name = 'content_data' AND column_name = 'embedding'
+                );
                 """
-                try:
-                    cursor.execute(alter_query)
-                    logger.info("Added embedding column to content_data table")
-                    conn.commit()
-                except Exception as e:
-                    logger.warning(f"Failed to add vector column: {str(e)}")
-                    # Try alternative approach for older PostgreSQL versions
+                cursor.execute(check_query)
+                has_embedding_column = cursor.fetchone()[0]
+                
+                # Add embedding column if it doesn't exist - but use JSONB
+                if not has_embedding_column:
                     try:
+                        # Try with JSONB type first which should work on all PostgreSQL versions
                         alter_query = """
                         ALTER TABLE content_data ADD COLUMN embedding JSONB;
                         """
                         cursor.execute(alter_query)
+                        conn.commit()  # Commit this change right away
                         logger.info("Added embedding JSONB column to content_data table")
-                        conn.commit()
-                    except Exception as e2:
-                        logger.warning(f"Failed to add JSONB column: {str(e2)}")
-                        # Proceed without the column
-        except Exception as e:
-            logger.warning(f"Error checking for embedding column: {str(e)}")
-        
-        # Process each item
-        for i, item in enumerate(extracted_data):
-            try:
-                # Extract item data - use data that was already processed
-                title = item.get("title", "")
-                link = item.get("link", "")
-                date_str = item.get("date")
-                content = item.get("content", "")
-                summary = item.get("summary", "")
-                themes = item.get("themes", [])
-                organization = item.get("organization", "")
-                sentiment = item.get("sentiment", "Neutral")
-                language = item.get("language", "English")
-                initiative = item.get("initiative", "ABS Initiative")
-                initiative_key = item.get("initiative_key", "abs_initiative")
-                embedding = item.get("embedding", [])
-                
-                # Skip items with empty/invalid URLs
-                if not link or len(link) < 5:
-                    logger.warning(f"Skipping item {i+1} with invalid URL: {link}")
-                    error_count += 1
-                    continue
-                
-                # Format date
-                date_value = None
-                if date_str:
-                    date_value = format_date(date_str)
-                
-                # Build query based on columns that exist
+                        has_embedding_column = True
+                    except Exception as e:
+                        logger.warning(f"Failed to add embedding column: {str(e)}")
+                        conn.rollback()
+                        # Continue without the embedding column
+            except Exception as e:
+                logger.warning(f"Error checking for embedding column: {str(e)}")
+                # Continue without checking column
+            
+            # Convert embedding to JSON string if present
+            embedding_json = None
+            embedding = item.get("embedding")
+            if embedding and has_embedding_column:
                 try:
-                    # Try to include embedding column if it exists
-                    if has_embedding_column:
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, themes, organization, sentiment, 
-                         language, initiative, initiative_key, embedding, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        # Convert embedding list to string for storage
-                        embedding_json = json.dumps(embedding) if embedding else None
-                        
-                        cursor.execute(
-                            query, 
-                            (link, title, date_value, summary, content, themes, organization, sentiment,
-                             language, initiative, initiative_key, embedding_json)
-                        )
-                    else:
-                        # Regular query without embedding
-                        query = """
-                        INSERT INTO content_data 
-                        (link, title, date, summary, full_content, themes, organization, sentiment, 
-                         language, initiative, initiative_key, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        RETURNING id;
-                        """
-                        
-                        cursor.execute(
-                            query, 
-                            (link, title, date_value, summary, content, themes, organization, sentiment,
-                             language, initiative, initiative_key)
-                        )
+                    embedding_json = json.dumps(embedding)
+                except Exception as e:
+                    logger.warning(f"Failed to convert embedding to JSON: {str(e)}")
+            
+            # Construct query based on column availability
+            if has_embedding_column:
+                query = """
+                INSERT INTO content_data 
+                (link, title, date, summary, full_content, themes, organization, sentiment, 
+                 language, initiative, initiative_key, embedding, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                RETURNING id;
+                """
                 
-                except Exception as col_error:
-                    logger.warning(f"Error executing insert query: {str(col_error)}")
-                    # Fall back to basic query without language or initiative
-                    query = """
-                    INSERT INTO content_data 
-                    (link, title, date, summary, full_content, themes, organization, sentiment, 
-                     created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                    RETURNING id;
-                    """
-                    
-                    cursor.execute(
-                        query, 
-                        (link, title, date_value, summary, content, themes, organization, sentiment)
-                    )
+                cursor.execute(
+                    query, 
+                    (link, title, date_value, summary, content, themes, organization, sentiment,
+                     language, initiative, initiative_key, embedding_json)
+                )
+            else:
+                # Fallback without embedding column
+                query = """
+                INSERT INTO content_data 
+                (link, title, date, summary, full_content, themes, organization, sentiment, 
+                 language, initiative, initiative_key, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                RETURNING id;
+                """
                 
-                # Get the ID of the inserted record
-                record_id = cursor.fetchone()[0]
-                inserted_ids.append(record_id)
-                success_count += 1
-                
-                logger.info(f"Inserted record with ID {record_id} for URL: {link}")
-                
-            except Exception as item_error:
-                error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(item_error)}"
-                logger.error(error_msg)
-                error_count += 1
+                cursor.execute(
+                    query, 
+                    (link, title, date_value, summary, content, themes, organization, sentiment,
+                     language, initiative, initiative_key)
+                )
+            
+            # Get the ID of the inserted record
+            record_id = cursor.fetchone()[0]
+            inserted_ids.append(record_id)
+            success_count += 1
+            
+            # Commit this transaction
+            conn.commit()
+            
+            logger.info(f"Inserted record with ID {record_id} for URL: {link}")
+            
+        except Exception as e:
+            error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(e)}"
+            logger.error(error_msg)
+            if conn:
+                conn.rollback()
+            error_count += 1
         
-        # Commit the transaction
-        conn.commit()
-        logger.info(f"Transaction committed successfully with {success_count} records")
-        
-    except Exception as e:
-        # If any error happens in the batch process, roll back
-        error_msg = f"Error during batch insertion: {str(e)}"
-        logger.error(error_msg)
-        
-        if conn:
-            conn.rollback()
-            logger.info("Transaction rolled back due to error")
-    
-    finally:
-        # Always close cursor and connection
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        finally:
+            # Close cursor and connection
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
     
     # Summary after all items are processed
     logger.info(f"Successfully stored {success_count} records in database")
+    logger.info(f"Failed to store {error_count} records")
     
     return inserted_ids
-
 
 
 def cosine_similarity(vec1, vec2):

@@ -113,3 +113,17 @@ WHERE (
     full_content ILIKE '%Bio-innovation Africa%' OR
     full_content ILIKE '%BioInnovation Africa%'
 ) AND initiative IS NULL;
+
+-- Add embedding column if it doesn't exist with JSONB type for compatibility
+DO $$
+BEGIN
+    -- Check if embedding column exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name='content_data' AND column_name='embedding') THEN
+        ALTER TABLE content_data ADD COLUMN embedding JSONB;
+    END IF;
+END
+$$;
+
+-- Create an index on the embedding column for faster searches
+CREATE INDEX IF NOT EXISTS idx_content_data_embedding_exists ON content_data ((embedding IS NOT NULL));
