@@ -7,7 +7,7 @@ import time
 import os
 import logging
 import json
-from content_db import generate_summary
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
@@ -93,13 +93,13 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         print(f"🔍 Initializing web content extractor for {language} content...")
 
         # Initialize WebExtractor with language parameter and generate_summary function
+        # Initialize WebExtractor with language parameter only
         extractor = WebExtractor(
             search_api_key=SERPER_API_KEY,
             max_workers=10,
-            language=language,
-            generate_summary=generate_summary
+            language=language
         )
-        
+
         # Store in session state for reference
         st.session_state['extractor_instance'] = extractor
 

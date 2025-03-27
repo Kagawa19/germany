@@ -169,95 +169,7 @@ def is_high_quality_content(content, title, url):
     # Return True if content meets quality thresholds
     return quality_score >= 5 or (is_reliable_source and quality_score >= 3) or keyword_density > 0.5
 
-def generate_summary(self, content, title="", url=""):
-    """
-    Generate a clean, validated summary from content using OpenAI.
-    
-    Args:
-        content: Content text to summarize
-        title: Content title for context
-        url: Source URL for context
-        
-    Returns:
-        Validated summary text
-    """
-    if not content or len(content) < 100:
-        return content
-    
-    # Reduce content length if too long
-    content_to_summarize = content[:3000] + ("..." if len(content) > 3000 else "")
-    
-    client = get_openai_client()
-    if client:
-        try:
-            logger.info("Generating summary using OpenAI")
-            
-            # Use a more explicit prompt focused on ABS Initiative
-            prompt = f"""
-Provide a factual summary of the following content about the ABS Initiative or related programs.
-Focus only on explicitly stated information about:
-1. The ABS Capacity Development Initiative
-2. Bio-innovation Africa
-3. Access and Benefit Sharing activities
-4. Specific projects, events, or outcomes mentioned
 
-Title: {title}
-URL: {url}
-
-Content: {content_to_summarize}
-
-IMPORTANT: Include ONLY factual information explicitly mentioned in the content. 
-DO NOT add any speculative or interpretive information. 
-If information seems unclear or ambiguous, exclude it from the summary.
-"""
-            
-            # Generate the initial summary
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_tokens=200
-            )
-            
-            summary = response.choices[0].message.content.strip()
-            
-            # Now validate the summary against the original content
-            validation_result = self.validate_summary(summary, content_to_summarize)
-            
-            if not validation_result['valid']:
-                logger.info(f"Summary validation failed: {validation_result['issues']}")
-                
-                # Regenerate with more specific instructions
-                validation_prompt = f"""
-The previous summary contained potential inaccuracies. Please create a new summary addressing these issues:
-{', '.join(validation_result['issues'])}
-
-Original content: {content_to_summarize}
-
-Create a STRICTLY FACTUAL summary focusing ONLY on information explicitly stated in the content.
-"""
-                
-                validation_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "user", "content": validation_prompt}
-                    ],
-                    temperature=0.2,
-                    max_tokens=200
-                )
-                
-                summary = validation_response.choices[0].message.content.strip()
-            
-            logger.info(f"Successfully generated validated summary ({len(summary)} chars)")
-            return summary
-        
-        except Exception as e:
-            logger.error(f"Error using OpenAI for summary: {str(e)}")
-    
-    # Fallback: use first 500 chars if OpenAI fails
-    return content[:500] + "..." if len(content) > 500 else content
 
 def analyze_sentiment(content: str) -> str:
     """
@@ -740,8 +652,8 @@ def extract_benefit_examples(content: str, initiative: str) -> List[Dict[str, An
 
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
-    Store extracted data into the database using a batch transaction.
-    Fixed with better error handling and embedding handling.
+    Store extracted data into the database without further processing.
+    Just stores the data exactly as provided.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
