@@ -1,33 +1,37 @@
 import os
 import pandas as pd
+import openai
+from dotenv import load_dotenv
 
-def filter_summary():
-    file_path = "summary.csv"
-    output_path = "new_summary.csv"
-    
-    keywords = [
-        "ABS Capacity Development Initiative", "ABS CDI", "ABS Capacity Development Initiative for Africa", 
-        "ABS Inititiave", "Initiative pour le renforcement des capacités en matière d’APA", 
-        "Initiative Accès et Partage des Avantages", "Initiative sur le développement des capacités pour l’APA", 
-        "Initiative de renforcement des capacités sur l’APA", "Initiative APA", 
-        "Initiative de développement des capacités en matière d'accès et de partage des avantages", 
-        "Initiative für Zugang und Vorteilsausgleich", "ABS-Kapazitätenentwicklungsinitiative für Afrika", 
-        "ABS-Initiative"
-    ]
-    
-    if not os.path.exists(file_path):
-        print(f"Error: {file_path} not found.")
-        return
-    
+# Load API Key from .env
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def translate_text(text, target_language):
+    if pd.isna(text) or not text.strip():
+        return text  # Return empty or NaN as is
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": f"Translate the following text into {target_language}."},
+            {"role": "user", "content": text}
+        ]
+    )
+    return response["choices"][0]["message"]["content"]
+
+def process_csv(file_path, target_language, new_file_name):
     df = pd.read_csv(file_path)
-    if "summary" not in df.columns:
-        print("Error: CSV file must contain a 'summary' column.")
-        return
-    
-    df_filtered = df[df["summary"].astype(str).apply(lambda x: any(keyword in x for keyword in keywords))]
-    
-    df_filtered.to_csv(output_path, index=False)
-    print(f"Filtered data saved as {output_path}")
 
-if __name__ == "__main__":
-    filter_summary()
+    if "summary" in df.columns:
+        df["summary"] = df["summary"].apply(lambda x: translate_text(x, target_language))
+        df.to_csv(new_file_name, index=False)
+        print(f"Translated file saved as {new_file_name}")
+    else:
+        print(f"No 'summary' column found in {file_path}")
+
+# Process German CSV
+process_csv("german.csv", "German", "german_translated.csv")
+
+# Process French CSV
+process_csv("french.csv", "French", "french_translated.csv")
