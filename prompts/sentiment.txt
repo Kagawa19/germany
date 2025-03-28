@@ -1,8 +1,0 @@
-Analyze the sentiment of the following text in the context of international environmental cooperation. 
-
-Categorize the overall sentiment as one of the following:
-- Positive: Optimistic, constructive, solution-oriented
-- Neutral: Balanced, factual, objective
-- Negative: Critical, pessimistic, highlighting challenges
-
-Consider the tone, language, and underlying message about environmental sustainability, international collaboration, and development efforts.
