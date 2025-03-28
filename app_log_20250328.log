@@ -2949,3 +2949,958 @@ LINE 1: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_...
 
 [SQL: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_score DESC, publication_date DESC LIMIT 100]
 (Background on this error at: https://sqlalche.me/e/20/f405)
+2025-03-28 17:07:19,809 - Dashboard - INFO - Rendering Dashboard page
+2025-03-28 17:07:19,810 - ContentDB - INFO - Fetching data from database (limit: 1000, filters: None)
+2025-03-28 17:07:19,812 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:07:19,863 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:07:19,902 - ContentDB - ERROR - Error fetching data: (psycopg2.errors.UndefinedTable) relation "v_abs_content_analysis" does not exist
+LINE 1: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_...
+                      ^
+
+[SQL: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_score DESC, publication_date DESC LIMIT 1000]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-03-28 17:07:19,919 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:07:19,921 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:07:26,131 - Dashboard - INFO - Rendering Dashboard page
+2025-03-28 17:07:26,132 - ContentDB - INFO - Fetching data from database (limit: 1000, filters: None)
+2025-03-28 17:07:26,133 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:07:26,135 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:07:26,172 - ContentDB - ERROR - Error fetching data: (psycopg2.errors.UndefinedTable) relation "v_abs_content_analysis" does not exist
+LINE 1: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_...
+                      ^
+
+[SQL: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_score DESC, publication_date DESC LIMIT 1000]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-03-28 17:07:26,187 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:07:26,189 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:07:32,668 - ABS_Initiative_App - INFO - Starting extraction - Language: English, Max Queries: 3, Max Results: 10
+2025-03-28 17:07:32,670 - root - INFO - Starting web extraction process | Max Queries: 3 | Max Results Per Query: 10 | Language: English
+2025-03-28 17:07:32,680 - root - INFO - Initializing WebExtractor with language: English
+2025-03-28 17:07:32,696 - Search - INFO - OpenAI API key loaded from environment variables
+2025-03-28 17:07:32,730 - Search - INFO - OpenAI client initialized successfully
+2025-03-28 17:07:32,739 - analysis - INFO - OpenAI API key loaded from environment variables
+2025-03-28 17:07:32,767 - analysis - INFO - OpenAI client initialized successfully
+2025-03-28 17:07:32,775 - Processing - INFO - OpenAI API key loaded from environment variables
+2025-03-28 17:07:32,775 - WebExtractor - INFO - Initialized WebExtractor for English with 10 workers
+2025-03-28 17:07:32,780 - WebExtractor - INFO - Running web extractor
+2025-03-28 17:07:32,781 - extraction.extractor - INFO - Starting web content extraction process
+2025-03-28 17:07:32,805 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:32,807 - extraction.extractor - ERROR - Database error: Failed to fetch existing URLs - column "link" does not exist
+LINE 1: SELECT link FROM content_sources
+               ^
+
+2025-03-28 17:07:32,809 - Search - INFO - Generated 3 search queries for English
+2025-03-28 17:07:32,814 - extraction.extractor - INFO - Starting with empty processed_urls set - no in-memory URL history
+2025-03-28 17:07:32,816 - extraction.extractor - INFO - Query 1/3: 'ABS Capacity Development Initiative'
+2025-03-28 17:07:32,821 - Search - INFO - Searching web for: 'ABS Capacity Development Initiative' (limit: 10 results, language: English)
+2025-03-28 17:07:34,176 - Search - INFO - Received 10 search results in 1.35 seconds
+2025-03-28 17:07:34,184 - Search - INFO - Filtered to 10 relevant English results
+2025-03-28 17:07:34,184 - Search - INFO - Result 1: [PDF] The ABS Capacity Development Initiative - SNRD Asia - https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:34,185 - Search - INFO - Result 2: The ABS Capacity Development Initiative | Pacific Environment - https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:34,186 - Search - INFO - Result 3: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:34,187 - Search - INFO - Result 4: [PDF] From Global to Local: The ABS Capacity Development Initiative - https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:34,188 - Search - INFO - Result 5: ABS Capacity Development Initiative (GIZ) 2023-2025 - https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:34,189 - Search - INFO - Result 6: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE - https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:34,189 - Search - INFO - Result 7: Awareness-raising material on ABS - https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:34,190 - Search - INFO - Result 8: General Information - ABS Biotrade - https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:34,191 - Search - INFO - Result 9: ABS Biotrade: Biodiversity-Based Value Chains - https://www.abs-biotrade.info/
+2025-03-28 17:07:34,191 - Search - INFO - Result 10: Implementing access and benefit sharing for biodiversity - giz.de - https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:34,194 - extraction.extractor - INFO - Query 1 returned 10 results
+2025-03-28 17:07:34,197 - extraction.extractor - INFO - Processing new URL: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:34,201 - extraction.extractor - INFO - Processing new URL: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:34,201 - extraction.content - INFO - Processing result 1 from query 1: [PDF] The ABS Capacity Development Initiative - SNRD Asia
+2025-03-28 17:07:34,204 - Processing - INFO - Scraping webpage: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:34,207 - extraction.extractor - INFO - Processing new URL: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:34,208 - Processing - INFO - PDF document detected, using specialized handling
+2025-03-28 17:07:34,209 - extraction.content - INFO - Processing result 2 from query 1: The ABS Capacity Development Initiative | Pacific Environment
+2025-03-28 17:07:34,213 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:34,214 - Processing - INFO - Handling PDF document: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:34,215 - Processing - INFO - Scraping webpage: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:34,216 - extraction.content - INFO - Processing result 3 from query 1: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ
+2025-03-28 17:07:34,223 - Processing - INFO - Scraping webpage: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:34,224 - Processing - INFO - PDF document detected, using specialized handling
+2025-03-28 17:07:34,223 - extraction.extractor - INFO - Processing new URL: https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:34,221 - Processing - INFO - Sending HTTP request to https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:34,226 - extraction.content - INFO - Processing result 4 from query 1: [PDF] From Global to Local: The ABS Capacity Development Initiative
+2025-03-28 17:07:34,225 - Processing - INFO - Handling PDF document: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:34,232 - Processing - INFO - Request attempt 1/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:34,235 - Processing - INFO - Scraping webpage: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:34,256 - Processing - INFO - PDF document detected, using specialized handling
+2025-03-28 17:07:34,257 - Processing - INFO - Handling PDF document: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:34,279 - extraction.extractor - INFO - Processing new URL: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:34,283 - extraction.content - INFO - Processing result 5 from query 1: ABS Capacity Development Initiative (GIZ) 2023-2025
+2025-03-28 17:07:34,285 - Processing - INFO - Scraping webpage: https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:34,285 - Processing - INFO - Sending HTTP request to https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:34,291 - Processing - INFO - Request attempt 1/3 for https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:34,315 - extraction.content - INFO - Processing result 6 from query 1: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE
+2025-03-28 17:07:34,318 - Processing - INFO - Scraping webpage: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:34,320 - Processing - INFO - PDF document detected, using specialized handling
+2025-03-28 17:07:34,315 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:34,322 - Processing - INFO - Handling PDF document: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:34,346 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:34,353 - extraction.content - INFO - Processing result 7 from query 1: Awareness-raising material on ABS
+2025-03-28 17:07:34,356 - Processing - INFO - Scraping webpage: https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:34,365 - Processing - INFO - Sending HTTP request to https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:34,371 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/
+2025-03-28 17:07:34,374 - extraction.content - INFO - Processing result 8 from query 1: General Information - ABS Biotrade
+2025-03-28 17:07:34,379 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:34,384 - Processing - INFO - Sending HTTP request to https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:34,374 - Processing - INFO - Request attempt 1/3 for https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:34,384 - Processing - INFO - Request attempt 1/3 for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:34,431 - extraction.content - INFO - Processing result 9 from query 1: ABS Biotrade: Biodiversity-Based Value Chains
+2025-03-28 17:07:34,432 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/
+2025-03-28 17:07:34,454 - Processing - INFO - Sending HTTP request to https://www.abs-biotrade.info/
+2025-03-28 17:07:34,491 - Processing - INFO - Request attempt 1/3 for https://www.abs-biotrade.info/
+2025-03-28 17:07:34,442 - extraction.extractor - INFO - Processing new URL: https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:34,543 - extraction.extractor - INFO - Query 1: Processing 10 new URLs, skipped 0
+2025-03-28 17:07:34,552 - extraction.content - INFO - Processing result 10 from query 1: Implementing access and benefit sharing for biodiversity - giz.de
+2025-03-28 17:07:34,553 - Processing - INFO - Scraping webpage: https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:34,558 - Processing - INFO - Sending HTTP request to https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:34,593 - Processing - INFO - Request attempt 1/3 for https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:34,626 - Processing - WARNING - Request attempt 1 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:35,349 - Processing - INFO - Received response in 0.97 seconds.
+2025-03-28 17:07:35,352 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:35,468 - Processing - INFO - Received response in 1.01 seconds.
+2025-03-28 17:07:35,477 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:35,512 - Processing - INFO - Received response in 1.23 seconds.
+2025-03-28 17:07:35,518 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:35,527 - Processing - INFO - Extracting title from webpage: https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:35,555 - Processing - INFO - Found title in title tag: Bistandsresultater
+2025-03-28 17:07:35,561 - Processing - INFO - Extracting date from webpage: https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:35,608 - Processing - INFO - Extracting title from webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:35,619 - Processing - INFO - Found title in title tag: ABS Biotrade: General Information
+2025-03-28 17:07:35,647 - Processing - INFO - Extracting date from webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:35,664 - Processing - INFO - No date information found
+2025-03-28 17:07:35,671 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:35,696 - Processing - INFO - Removed 4 elements from DOM
+2025-03-28 17:07:35,711 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:35,721 - Processing - INFO - Successfully scraped 65 chars from https://resultater.norad.no/agreement/QZA-23/0127 in 1.44 seconds (cleaned from 65 to 65 chars)
+2025-03-28 17:07:35,743 - Processing - INFO - Extracted title: Bistandsresultater
+2025-03-28 17:07:35,765 - Processing - INFO - Extracted date: None
+2025-03-28 17:07:35,778 - extraction.content - INFO - Running comprehensive content analysis for https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:35,779 - analysis - INFO - Content too short for comprehensive analysis
+2025-03-28 17:07:35,783 - extraction.content - INFO - Running comprehensive content analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:35,787 - Processing - INFO - Extracting title from webpage: https://www.abs-biotrade.info/
+2025-03-28 17:07:35,796 - extraction.content - INFO - Identified themes for https://resultater.norad.no/agreement/QZA-23/0127: ['ABS Initiative']
+2025-03-28 17:07:35,813 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:35,817 - Processing - INFO - Found title in title tag: ABS Biotrade: Biodiversity-Based Value Chains
+2025-03-28 17:07:35,854 - extraction.content - INFO - Sentiment analysis for https://resultater.norad.no/agreement/QZA-23/0127: Neutral
+2025-03-28 17:07:35,902 - analysis - INFO - Content too short for summarization
+2025-03-28 17:07:35,902 - extraction.content - INFO - Generated new summary for https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:35,874 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:35,872 - Processing - INFO - Extracting date from webpage: https://www.abs-biotrade.info/
+2025-03-28 17:07:35,889 - extraction.content - INFO - Running comprehensive content analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:35,906 - Processing - INFO - Received response in 1.35 seconds.
+2025-03-28 17:07:35,906 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:35,933 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:35,971 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:35,991 - extraction.content - INFO - Found geographic focus data for https://resultater.norad.no/agreement/QZA-23/0127: 0 locations
+2025-03-28 17:07:35,992 - extraction.content - INFO - Found project data for https://resultater.norad.no/agreement/QZA-23/0127: 0 projects
+2025-03-28 17:07:36,161 - extraction.content - INFO - Found resource data for https://resultater.norad.no/agreement/QZA-23/0127: 0 resources
+2025-03-28 17:07:36,166 - extraction.content - INFO - Found target audience data for https://resultater.norad.no/agreement/QZA-23/0127: 0 audiences
+2025-03-28 17:07:36,172 - extraction.content - INFO - Found benefits data for https://resultater.norad.no/agreement/QZA-23/0127: 0 examples
+2025-03-28 17:07:36,172 - extraction.content - INFO - Successfully processed https://resultater.norad.no/agreement/QZA-23/0127 with comprehensive metadata
+2025-03-28 17:07:36,225 - extraction.extractor - INFO - Skipping irrelevant content from https://resultater.norad.no/agreement/QZA-23/0127
+2025-03-28 17:07:36,226 - Processing - INFO - Extracting title from webpage: https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:36,229 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:36,403 - Processing - INFO - Found title in title tag: Implementing access and benefit sharing for biodiversity - giz.de
+2025-03-28 17:07:36,551 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:36,567 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:36,577 - extraction.content - INFO - Running comprehensive content analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:36,596 - Processing - INFO - Extracting date from webpage: https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:36,648 - Processing - INFO - No date information found
+2025-03-28 17:07:36,648 - Processing - INFO - Request attempt 2/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:36,654 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:36,697 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:36,709 - Processing - INFO - Found date in meta tag date: 03/28/2025 14:49
+2025-03-28 17:07:36,715 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:36,788 - Processing - INFO - Removed 9 elements from DOM
+2025-03-28 17:07:36,820 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:36,905 - Processing - INFO - Received response in 2.54 seconds.
+2025-03-28 17:07:36,926 - Processing - INFO - Successfully scraped 5874 chars from https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/ in 2.54 seconds (cleaned from 12065 to 5874 chars)
+2025-03-28 17:07:36,938 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:36,973 - Processing - INFO - Removed 13 elements from DOM
+2025-03-28 17:07:36,994 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:37,014 - Processing - INFO - Extracted title: ABS Biotrade: General Information
+2025-03-28 17:07:37,045 - Processing - INFO - Successfully scraped 3745 chars from https://www.giz.de/en/worldwide/151610.html in 2.49 seconds (cleaned from 5046 to 3745 chars)
+2025-03-28 17:07:37,053 - Processing - WARNING - Request attempt 2 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:37,076 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:37,076 - Processing - INFO - Extracted date: None
+2025-03-28 17:07:37,153 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:37,097 - Processing - INFO - Extracted title: Implementing access and benefit sharing for biodiversity - giz.de
+2025-03-28 17:07:37,216 - Processing - INFO - Extracting title from webpage: https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:37,222 - Processing - INFO - Extracted date: 03/28/2025 14:49
+2025-03-28 17:07:37,243 - Processing - INFO - Found title in title tag: Awareness-raising material  on ABS
+2025-03-28 17:07:37,255 - Processing - INFO - No date information found
+2025-03-28 17:07:37,255 - extraction.content - INFO - Running comprehensive content analysis for https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:37,257 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:37,258 - Processing - INFO - Extracting date from webpage: https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:37,259 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:37,303 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:37,436 - Processing - INFO - Removed 8 elements from DOM
+2025-03-28 17:07:37,445 - Processing - INFO - Successfully scraped 5545 chars from https://www.abs-biotrade.info/ in 2.99 seconds (cleaned from 9775 to 5545 chars)
+2025-03-28 17:07:37,450 - Processing - INFO - Extracted title: ABS Biotrade: Biodiversity-Based Value Chains
+2025-03-28 17:07:37,466 - Processing - INFO - Extracted date: None
+2025-03-28 17:07:37,472 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/
+2025-03-28 17:07:37,611 - Processing - INFO - Found date using regex pattern in HTML: " content="2024
+2025-03-28 17:07:37,612 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:37,636 - Processing - INFO - Removed 25 elements from DOM
+2025-03-28 17:07:37,640 - Processing - INFO - Successfully scraped 7473 chars from https://www.cbd.int/abs/awareness-raising/ in 3.27 seconds (cleaned from 8122 to 7473 chars)
+2025-03-28 17:07:37,640 - Processing - INFO - Extracted title: Awareness-raising material  on ABS
+2025-03-28 17:07:37,641 - Processing - INFO - Extracted date: " content="2024
+2025-03-28 17:07:37,641 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:37,737 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:37,741 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:38,028 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,031 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:38,141 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,144 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:38,297 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,299 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:38,381 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,390 - analysis - INFO - Generated summary (492 chars)
+2025-03-28 17:07:38,392 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:38,400 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,407 - analysis - INFO - Generated summary (516 chars)
+2025-03-28 17:07:38,408 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:38,523 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,526 - analysis - INFO - Generated summary (635 chars)
+2025-03-28 17:07:38,527 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:38,712 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:38,721 - analysis - INFO - Generated summary (569 chars)
+2025-03-28 17:07:38,722 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:39,113 - Processing - INFO - Request attempt 3/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:39,177 - Processing - WARNING - Request attempt 3 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:39,178 - Processing - ERROR - All 3 attempts failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:39,181 - Processing - ERROR - Failed to retrieve content from https://www.sprep.org/publications/the-abs-capacity-development-initiative
+2025-03-28 17:07:39,181 - extraction.content - INFO - No content extracted from https://www.sprep.org/publications/the-abs-capacity-development-initiative, skipping
+2025-03-28 17:07:39,214 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,218 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:39,219 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:39,221 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:39,223 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:39,226 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:39,259 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,261 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,266 - analysis - INFO - Generated summary (698 chars)
+2025-03-28 17:07:39,270 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:39,270 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:39,278 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:39,283 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:39,284 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:39,286 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:39,469 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,474 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:39,475 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:39,477 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:39,479 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:39,480 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:39,577 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,586 - analysis - INFO - Generated summary (704 chars)
+2025-03-28 17:07:39,588 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:39,902 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,903 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,911 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:39,920 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:39,923 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:39,924 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:39,926 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:39,981 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:39,992 - analysis - INFO - Generated summary (680 chars)
+2025-03-28 17:07:39,995 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:40,028 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,050 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,054 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:40,056 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:40,057 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:40,059 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:40,060 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:40,256 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,261 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:40,262 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:40,264 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:40,264 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:40,267 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:40,359 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,568 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,574 - analysis - INFO - Generated summary (744 chars)
+2025-03-28 17:07:40,574 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:40,621 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,625 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:40,626 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:40,628 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:40,630 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:40,632 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:40,700 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,726 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:40,891 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,195 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,199 - analysis - INFO - Extracted benefits summary (753 chars)
+2025-03-28 17:07:41,199 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:41,200 - extraction.content - INFO - Successfully got embedding vector for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:41,202 - extraction.content - INFO - Identified themes for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: ['Nature conservation', 'Biodiversity', 'Access and Benefit-sharing', 'Traditional knowledge', 'Genetic resources']
+2025-03-28 17:07:41,203 - extraction.content - INFO - Sentiment analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: Neutral
+2025-03-28 17:07:41,205 - extraction.content - INFO - Got summary from analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:41,205 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:07:41,206 - extraction.content - INFO - Found geographic focus data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 locations
+2025-03-28 17:07:41,207 - extraction.content - INFO - Found project data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 projects
+2025-03-28 17:07:41,208 - extraction.content - INFO - Found resource data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 resources
+2025-03-28 17:07:41,209 - extraction.content - INFO - Found target audience data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 4 audiences
+2025-03-28 17:07:41,209 - extraction.content - INFO - Found benefits data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 examples
+2025-03-28 17:07:41,209 - extraction.content - INFO - Successfully processed https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf with comprehensive metadata
+2025-03-28 17:07:41,212 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:41,228 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,233 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:41,236 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:41,238 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:41,239 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:41,241 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:41,255 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:41,260 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,277 - analysis - INFO - Extracted benefits summary (622 chars)
+2025-03-28 17:07:41,277 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:41,284 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:41,286 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:41,286 - extraction.content - INFO - Identified themes for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: ['Biodiversity Conservation', 'Traditional Knowledge', 'Genetic Resources', 'Access and Benefit Sharing', 'Capacity Building']
+2025-03-28 17:07:41,288 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: Neutral
+2025-03-28 17:07:41,292 - ContentDB - ERROR - Error storing item with URL https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:41,293 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:41,299 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:07:41,295 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:41,304 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:41,303 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 locations
+2025-03-28 17:07:41,309 - extraction.content - INFO - Found project data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 projects
+2025-03-28 17:07:41,311 - extraction.content - INFO - Found resource data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 resources
+2025-03-28 17:07:41,313 - extraction.content - INFO - Found target audience data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 4 audiences
+2025-03-28 17:07:41,314 - extraction.content - INFO - Found benefits data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 examples
+2025-03-28 17:07:41,316 - extraction.content - INFO - Successfully processed https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf with comprehensive metadata
+2025-03-28 17:07:41,317 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:41,355 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:41,363 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:41,371 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,371 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:41,373 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:41,374 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:41,795 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,800 - analysis - INFO - Extracted benefits summary (741 chars)
+2025-03-28 17:07:41,801 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:41,802 - extraction.content - INFO - Successfully got embedding vector for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:41,804 - extraction.content - INFO - Identified themes for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: ['Capacity Building', 'Access and Benefit Sharing (ABS)', 'Traditional Knowledge', 'Genetic Resources', 'Biodiversity Governance']
+2025-03-28 17:07:41,805 - extraction.content - INFO - Sentiment analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: Neutral
+2025-03-28 17:07:41,807 - extraction.content - INFO - Got summary from analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:41,808 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:41,810 - extraction.content - INFO - Found geographic focus data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 locations
+2025-03-28 17:07:41,811 - extraction.content - INFO - Found project data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 projects
+2025-03-28 17:07:41,813 - extraction.content - INFO - Found resource data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 resources
+2025-03-28 17:07:41,814 - extraction.content - INFO - Found target audience data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 4 audiences
+2025-03-28 17:07:41,816 - extraction.content - INFO - Found benefits data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 examples
+2025-03-28 17:07:41,817 - extraction.content - INFO - Successfully processed https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf with comprehensive metadata
+2025-03-28 17:07:41,819 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:41,839 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:41,848 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:41,852 - ContentDB - ERROR - Error storing item with URL https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:41,855 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:41,856 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:41,876 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,986 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:41,990 - analysis - INFO - Extracted benefits summary (679 chars)
+2025-03-28 17:07:41,990 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:41,991 - extraction.content - INFO - Successfully got embedding vector for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:41,992 - extraction.content - INFO - Identified themes for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: ['Biodiversity Conservation', 'Traditional Knowledge', 'Genetic Resources', 'Nagoya Protocol', 'Access and Benefit Sharing']
+2025-03-28 17:07:41,992 - extraction.content - INFO - Sentiment analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: Neutral
+2025-03-28 17:07:41,993 - extraction.content - INFO - Got summary from analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:41,994 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+2025-03-28 17:07:41,994 - extraction.content - INFO - Found geographic focus data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 locations
+2025-03-28 17:07:41,995 - extraction.content - INFO - Found project data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 projects
+2025-03-28 17:07:41,996 - extraction.content - INFO - Found resource data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 resources
+2025-03-28 17:07:41,996 - extraction.content - INFO - Found target audience data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 4 audiences
+2025-03-28 17:07:41,997 - extraction.content - INFO - Found benefits data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 examples
+2025-03-28 17:07:41,997 - extraction.content - INFO - Successfully processed https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf with comprehensive metadata
+2025-03-28 17:07:41,999 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:42,017 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:42,026 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:42,028 - ContentDB - ERROR - Error storing item with URL https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:42,029 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:42,030 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:42,538 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:42,544 - analysis - INFO - Extracted benefits summary (608 chars)
+2025-03-28 17:07:42,545 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:42,546 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/
+2025-03-28 17:07:42,546 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/: ['Biodiversity-based value chains', 'Access and benefit-sharing', 'Genetic resources', 'Geographic Indicator status', 'Sustainable growth']
+2025-03-28 17:07:42,547 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/: Neutral
+2025-03-28 17:07:42,548 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/
+2025-03-28 17:07:42,549 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/
+2025-03-28 17:07:42,549 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/: 0 locations
+2025-03-28 17:07:42,549 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/: 0 projects
+2025-03-28 17:07:42,550 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/: 0 resources
+2025-03-28 17:07:42,550 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/: 4 audiences
+2025-03-28 17:07:42,551 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/: 0 examples
+2025-03-28 17:07:42,551 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/ with comprehensive metadata
+2025-03-28 17:07:42,552 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:42,571 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:42,581 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:42,585 - ContentDB - ERROR - Error storing item with URL https://www.abs-biotrade.info/: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:42,585 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:42,587 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:42,767 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:42,771 - analysis - INFO - Extracted benefits summary (971 chars)
+2025-03-28 17:07:42,772 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:42,772 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:42,773 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: ['Biodiversity conservation', 'Traditional knowledge', 'Genetic resources', 'Indigenous peoples', 'Economic development.']
+2025-03-28 17:07:42,774 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: Neutral
+2025-03-28 17:07:42,775 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:42,777 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:07:42,777 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 locations
+2025-03-28 17:07:42,778 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 projects
+2025-03-28 17:07:42,779 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 resources
+2025-03-28 17:07:42,780 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 8 audiences
+2025-03-28 17:07:42,782 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 examples
+2025-03-28 17:07:42,782 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/ with comprehensive metadata
+2025-03-28 17:07:42,783 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:42,800 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:42,808 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:42,811 - ContentDB - ERROR - Error storing item with URL https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:42,812 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:42,812 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:43,331 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:43,336 - analysis - INFO - Extracted benefits summary (593 chars)
+2025-03-28 17:07:43,336 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:43,337 - extraction.content - INFO - Successfully got embedding vector for https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:43,338 - extraction.content - INFO - Identified themes for https://www.giz.de/en/worldwide/151610.html: ['Biodiversity conservation', 'Economic development', 'Stakeholder involvement', 'Indigenous rights', 'Knowledge sharing']
+2025-03-28 17:07:43,338 - extraction.content - INFO - Sentiment analysis for https://www.giz.de/en/worldwide/151610.html: Neutral
+2025-03-28 17:07:43,339 - extraction.content - INFO - Got summary from analysis for https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:43,340 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:07:43,340 - extraction.content - INFO - Found geographic focus data for https://www.giz.de/en/worldwide/151610.html: 0 locations
+2025-03-28 17:07:43,341 - extraction.content - INFO - Found project data for https://www.giz.de/en/worldwide/151610.html: 0 projects
+2025-03-28 17:07:43,342 - extraction.content - INFO - Found resource data for https://www.giz.de/en/worldwide/151610.html: 0 resources
+2025-03-28 17:07:43,343 - extraction.content - INFO - Found target audience data for https://www.giz.de/en/worldwide/151610.html: 4 audiences
+2025-03-28 17:07:43,343 - extraction.content - INFO - Found benefits data for https://www.giz.de/en/worldwide/151610.html: 0 examples
+2025-03-28 17:07:43,343 - extraction.content - INFO - Successfully processed https://www.giz.de/en/worldwide/151610.html with comprehensive metadata
+2025-03-28 17:07:43,345 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:43,372 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:43,380 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:43,383 - ContentDB - ERROR - Error storing item with URL https://www.giz.de/en/worldwide/151610.html: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:43,384 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:43,386 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:43,688 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:43,698 - analysis - INFO - Extracted benefits summary (1437 chars)
+2025-03-28 17:07:43,700 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:43,701 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:43,702 - extraction.content - INFO - Identified themes for https://www.cbd.int/abs/awareness-raising/: ['Genetic resources', 'Traditional knowledge', 'Access and benefit-sharing', 'Nagoya Protocol', 'Communication materials']
+2025-03-28 17:07:43,704 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/abs/awareness-raising/: Neutral
+2025-03-28 17:07:43,706 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:43,708 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/abs/awareness-raising/
+2025-03-28 17:07:43,709 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/abs/awareness-raising/: 0 locations
+2025-03-28 17:07:43,711 - extraction.content - INFO - Found project data for https://www.cbd.int/abs/awareness-raising/: 0 projects
+2025-03-28 17:07:43,712 - extraction.content - INFO - Found resource data for https://www.cbd.int/abs/awareness-raising/: 0 resources
+2025-03-28 17:07:43,714 - extraction.content - INFO - Found target audience data for https://www.cbd.int/abs/awareness-raising/: 1 audiences
+2025-03-28 17:07:43,717 - extraction.content - INFO - Found benefits data for https://www.cbd.int/abs/awareness-raising/: 0 examples
+2025-03-28 17:07:43,718 - extraction.content - INFO - Successfully processed https://www.cbd.int/abs/awareness-raising/ with comprehensive metadata
+2025-03-28 17:07:43,720 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:07:43,766 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:07:43,783 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:07:43,788 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/abs/awareness-raising/: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:07:43,789 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:07:43,789 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:07:44,791 - extraction.extractor - INFO - Query 2/3: 'ABS CDI'
+2025-03-28 17:07:44,794 - Search - INFO - Searching web for: 'ABS CDI' (limit: 10 results, language: English)
+2025-03-28 17:07:47,454 - Search - INFO - Received 9 search results in 2.66 seconds
+2025-03-28 17:07:47,458 - Search - INFO - Filtered to 9 relevant English results
+2025-03-28 17:07:47,458 - Search - INFO - Result 1: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:47,459 - Search - INFO - Result 2: honda st 1100 abs cdi - eBay - https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:47,461 - Search - INFO - Result 3: Wholesale abs cdi That Are Simple And Effective - Alibaba.com - https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:47,462 - Search - INFO - Result 4: 2023 INDIAN SCOUT BOBBER ABS CDI ECU ECM COMPUTER ... - https://www.ebay.com/itm/305812328966
+2025-03-28 17:07:47,462 - Search - INFO - Result 5: Racing Cdi Abs - AliExpress - https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:47,464 - Search - INFO - Result 6: Perception Simmental - Buy Angus Beef Semen - ABS Global - https://store.absglobal.com/product/perception/
+2025-03-28 17:07:47,465 - Search - INFO - Result 7: Vespa Primavera/Sprint 150 iGET ABS Regulator, CDI & HT Coil - https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:47,466 - Search - INFO - Result 8: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 ... - https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:47,467 - Search - INFO - Result 9: [PDF] Digital Sequence Information | Pre-CBD COP16 Informal Work - https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:47,471 - extraction.extractor - INFO - Query 2 returned 9 results
+2025-03-28 17:07:47,475 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:07:47,476 - extraction.extractor - INFO - Processing new URL: https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:47,478 - extraction.extractor - INFO - Processing new URL: https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:47,479 - extraction.content - INFO - Processing result 2 from query 2: honda st 1100 abs cdi - eBay
+2025-03-28 17:07:47,479 - extraction.extractor - INFO - Processing new URL: https://www.ebay.com/itm/305812328966
+2025-03-28 17:07:47,480 - extraction.content - INFO - Processing result 3 from query 2: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+2025-03-28 17:07:47,481 - Processing - INFO - Scraping webpage: https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:47,483 - Processing - INFO - Scraping webpage: https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:47,483 - Processing - INFO - Sending HTTP request to https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:47,482 - extraction.extractor - INFO - Processing new URL: https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:47,483 - Processing - INFO - Sending HTTP request to https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:47,482 - extraction.content - INFO - Processing result 4 from query 2: 2023 INDIAN SCOUT BOBBER ABS CDI ECU ECM COMPUTER ...
+2025-03-28 17:07:47,484 - Processing - INFO - Request attempt 1/3 for https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:47,485 - extraction.extractor - INFO - Processing new URL: https://store.absglobal.com/product/perception/
+2025-03-28 17:07:47,486 - extraction.content - INFO - Processing result 5 from query 2: Racing Cdi Abs - AliExpress
+2025-03-28 17:07:47,493 - Processing - INFO - Scraping webpage: https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:47,499 - Processing - INFO - Sending HTTP request to https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:47,492 - extraction.extractor - INFO - Processing new URL: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:47,501 - Processing - INFO - Request attempt 1/3 for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:47,498 - extraction.content - INFO - Processing result 6 from query 2: Perception Simmental - Buy Angus Beef Semen - ABS Global
+2025-03-28 17:07:47,488 - Processing - INFO - Scraping webpage: https://www.ebay.com/itm/305812328966
+2025-03-28 17:07:47,487 - Processing - INFO - Request attempt 1/3 for https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:47,504 - extraction.extractor - INFO - Processing new URL: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:47,518 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:47,511 - Processing - INFO - Scraping webpage: https://store.absglobal.com/product/perception/
+2025-03-28 17:07:47,512 - Processing - INFO - Sending HTTP request to https://www.ebay.com/itm/305812328966
+2025-03-28 17:07:47,518 - extraction.content - INFO - Processing result 8 from query 2: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 ...
+2025-03-28 17:07:47,504 - extraction.content - INFO - Processing result 7 from query 2: Vespa Primavera/Sprint 150 iGET ABS Regulator, CDI & HT Coil
+2025-03-28 17:07:47,520 - extraction.extractor - INFO - Query 2: Processing 8 new URLs, skipped 1
+2025-03-28 17:07:47,523 - Processing - INFO - Request attempt 1/3 for https://www.ebay.com/itm/305812328966
+2025-03-28 17:07:47,521 - extraction.content - INFO - Processing result 9 from query 2: [PDF] Digital Sequence Information | Pre-CBD COP16 Informal Work
+2025-03-28 17:07:47,530 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:47,531 - Processing - INFO - PDF document detected, using specialized handling
+2025-03-28 17:07:47,523 - Processing - INFO - Scraping webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:47,522 - Processing - INFO - Sending HTTP request to https://store.absglobal.com/product/perception/
+2025-03-28 17:07:47,524 - Processing - INFO - Scraping webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:47,537 - Processing - INFO - Handling PDF document: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:47,537 - Processing - INFO - Sending HTTP request to https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:47,543 - Processing - INFO - Request attempt 1/3 for https://store.absglobal.com/product/perception/
+2025-03-28 17:07:47,546 - Processing - INFO - Request attempt 1/3 for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:47,552 - Processing - INFO - Sending HTTP request to https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:47,553 - Processing - INFO - Request attempt 1/3 for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:48,635 - Processing - INFO - Received response in 1.14 seconds.
+2025-03-28 17:07:48,636 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:48,705 - Processing - INFO - Extracting title from webpage: https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:48,719 - Processing - INFO - Found title in h1 tag: Results for racing cdi abs
+2025-03-28 17:07:48,719 - Processing - INFO - Extracting date from webpage: https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:48,809 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:48,828 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:49,120 - Processing - INFO - Found date using regex pattern in HTML: ":"2020-03-05 23:05:09","evaTotalNum":1,"buyerName":"K***n","buyerFeedback":"With the seller communicated, responds immediately, the quality is excellent, came quickly enough, I recommend everyone, the seller is honest and even put a gift. Thank You","class":"com.aliexpress.seo.data.service.dto.request.SearchReviewsDTO"},{"buyerCountry":"FR","buyerEval":5,"evaluationId":"60031309565128964","avgStarLevel":5,"productId":1005003002008601,"evalDate":"2021-09-04 00:56:37","evaTotalNum":2,"buyerName":"s***e","buyerFeedback":"Product conforms to the description. Not tried yet.","class":"com.aliexpress.seo.data.service.dto.request.SearchReviewsDTO"}],"keywordInfo":" motorcycle ignition","products":[{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S27c451f40ba2468dac36322e090b1ec2i.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002369183546"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1RIwhNXXXXXbxXFXXq6xXFXXX3.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32734395058"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S7c52fc9358f44456a1a04cf8232b4f1bX.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003598632726"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S328a625198b343f19c2a3986f7299a4bA.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004891079017"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H1ff9a0a6b0b14d23a66d602dbed00796s.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003002008601"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1mSRvX4_rK1RkHFqDq6yJAFXaw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32958099150"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S508f983ef8474001ab77dcceec9fad9dR.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002363430375"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S18f6eee91ccd458da7958a1c9711e0ffh.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004008679531"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S3eefb2ab3b8b4fafb22870cc677556ddw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003267670541"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Saee485d7fefc453db497d2abe274d9130.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004402273563"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sebb2b7efbe6a468e93c7865b0eef7ed7n.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005796631935"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB15B4ud22H8KJjy1zkq6xr7pXa0.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32843183727"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H3eff1e611c154865998ce4f62523b404T.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"33050941520"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S884b46490dbb41af9bfe894488e6d1f2t.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003828074424"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Hc02cbe77d92d485aa922f31c79e3977fw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4000182414678"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Safa0f8d49175435cb203fb812cc605259.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003802073883"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H1486a7631e38495fa5dadf2a7c4e1ec53.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4001200749926"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8039d32be91241f0834ee6a5f2e17d04K.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005721217816"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Saa3e18585a6c4e969a367ff884951e52k.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004789000875"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H3284f4a45d754be1be729345368760b8J.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003433100947"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H18fbc1031ac04bfd9a248b1bcf0edf2bq.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32865038590"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1TQdoaiLxK1Rjy0Ffq6zYdVXad.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32959108158"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Scce993276f1b44bf84426f9f37ecb0c48.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004085470595"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S56a2a421d0fa43d3b64d7c23007e6a87b.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005786986146"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H80312789ad4c4c309e8ef5d54eb48c53p.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4001007211667"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H14efe516a9de4a7cb41e89372e380d20h.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003001964928"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H7cbcf23701304c04a0e260bc3eea52dcg.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002376435042"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S1f94beeb480a4025884c90d88f19666dF.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004005836932"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S20af2b730154474d8c8089669a0086cdJ.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004182140245"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sf2c7de7f683a45d48ea5426b4b861d29p.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005006145819265"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8d80207a13704a94898b644302d88869k.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003634559655"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H9fb9a9c96a294f8094f8ff9a54f4bce6l.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002265094384"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8aa6c6e3e4be446d9cc08921cbd1e84fM.png","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003839092764"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S3b2faafca4004270843ba5e2328d13a3Y.png","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005006126417378"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S89ad780c409e42a2a9b24f894c900d4eW.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004783670637"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sebe627e098fa4023ac9f5a39d5f3b460g.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005714520490"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H72ca97d3859d4f339cbed143ec35bbb0L.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003424913008"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1KdEKX5zxK1RkSnaVq6xn9VXa8.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32958380638"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1.J4jaYY1gK0jSZTEq6xDQVXaR.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003700140324"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S4123d2aa304f4bd49bae134598801517N.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005067747511"}],"pageId":"eeffeeacfcac195ddb95edd1564d0e203061c6cd38","i18n":{"Related_Searches@content":"Related Searches","ranking_keywords@content":"Ranking Keywords","results_for@Content":"Results for #keywords#","helpful_reviews@content":"Helpful reviews about #keywords# "}}},"law2023_3730":{"id":3730,"type":"law2023","fields":{}}},"global":{"scheme":"pcNewSeo","screenPagination":{"hasNext":false,"current":1,"total":1},"eagleeye_tracer_id":"2140f54217431816680275599e0337
+2025-03-28 17:07:49,121 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:49,156 - Processing - INFO - Removed 32 elements from DOM
+2025-03-28 17:07:49,160 - Processing - INFO - Successfully scraped 11026 chars from https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html in 1.66 seconds (cleaned from 12702 to 11026 chars)
+2025-03-28 17:07:49,160 - Processing - INFO - Extracted title: Results for racing cdi abs
+2025-03-28 17:07:49,161 - Processing - INFO - Extracted date: ":"2020-03-05 23:05:09","evaTotalNum":1,"buyerName":"K***n","buyerFeedback":"With the seller communicated, responds immediately, the quality is excellent, came quickly enough, I recommend everyone, the seller is honest and even put a gift. Thank You","class":"com.aliexpress.seo.data.service.dto.request.SearchReviewsDTO"},{"buyerCountry":"FR","buyerEval":5,"evaluationId":"60031309565128964","avgStarLevel":5,"productId":1005003002008601,"evalDate":"2021-09-04 00:56:37","evaTotalNum":2,"buyerName":"s***e","buyerFeedback":"Product conforms to the description. Not tried yet.","class":"com.aliexpress.seo.data.service.dto.request.SearchReviewsDTO"}],"keywordInfo":" motorcycle ignition","products":[{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S27c451f40ba2468dac36322e090b1ec2i.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002369183546"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1RIwhNXXXXXbxXFXXq6xXFXXX3.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32734395058"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S7c52fc9358f44456a1a04cf8232b4f1bX.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003598632726"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S328a625198b343f19c2a3986f7299a4bA.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004891079017"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H1ff9a0a6b0b14d23a66d602dbed00796s.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003002008601"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1mSRvX4_rK1RkHFqDq6yJAFXaw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32958099150"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S508f983ef8474001ab77dcceec9fad9dR.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002363430375"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S18f6eee91ccd458da7958a1c9711e0ffh.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004008679531"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S3eefb2ab3b8b4fafb22870cc677556ddw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003267670541"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Saee485d7fefc453db497d2abe274d9130.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004402273563"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sebb2b7efbe6a468e93c7865b0eef7ed7n.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005796631935"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB15B4ud22H8KJjy1zkq6xr7pXa0.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32843183727"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H3eff1e611c154865998ce4f62523b404T.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"33050941520"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S884b46490dbb41af9bfe894488e6d1f2t.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003828074424"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Hc02cbe77d92d485aa922f31c79e3977fw.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4000182414678"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Safa0f8d49175435cb203fb812cc605259.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003802073883"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H1486a7631e38495fa5dadf2a7c4e1ec53.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4001200749926"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8039d32be91241f0834ee6a5f2e17d04K.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005721217816"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Saa3e18585a6c4e969a367ff884951e52k.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004789000875"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H3284f4a45d754be1be729345368760b8J.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003433100947"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H18fbc1031ac04bfd9a248b1bcf0edf2bq.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32865038590"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1TQdoaiLxK1Rjy0Ffq6zYdVXad.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32959108158"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Scce993276f1b44bf84426f9f37ecb0c48.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004085470595"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S56a2a421d0fa43d3b64d7c23007e6a87b.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005786986146"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H80312789ad4c4c309e8ef5d54eb48c53p.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"4001007211667"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H14efe516a9de4a7cb41e89372e380d20h.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003001964928"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H7cbcf23701304c04a0e260bc3eea52dcg.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002376435042"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S1f94beeb480a4025884c90d88f19666dF.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004005836932"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S20af2b730154474d8c8089669a0086cdJ.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004182140245"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sf2c7de7f683a45d48ea5426b4b861d29p.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005006145819265"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8d80207a13704a94898b644302d88869k.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003634559655"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H9fb9a9c96a294f8094f8ff9a54f4bce6l.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005002265094384"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S8aa6c6e3e4be446d9cc08921cbd1e84fM.png","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003839092764"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S3b2faafca4004270843ba5e2328d13a3Y.png","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005006126417378"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S89ad780c409e42a2a9b24f894c900d4eW.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005004783670637"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/Sebe627e098fa4023ac9f5a39d5f3b460g.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005714520490"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/H72ca97d3859d4f339cbed143ec35bbb0L.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003424913008"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1KdEKX5zxK1RkSnaVq6xn9VXa8.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"32958380638"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/HTB1.J4jaYY1gK0jSZTEq6xDQVXaR.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005003700140324"},{"image":{"imgUrl":"//ae-pic-a1.aliexpress-media.com/kf/S4123d2aa304f4bd49bae134598801517N.jpg","imgWidth":350,"imgHeight":350,"imgType":"0"},"productId":"1005005067747511"}],"pageId":"eeffeeacfcac195ddb95edd1564d0e203061c6cd38","i18n":{"Related_Searches@content":"Related Searches","ranking_keywords@content":"Ranking Keywords","results_for@Content":"Results for #keywords#","helpful_reviews@content":"Helpful reviews about #keywords# "}}},"law2023_3730":{"id":3730,"type":"law2023","fields":{}}},"global":{"scheme":"pcNewSeo","screenPagination":{"hasNext":false,"current":1,"total":1},"eagleeye_tracer_id":"2140f54217431816680275599e0337
+2025-03-28 17:07:49,162 - extraction.content - INFO - Running comprehensive content analysis for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:49,175 - Processing - INFO - Received response in 1.69 seconds.
+2025-03-28 17:07:49,176 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:49,228 - Processing - INFO - Extracting title from webpage: https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:49,229 - Processing - INFO - Found title in title tag: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+2025-03-28 17:07:49,230 - Processing - INFO - Extracting date from webpage: https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:49,550 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:49,561 - Processing - INFO - Found date using regex pattern in HTML: 5540-00-00
+2025-03-28 17:07:49,561 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:49,575 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:49,589 - Processing - INFO - Removed 24 elements from DOM
+2025-03-28 17:07:49,591 - Processing - INFO - Successfully scraped 3603 chars from https://www.alibaba.com/showroom/abs-cdi.html in 2.11 seconds (cleaned from 3774 to 3603 chars)
+2025-03-28 17:07:49,602 - Processing - INFO - Extracted title: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+2025-03-28 17:07:49,603 - Processing - INFO - Extracted date: 5540-00-00
+2025-03-28 17:07:49,604 - extraction.content - INFO - Running comprehensive content analysis for https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:49,614 - Processing - INFO - Received response in 2.08 seconds.
+2025-03-28 17:07:49,615 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:49,699 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:49,712 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:49,919 - Processing - INFO - Extracting title from webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:49,924 - Processing - INFO - Found title in title tag: Amazon.com: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 200M 200S 200X ATC250R TRX200 1983-1985 : Automotive
+2025-03-28 17:07:49,924 - Processing - INFO - Extracting date from webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:50,107 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:50,147 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:50,159 - Processing - INFO - Received response in 2.61 seconds.
+2025-03-28 17:07:50,170 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:50,383 - Processing - INFO - Extracting title from webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:50,389 - Processing - INFO - Found title in title tag: ScooterWest.com -  Vespa Primavera/Sprint 150 iGET ABS  Regulator, CDI & HT Coil
+2025-03-28 17:07:50,399 - Processing - INFO - Extracting date from webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:51,156 - Processing - INFO - Received response in 3.63 seconds.
+2025-03-28 17:07:51,179 - Processing - INFO - Parsing HTML content
+2025-03-28 17:07:51,298 - Processing - INFO - Found date using regex pattern in HTML: ItemQtyUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/updateItemQty\/","removeItemUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/removeItem\/","imageTemplate":"Magento_Catalog\/product\/image_with_borders","baseUrl":"https:\/\/www.scooterwest.com\/","minicartMaxItemsVisible":4,"websiteId":"1","maxItemsToDisplay":100,"storeId":"1","storeGroupId":"1","customerLoginUrl":"https:\/\/www.scooterwest.com\/customer\/account\/login\/referer\/aHR0cHM6Ly93d3cuc2Nvb3Rlcndlc3QuY29tL3Zlc3BhLXByaW1hdmVyYS1zcHJpbnQtMTUwLWlnZXQtYWJzLXJlZ3VsYXRvci1jZGktaHQtY29pbC5odG1sP3Nyc2x0aWQ9QWZtQk9vcnNwaDNOWld3VG5UT291bzEzMEowd1ZzT3BRYkg3eGI3MHR6czdmbnczMUZfWEczZVk~\/","isRedirectRequired":false,"autocomplete":"off","captcha":{"user_login":{"isCaseSensitive":false,"imageHeight":50,"imageSrc":"","refreshUrl":"https:\/\/www.scooterwest.com\/captcha\/refresh\/","isRequired":false,"timestamp":1743181669
+2025-03-28 17:07:51,304 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:51,305 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:51,311 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:51,473 - Processing - INFO - Extracting title from webpage: https://store.absglobal.com/product/perception/
+2025-03-28 17:07:51,475 - analysis - INFO - Generated summary (612 chars)
+2025-03-28 17:07:51,479 - Processing - INFO - Removed 72 elements from DOM
+2025-03-28 17:07:51,481 - Processing - INFO - Found title in title tag: Perception Simmental - Buy Angus Beef Semen | ABS Global
+2025-03-28 17:07:51,496 - analysis - INFO - Generated summary (700 chars)
+2025-03-28 17:07:51,531 - Processing - INFO - Successfully scraped 2498 chars from https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY in 3.98 seconds (cleaned from 4264 to 2498 chars)
+2025-03-28 17:07:51,548 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:51,559 - Processing - INFO - Extracting date from webpage: https://store.absglobal.com/product/perception/
+2025-03-28 17:07:51,581 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:51,587 - Processing - INFO - Extracted title: ScooterWest.com -  Vespa Primavera/Sprint 150 iGET ABS  Regulator, CDI & HT Coil
+2025-03-28 17:07:51,721 - Processing - INFO - Extracted date: ItemQtyUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/updateItemQty\/","removeItemUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/removeItem\/","imageTemplate":"Magento_Catalog\/product\/image_with_borders","baseUrl":"https:\/\/www.scooterwest.com\/","minicartMaxItemsVisible":4,"websiteId":"1","maxItemsToDisplay":100,"storeId":"1","storeGroupId":"1","customerLoginUrl":"https:\/\/www.scooterwest.com\/customer\/account\/login\/referer\/aHR0cHM6Ly93d3cuc2Nvb3Rlcndlc3QuY29tL3Zlc3BhLXByaW1hdmVyYS1zcHJpbnQtMTUwLWlnZXQtYWJzLXJlZ3VsYXRvci1jZGktaHQtY29pbC5odG1sP3Nyc2x0aWQ9QWZtQk9vcnNwaDNOWld3VG5UT291bzEzMEowd1ZzT3BRYkg3eGI3MHR6czdmbnczMUZfWEczZVk~\/","isRedirectRequired":false,"autocomplete":"off","captcha":{"user_login":{"isCaseSensitive":false,"imageHeight":50,"imageSrc":"","refreshUrl":"https:\/\/www.scooterwest.com\/captcha\/refresh\/","isRequired":false,"timestamp":1743181669
+2025-03-28 17:07:51,726 - extraction.content - INFO - Running comprehensive content analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:51,864 - Processing - INFO - Found date using regex pattern in HTML: December 13, 2019
+2025-03-28 17:07:51,880 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:51,911 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:52,160 - analysis - INFO - Generated summary (625 chars)
+2025-03-28 17:07:52,172 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:52,199 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:52,260 - Processing - INFO - Removed 309 elements from DOM
+2025-03-28 17:07:52,293 - Processing - INFO - Successfully scraped 11945 chars from https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC in 4.76 seconds (cleaned from 19560 to 11945 chars)
+2025-03-28 17:07:52,295 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:52,295 - Processing - INFO - Extracted title: Amazon.com: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 200M 200S 200X ATC250R TRX200 1983-1985 : Automotive
+2025-03-28 17:07:52,320 - Processing - INFO - Extracted date: December 13, 2019
+2025-03-28 17:07:52,331 - extraction.content - INFO - Running comprehensive content analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:52,442 - Processing - INFO - Found date using regex pattern in HTML: ":"2022-01-05T10:36:13+00:00","dateModified":"2022-08-18T08:26:30+00:00","description":"Shop Perception for premium-quality Simmental semen. For assistance, contact our knowledgeable staff at 1-800-ABS-STUD. Buy Angus Beef Semen | ABS Global","breadcrumb":{"@id":"https://store.absglobal.com/product/perception/#breadcrumb"},"inLanguage":"en-GB","potentialAction":[{"@type":"ReadAction","target":["https://store.absglobal.com/product/perception/"]}]},{"@type":"ImageObject","inLanguage":"en-GB","@id":"https://store.absglobal.com/product/perception/#primaryimage","url":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018","contentUrl":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018
+2025-03-28 17:07:52,447 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:07:52,482 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:52,486 - Processing - INFO - Removed 119 elements from DOM
+2025-03-28 17:07:52,494 - Processing - INFO - Successfully scraped 4376 chars from https://store.absglobal.com/product/perception/ in 4.97 seconds (cleaned from 5906 to 4376 chars)
+2025-03-28 17:07:52,494 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:52,496 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:52,495 - Processing - INFO - Extracted title: Perception Simmental - Buy Angus Beef Semen | ABS Global
+2025-03-28 17:07:52,499 - Processing - INFO - Extracted date: ":"2022-01-05T10:36:13+00:00","dateModified":"2022-08-18T08:26:30+00:00","description":"Shop Perception for premium-quality Simmental semen. For assistance, contact our knowledgeable staff at 1-800-ABS-STUD. Buy Angus Beef Semen | ABS Global","breadcrumb":{"@id":"https://store.absglobal.com/product/perception/#breadcrumb"},"inLanguage":"en-GB","potentialAction":[{"@type":"ReadAction","target":["https://store.absglobal.com/product/perception/"]}]},{"@type":"ImageObject","inLanguage":"en-GB","@id":"https://store.absglobal.com/product/perception/#primaryimage","url":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018","contentUrl":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018
+2025-03-28 17:07:52,500 - extraction.content - INFO - Running comprehensive content analysis for https://store.absglobal.com/product/perception/
+2025-03-28 17:07:52,502 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:52,511 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:52,513 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:53,203 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,206 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:53,239 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,251 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,256 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:53,257 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:53,258 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:53,260 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:53,262 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:53,273 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,286 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:53,288 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:53,289 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:53,291 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:53,293 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:53,468 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,471 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:07:53,824 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,828 - analysis - INFO - Generated summary (483 chars)
+2025-03-28 17:07:53,829 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:53,934 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:53,964 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:54,452 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:54,457 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:54,458 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:54,460 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:54,461 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:54,463 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:54,540 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:54,544 - analysis - INFO - Generated summary (473 chars)
+2025-03-28 17:07:54,545 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:54,718 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:54,723 - analysis - INFO - Extracted benefits summary (695 chars)
+2025-03-28 17:07:54,724 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:54,725 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:54,727 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: ['Digital Sequence Information', 'Pre-CBD COP16', 'Informal Work', 'Meridian-ABS', 'CDI DSI.']
+2025-03-28 17:07:54,728 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: Neutral
+2025-03-28 17:07:54,728 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:54,729 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:54,729 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 locations
+2025-03-28 17:07:54,730 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 projects
+2025-03-28 17:07:54,731 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 resources
+2025-03-28 17:07:54,731 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 4 audiences
+2025-03-28 17:07:54,732 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 examples
+2025-03-28 17:07:54,733 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf with comprehensive metadata
+2025-03-28 17:07:54,734 - extraction.extractor - INFO - Skipping irrelevant content from https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+2025-03-28 17:07:55,034 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,279 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,284 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:55,285 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:55,286 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:55,289 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:55,291 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:55,313 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,319 - analysis - INFO - Extracted benefits summary (453 chars)
+2025-03-28 17:07:55,320 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:55,322 - extraction.content - INFO - Successfully got embedding vector for https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:55,323 - extraction.content - INFO - Identified themes for https://www.alibaba.com/showroom/abs-cdi.html: ['Wholesale products', 'Motorcycle accessories', 'Ignition systems', 'Safety features', 'Lighting systems']
+2025-03-28 17:07:55,323 - extraction.content - INFO - Sentiment analysis for https://www.alibaba.com/showroom/abs-cdi.html: Neutral
+2025-03-28 17:07:55,324 - extraction.content - INFO - Got summary from analysis for https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:55,324 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:55,325 - extraction.content - INFO - Found geographic focus data for https://www.alibaba.com/showroom/abs-cdi.html: 0 locations
+2025-03-28 17:07:55,326 - extraction.content - INFO - Found project data for https://www.alibaba.com/showroom/abs-cdi.html: 0 projects
+2025-03-28 17:07:55,327 - extraction.content - INFO - Found resource data for https://www.alibaba.com/showroom/abs-cdi.html: 0 resources
+2025-03-28 17:07:55,327 - extraction.content - INFO - Found target audience data for https://www.alibaba.com/showroom/abs-cdi.html: 4 audiences
+2025-03-28 17:07:55,327 - extraction.content - INFO - Found benefits data for https://www.alibaba.com/showroom/abs-cdi.html: 0 examples
+2025-03-28 17:07:55,328 - extraction.content - INFO - Successfully processed https://www.alibaba.com/showroom/abs-cdi.html with comprehensive metadata
+2025-03-28 17:07:55,329 - extraction.extractor - INFO - Skipping irrelevant content from https://www.alibaba.com/showroom/abs-cdi.html
+2025-03-28 17:07:55,335 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,344 - analysis - INFO - Extracted benefits summary (707 chars)
+2025-03-28 17:07:55,345 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:55,347 - extraction.content - INFO - Successfully got embedding vector for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:55,349 - extraction.content - INFO - Identified themes for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: ['Racing techniques', 'CDI systems', 'Advanced ABS technology', 'Vehicle performance optimization', 'Driver safety']
+2025-03-28 17:07:55,351 - extraction.content - INFO - Sentiment analysis for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: Neutral
+2025-03-28 17:07:55,353 - extraction.content - INFO - Got summary from analysis for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:55,355 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:55,356 - extraction.content - INFO - Found geographic focus data for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: 0 locations
+2025-03-28 17:07:55,358 - extraction.content - INFO - Found project data for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: 0 projects
+2025-03-28 17:07:55,360 - extraction.content - INFO - Found resource data for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: 0 resources
+2025-03-28 17:07:55,361 - extraction.content - INFO - Found target audience data for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: 5 audiences
+2025-03-28 17:07:55,363 - extraction.content - INFO - Found benefits data for https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html: 0 examples
+2025-03-28 17:07:55,364 - extraction.content - INFO - Successfully processed https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html with comprehensive metadata
+2025-03-28 17:07:55,366 - extraction.extractor - INFO - Skipping irrelevant content from https://www.aliexpress.com/w/wholesale-racing-cdi-abs.html
+2025-03-28 17:07:55,669 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,680 - analysis - INFO - Generated summary (421 chars)
+2025-03-28 17:07:55,682 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:07:55,760 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,792 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:55,796 - analysis - INFO - Extracted benefits summary (177 chars)
+2025-03-28 17:07:55,797 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:55,798 - extraction.content - INFO - Successfully got embedding vector for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:55,799 - extraction.content - INFO - Identified themes for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: ['Vespa parts', 'Scooter maintenance', 'Electrical components', 'Online shopping', 'Product availability']
+2025-03-28 17:07:55,800 - extraction.content - INFO - Sentiment analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: Neutral
+2025-03-28 17:07:55,801 - extraction.content - INFO - Got summary from analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:55,802 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:55,803 - extraction.content - INFO - Found geographic focus data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: 0 locations
+2025-03-28 17:07:55,804 - extraction.content - INFO - Found project data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: 0 projects
+2025-03-28 17:07:55,805 - extraction.content - INFO - Found resource data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: 0 resources
+2025-03-28 17:07:55,806 - extraction.content - INFO - Found target audience data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: 3 audiences
+2025-03-28 17:07:55,807 - extraction.content - INFO - Found benefits data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY: 0 examples
+2025-03-28 17:07:55,808 - extraction.content - INFO - Successfully processed https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY with comprehensive metadata
+2025-03-28 17:07:55,810 - extraction.extractor - INFO - Skipping irrelevant content from https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOorsph3NZWwTnTOouo130J0wVsOpQbH7xb70tzs7fnw31F_XG3eY
+2025-03-28 17:07:56,642 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:56,647 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:07:56,648 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:07:56,649 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:07:56,652 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:07:56,653 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:07:57,287 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:57,291 - analysis - INFO - Extracted benefits summary (603 chars)
+2025-03-28 17:07:57,292 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:57,293 - extraction.content - INFO - Successfully got embedding vector for https://store.absglobal.com/product/perception/
+2025-03-28 17:07:57,294 - extraction.content - INFO - Identified themes for https://store.absglobal.com/product/perception/: ['Perception Simmental', 'Angus Beef Semen', 'Bull Search', 'Genetic Traits', 'DNA Testing']
+2025-03-28 17:07:57,294 - extraction.content - INFO - Sentiment analysis for https://store.absglobal.com/product/perception/: Neutral
+2025-03-28 17:07:57,298 - extraction.content - INFO - Got summary from analysis for https://store.absglobal.com/product/perception/
+2025-03-28 17:07:57,299 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://store.absglobal.com/product/perception/
+2025-03-28 17:07:57,300 - extraction.content - INFO - Found geographic focus data for https://store.absglobal.com/product/perception/: 0 locations
+2025-03-28 17:07:57,302 - extraction.content - INFO - Found project data for https://store.absglobal.com/product/perception/: 0 projects
+2025-03-28 17:07:57,303 - extraction.content - INFO - Found resource data for https://store.absglobal.com/product/perception/: 0 resources
+2025-03-28 17:07:57,305 - extraction.content - INFO - Found target audience data for https://store.absglobal.com/product/perception/: 1 audiences
+2025-03-28 17:07:57,306 - extraction.content - INFO - Found benefits data for https://store.absglobal.com/product/perception/: 0 examples
+2025-03-28 17:07:57,307 - extraction.content - INFO - Successfully processed https://store.absglobal.com/product/perception/ with comprehensive metadata
+2025-03-28 17:07:57,309 - extraction.extractor - INFO - Skipping irrelevant content from https://store.absglobal.com/product/perception/
+2025-03-28 17:07:57,411 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:58,016 - Processing - WARNING - Request attempt 1 failed for https://www.ebay.com/itm/121760783695: 503 Server Error: Service Unavailable for url: https://www.ebay.com/itm/121760783695
+2025-03-28 17:07:58,923 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:07:58,927 - analysis - INFO - Extracted benefits summary (730 chars)
+2025-03-28 17:07:58,928 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:07:58,929 - extraction.content - INFO - Successfully got embedding vector for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:58,930 - extraction.content - INFO - Identified themes for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: ['CDI Igniter', 'Honda ATC', 'Ignition Parts', 'Automotive Replacement Parts', 'Customer Service']
+2025-03-28 17:07:58,931 - extraction.content - INFO - Sentiment analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: Neutral
+2025-03-28 17:07:58,932 - extraction.content - INFO - Got summary from analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:58,933 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:07:58,934 - extraction.content - INFO - Found geographic focus data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 locations
+2025-03-28 17:07:58,934 - extraction.content - INFO - Found project data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 projects
+2025-03-28 17:07:58,935 - extraction.content - INFO - Found resource data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 resources
+2025-03-28 17:07:58,935 - extraction.content - INFO - Found target audience data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 5 audiences
+2025-03-28 17:07:58,937 - extraction.content - INFO - Found benefits data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 examples
+2025-03-28 17:07:58,937 - extraction.content - INFO - Successfully processed https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC with comprehensive metadata
+2025-03-28 17:07:58,941 - extraction.extractor - INFO - Skipping irrelevant content from https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+2025-03-28 17:08:00,017 - Processing - INFO - Request attempt 2/3 for https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:01,828 - Processing - INFO - Received response in 14.34 seconds.
+2025-03-28 17:08:01,829 - Processing - INFO - Parsing HTML content
+2025-03-28 17:08:02,027 - Processing - INFO - Extracting title from webpage: https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:02,028 - Processing - INFO - Found title in title tag: honda  st 1100 abs  cdi   | eBay
+2025-03-28 17:08:02,028 - Processing - INFO - Extracting date from webpage: https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:02,710 - Processing - INFO - Found date using regex pattern in HTML: Jun 08, 2024
+2025-03-28 17:08:02,710 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:08:02,780 - Processing - INFO - Removed 55 elements from DOM
+2025-03-28 17:08:02,787 - Processing - INFO - Successfully scraped 9083 chars from https://www.ebay.com/itm/121760783695 in 15.30 seconds (cleaned from 9182 to 9083 chars)
+2025-03-28 17:08:02,788 - Processing - INFO - Extracted title: honda  st 1100 abs  cdi   | eBay
+2025-03-28 17:08:02,788 - Processing - INFO - Extracted date: Jun 08, 2024
+2025-03-28 17:08:02,788 - extraction.content - INFO - Running comprehensive content analysis for https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:03,192 - Processing - WARNING - Request attempt 1 failed for https://www.ebay.com/itm/305812328966: HTTPSConnectionPool(host='www.ebay.com', port=443): Read timed out. (read timeout=15)
+2025-03-28 17:08:03,352 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:08:03,356 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:08:05,193 - Processing - INFO - Request attempt 2/3 for https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:05,705 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:05,710 - analysis - INFO - Generated summary (478 chars)
+2025-03-28 17:08:05,712 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:08:06,313 - Processing - INFO - Received response in 18.80 seconds.
+2025-03-28 17:08:06,314 - Processing - INFO - Parsing HTML content
+2025-03-28 17:08:06,404 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:06,431 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:08:06,432 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:08:06,433 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:08:06,444 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:08:06,448 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:08:06,601 - Processing - INFO - Extracting title from webpage: https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:06,602 - Processing - INFO - Found title in title tag: 2023 INDIAN SCOUT BOBBER ABS CDI ECU ECM COMPUTER BOX 2284486482-6 852133929  | eBay
+2025-03-28 17:08:06,602 - Processing - INFO - Extracting date from webpage: https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:07,449 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:07,581 - Processing - INFO - Found date using regex pattern in HTML: .01" content="34E98E6F27109BE1A9DCF19658
+2025-03-28 17:08:07,581 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:08:07,656 - Processing - INFO - Removed 54 elements from DOM
+2025-03-28 17:08:07,662 - Processing - INFO - Successfully scraped 12375 chars from https://www.ebay.com/itm/305812328966 in 20.15 seconds (cleaned from 12475 to 12375 chars)
+2025-03-28 17:08:07,663 - Processing - INFO - Extracted title: 2023 INDIAN SCOUT BOBBER ABS CDI ECU ECM COMPUTER BOX 2284486482-6 852133929  | eBay
+2025-03-28 17:08:07,664 - Processing - INFO - Extracted date: .01" content="34E98E6F27109BE1A9DCF19658
+2025-03-28 17:08:07,665 - extraction.content - INFO - Running comprehensive content analysis for https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:08,245 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:08:08,248 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:08:08,359 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:08,368 - analysis - INFO - Extracted benefits summary (128 chars)
+2025-03-28 17:08:08,370 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:08:08,371 - extraction.content - INFO - Successfully got embedding vector for https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:08,371 - extraction.content - INFO - Identified themes for https://www.ebay.com/itm/121760783695: ['honda st 1100 abs', 'cdi', 'eBay', 'vehicle compatibility', 'used condition']
+2025-03-28 17:08:08,373 - extraction.content - INFO - Sentiment analysis for https://www.ebay.com/itm/121760783695: Neutral
+2025-03-28 17:08:08,375 - extraction.content - INFO - Got summary from analysis for https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:08,375 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:08,376 - extraction.content - INFO - Found geographic focus data for https://www.ebay.com/itm/121760783695: 0 locations
+2025-03-28 17:08:08,377 - extraction.content - INFO - Found project data for https://www.ebay.com/itm/121760783695: 0 projects
+2025-03-28 17:08:08,378 - extraction.content - INFO - Found resource data for https://www.ebay.com/itm/121760783695: 0 resources
+2025-03-28 17:08:08,379 - extraction.content - INFO - Found target audience data for https://www.ebay.com/itm/121760783695: 1 audiences
+2025-03-28 17:08:08,380 - extraction.content - INFO - Found benefits data for https://www.ebay.com/itm/121760783695: 0 examples
+2025-03-28 17:08:08,381 - extraction.content - INFO - Successfully processed https://www.ebay.com/itm/121760783695 with comprehensive metadata
+2025-03-28 17:08:08,383 - extraction.extractor - INFO - Skipping irrelevant content from https://www.ebay.com/itm/121760783695
+2025-03-28 17:08:10,607 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:10,613 - analysis - INFO - Generated summary (549 chars)
+2025-03-28 17:08:10,614 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:08:11,377 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:11,383 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:08:11,384 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:08:11,385 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:08:11,387 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:08:11,388 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:08:11,938 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:12,763 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:12,767 - analysis - INFO - Extracted benefits summary (132 chars)
+2025-03-28 17:08:12,768 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:08:12,769 - extraction.content - INFO - Successfully got embedding vector for https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:12,770 - extraction.content - INFO - Identified themes for https://www.ebay.com/itm/305812328966: ['Indian Scout Bobber', 'ABS', 'CDI', 'ECU', 'ECM', 'Computer Box']
+2025-03-28 17:08:12,770 - extraction.content - INFO - Sentiment analysis for https://www.ebay.com/itm/305812328966: Neutral
+2025-03-28 17:08:12,772 - extraction.content - INFO - Got summary from analysis for https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:12,773 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:12,775 - extraction.content - INFO - Found geographic focus data for https://www.ebay.com/itm/305812328966: 0 locations
+2025-03-28 17:08:12,775 - extraction.content - INFO - Found project data for https://www.ebay.com/itm/305812328966: 0 projects
+2025-03-28 17:08:12,777 - extraction.content - INFO - Found resource data for https://www.ebay.com/itm/305812328966: 0 resources
+2025-03-28 17:08:12,778 - extraction.content - INFO - Found target audience data for https://www.ebay.com/itm/305812328966: 1 audiences
+2025-03-28 17:08:12,779 - extraction.content - INFO - Found benefits data for https://www.ebay.com/itm/305812328966: 0 examples
+2025-03-28 17:08:12,781 - extraction.content - INFO - Successfully processed https://www.ebay.com/itm/305812328966 with comprehensive metadata
+2025-03-28 17:08:12,782 - extraction.extractor - INFO - Skipping irrelevant content from https://www.ebay.com/itm/305812328966
+2025-03-28 17:08:13,783 - extraction.extractor - INFO - Query 3/3: 'ABS Initiative'
+2025-03-28 17:08:13,784 - Search - INFO - Searching web for: 'ABS Initiative' (limit: 10 results, language: English)
+2025-03-28 17:08:14,595 - Search - INFO - Received 10 search results in 0.81 seconds
+2025-03-28 17:08:14,599 - Search - INFO - Filtered to 9 relevant English results
+2025-03-28 17:08:14,600 - Search - INFO - Result 1: [PDF] From Global to Local: The ABS Capacity Development Initiative - https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:08:14,601 - Search - INFO - Result 2: ABS Capacity Development Initiative - Devex - https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:14,601 - Search - INFO - Result 3: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:08:14,602 - Search - INFO - Result 4: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE - https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:08:14,602 - Search - INFO - Result 5: ABS Initiative - ERuDeF - https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:14,603 - Search - INFO - Result 6: General Information - ABS Biotrade - https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:08:14,604 - Search - INFO - Result 7: Awareness-raising material on ABS - https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:14,604 - Search - INFO - Result 8: ABS Biotrade: Biodiversity-Based Value Chains - https://www.abs-biotrade.info/
+2025-03-28 17:08:14,605 - Search - INFO - Result 9: Implementing access and benefit sharing for biodiversity - giz.de - https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:08:14,608 - extraction.extractor - INFO - Query 3 returned 9 results
+2025-03-28 17:08:14,610 - extraction.extractor - INFO - Skipping URL already processed: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+2025-03-28 17:08:14,610 - extraction.extractor - INFO - Processing new URL: https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:14,611 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+2025-03-28 17:08:14,612 - extraction.extractor - INFO - Skipping URL already processed: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+2025-03-28 17:08:14,611 - extraction.content - INFO - Processing result 2 from query 3: ABS Capacity Development Initiative - Devex
+2025-03-28 17:08:14,613 - extraction.extractor - INFO - Processing new URL: https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:14,615 - extraction.extractor - INFO - Skipping URL already processed: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+2025-03-28 17:08:14,615 - extraction.content - INFO - Processing result 5 from query 3: ABS Initiative - ERuDeF
+2025-03-28 17:08:14,619 - Processing - INFO - Scraping webpage: https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:14,616 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:14,620 - Processing - INFO - Sending HTTP request to https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:14,614 - Processing - INFO - Scraping webpage: https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:14,621 - extraction.extractor - INFO - Skipping URL already processed: https://www.abs-biotrade.info/
+2025-03-28 17:08:14,623 - Processing - INFO - Sending HTTP request to https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:14,624 - Processing - INFO - Request attempt 1/3 for https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:14,624 - extraction.content - INFO - Processing result 7 from query 3: Awareness-raising material on ABS
+2025-03-28 17:08:14,622 - Processing - INFO - Request attempt 1/3 for https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:14,623 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/en/worldwide/151610.html
+2025-03-28 17:08:14,635 - Processing - INFO - Scraping webpage: https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:14,635 - Processing - INFO - Sending HTTP request to https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:14,636 - Processing - INFO - Request attempt 1/3 for https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:14,646 - extraction.extractor - INFO - Query 3: Processing 3 new URLs, skipped 6
+2025-03-28 17:08:15,753 - Processing - INFO - Received response in 1.13 seconds.
+2025-03-28 17:08:15,754 - Processing - INFO - Parsing HTML content
+2025-03-28 17:08:15,791 - Processing - INFO - Extracting title from webpage: https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:15,792 - Processing - INFO - Found title in title tag: ABS Capacity Development Initiative | Devex
+2025-03-28 17:08:15,793 - Processing - INFO - Extracting date from webpage: https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:16,055 - Processing - INFO - Found copyright year in footer: 2000
+2025-03-28 17:08:16,058 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:08:16,105 - Processing - INFO - Removed 24 elements from DOM
+2025-03-28 17:08:16,109 - Processing - INFO - Successfully scraped 2871 chars from https://www.devex.com/organizations/abs-capacity-development-initiative-176212 in 1.49 seconds (cleaned from 3102 to 2871 chars)
+2025-03-28 17:08:16,111 - Processing - INFO - Extracted title: ABS Capacity Development Initiative | Devex
+2025-03-28 17:08:16,114 - Processing - INFO - Extracted date: 2000-01-01
+2025-03-28 17:08:16,117 - extraction.content - INFO - Running comprehensive content analysis for https://www.devex.com/organizations/abs-capacity-development-initiative-176212
+2025-03-28 17:08:16,175 - Processing - INFO - Received response in 1.54 seconds.
+2025-03-28 17:08:16,176 - Processing - INFO - Parsing HTML content
+2025-03-28 17:08:16,235 - Processing - INFO - Extracting title from webpage: https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:16,236 - Processing - INFO - Found title in title tag: Awareness-raising material  on ABS
+2025-03-28 17:08:16,237 - Processing - INFO - Extracting date from webpage: https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:16,391 - Processing - INFO - Received response in 1.77 seconds.
+2025-03-28 17:08:16,396 - Processing - INFO - Parsing HTML content
+2025-03-28 17:08:16,541 - Processing - INFO - Extracting title from webpage: https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:16,563 - Processing - INFO - Found title in title tag: ABS Initiative - ERuDeF
+2025-03-28 17:08:16,564 - Processing - INFO - Extracting date from webpage: https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:16,568 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:08:16,571 - Processing - INFO - Found date in meta tag article:published_time: 2019-10-04T19:45:55+00:00
+2025-03-28 17:08:16,578 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:08:16,576 - Processing - INFO - Found date using regex pattern in HTML: " content="2024
+2025-03-28 17:08:16,586 - Processing - INFO - Removing script, style, and navigation elements
+2025-03-28 17:08:16,593 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:08:16,626 - Processing - INFO - Removed 24 elements from DOM
+2025-03-28 17:08:16,629 - Processing - INFO - Removed 25 elements from DOM
+2025-03-28 17:08:16,631 - Processing - INFO - Successfully scraped 2529 chars from https://erudef.org/abs-initiative-cameroon/ in 2.01 seconds (cleaned from 2893 to 2529 chars)
+2025-03-28 17:08:16,644 - Processing - INFO - Successfully scraped 7473 chars from https://www.cbd.int/abs/awareness-raising in 2.01 seconds (cleaned from 8122 to 7473 chars)
+2025-03-28 17:08:16,644 - Processing - INFO - Extracted title: ABS Initiative - ERuDeF
+2025-03-28 17:08:16,646 - Processing - INFO - Extracted date: 2019-10-04T19:45:55+00:00
+2025-03-28 17:08:16,646 - Processing - INFO - Extracted title: Awareness-raising material  on ABS
+2025-03-28 17:08:16,647 - extraction.content - INFO - Running comprehensive content analysis for https://erudef.org/abs-initiative-cameroon/
+2025-03-28 17:08:16,647 - Processing - INFO - Extracted date: " content="2024
+2025-03-28 17:08:16,652 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:08:17,103 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:08:17,107 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:08:17,216 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-03-28 17:08:17,219 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+2025-03-28 17:08:18,351 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:18,352 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:18,358 - analysis - INFO - Generated summary (494 chars)
+2025-03-28 17:08:18,361 - analysis - INFO - Generated summary (758 chars)
+2025-03-28 17:08:18,362 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:08:18,364 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:08:18,946 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:18,949 - analysis - INFO - Generated summary (800 chars)
+2025-03-28 17:08:18,950 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+2025-03-28 17:08:19,032 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:19,036 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:08:19,038 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:08:19,039 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:08:19,041 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:08:19,043 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:08:19,173 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:19,177 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:08:19,179 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:08:19,181 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:08:19,183 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:08:19,184 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:08:19,575 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:19,579 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+2025-03-28 17:08:19,580 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+2025-03-28 17:08:19,582 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+2025-03-28 17:08:19,584 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+2025-03-28 17:08:19,585 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+2025-03-28 17:08:19,766 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:19,891 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:08:20,329 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
