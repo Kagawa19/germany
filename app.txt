@@ -1,0 +1,1007 @@
+python-app  | 
+python-app  | Collecting usage statistics. To deactivate, set browser.gatherUsageStats to False.
+python-app  | 
+python-app  | 
+python-app  |   You can now view your Streamlit app in your browser.
+python-app  | 
+python-app  |   Network URL: http://172.18.0.3:8501
+python-app  |   External URL: http://13.71.3.96:8501
+python-app  | 
+python-app  | 
+python-app  |   A new version of Streamlit is available.
+python-app  | 
+python-app  |   See what's new at https://discuss.streamlit.io/c/announcements
+python-app  | 
+python-app  |   Enter the following command to upgrade:
+python-app  |   $ pip install streamlit --upgrade
+python-app  | 
+python-app  | 2025-03-28 16:52:28,735 - Dashboard - INFO - Rendering Dashboard page
+python-app  | 2025-03-28 16:52:28,738 - ContentDB - INFO - Fetching data from database (limit: 1000, filters: None)
+python-app  | 2025-03-28 16:52:28,738 - ConnectionDB - INFO - Creating database connection
+python-app  | 2025-03-28 16:52:28,791 - ConnectionDB - INFO - Database connection created successfully
+python-app  | 2025-03-28 16:52:29,745 - ContentDB - INFO - Fetched 0 rows from database
+python-app  | 2025-03-28 16:52:29,757 - ConnectionDB - INFO - Creating database connection
+python-app  | 2025-03-28 16:52:29,759 - ConnectionDB - INFO - Database connection created successfully
+python-app  | 2025-03-28 16:52:36,124 - ABS_Initiative_App - INFO - Starting extraction - Language: English, Max Queries: 3, Max Results: 10
+python-app  | 2025-03-28 16:52:36,126 - root - INFO - Starting web extraction process | Max Queries: 3 | Max Results Per Query: 10 | Language: English
+python-app  | 🌐 Initiating web content extraction...
+python-app  |    Configuration:
+python-app  |    - Max Queries: 3
+python-app  |    - Max Results Per Query: 10
+python-app  |    - Language: English
+python-app  | 2025-03-28 16:52:36,134 - root - INFO - Initializing WebExtractor with language: English
+python-app  | 🔍 Initializing web content extractor for English content...
+python-app  | 2025-03-28 16:52:36,151 - Search - INFO - OpenAI API key loaded from environment variables
+python-app  | 2025-03-28 16:52:36,185 - Search - INFO - OpenAI client initialized successfully
+python-app  | 2025-03-28 16:52:36,195 - analysis - INFO - OpenAI API key loaded from environment variables
+python-app  | 2025-03-28 16:52:36,225 - analysis - INFO - OpenAI client initialized successfully
+python-app  | 2025-03-28 16:52:36,235 - Processing - INFO - OpenAI API key loaded from environment variables
+python-app  | 2025-03-28 16:52:36,235 - WebExtractor - INFO - Initialized WebExtractor for English with 10 workers
+python-app  | 2025-03-28 16:52:36,239 - WebExtractor - INFO - Running web extractor
+python-app  | 2025-03-28 16:52:36,240 - extraction.extractor - INFO - Starting web content extraction process
+python-app  | 
+python-app  | ============================================================
+python-app  |                     WEB CONTENT EXTRACTION
+python-app  | ============================================================
+python-app  | 2025-03-28 16:52:36,266 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:36,268 - extraction.extractor - ERROR - Database error: Failed to fetch existing URLs - relation "content_data" does not exist
+python-app  | LINE 1: SELECT link FROM content_data
+python-app  |                          ^
+python-app  | 
+python-app  | 
+python-app  | ⚠️ Warning: Could not fetch existing URLs from database
+python-app  |    Error details: relation "content_data" does not exist
+python-app  | LINE 1: SELECT link FROM content_data
+python-app  |                          ^
+python-app  | 
+python-app  | 2025-03-28 16:52:36,273 - Search - INFO - Generated 3 search queries for English
+python-app  | 2025-03-28 16:52:36,276 - extraction.extractor - INFO - Starting with empty processed_urls set - no in-memory URL history
+python-app  | 🔄 Starting with fresh URL tracking - no previous history carried over
+python-app  | 2025-03-28 16:52:36,278 - extraction.extractor - INFO - Query 1/3: 'ABS Capacity Development Initiative'
+python-app  | 
+python-app  | 📝 QUERY 1/3:
+python-app  |    'ABS Capacity Development Initiative'
+python-app  | 2025-03-28 16:52:36,284 - Search - INFO - Searching web for: 'ABS Capacity Development Initiative' (limit: 10 results, language: English)
+python-app  |   Searching for: 'ABS Capacity Development Initiative' in English...
+python-app  |   Found 10 results in 1.20 seconds
+python-app  | 2025-03-28 16:52:37,482 - Search - INFO - Received 10 search results in 1.20 seconds
+python-app  | 2025-03-28 16:52:37,494 - Search - INFO - Filtered to 10 relevant English results
+python-app  | 2025-03-28 16:52:37,497 - Search - INFO - Result 1: [PDF] The ABS Capacity Development Initiative - SNRD Asia - https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:37,497 - Search - INFO - Result 2: The ABS Capacity Development Initiative | Pacific Environment - https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:37,498 - Search - INFO - Result 3: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:37,499 - Search - INFO - Result 4: [PDF] From Global to Local: The ABS Capacity Development Initiative - https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:37,500 - Search - INFO - Result 5: ABS Capacity Development Initiative (GIZ) 2023-2025 - https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:37,501 - Search - INFO - Result 6: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE - https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:37,502 - Search - INFO - Result 7: Awareness-raising material on ABS - https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:37,504 - Search - INFO - Result 8: General Information - ABS Biotrade - https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:37,507 - Search - INFO - Result 9: ABS Biotrade: Biodiversity-Based Value Chains - https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:37,507 - Search - INFO - Result 10: Implementing access and benefit sharing for biodiversity - giz.de - https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:37,511 - extraction.extractor - INFO - Query 1 returned 10 results
+python-app  |    Found 10 search results
+python-app  | 2025-03-28 16:52:37,513 - extraction.extractor - INFO - Processing new URL: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:37,518 - extraction.extractor - INFO - Processing new URL: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:37,519 - extraction.content - INFO - Processing result 1 from query 1: [PDF] The ABS Capacity Development Initiative - SNRD Asia
+python-app  | 2025-03-28 16:52:37,522 - Processing - INFO - Scraping webpage: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:37,523 - extraction.extractor - INFO - Processing new URL: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:37,524 - extraction.content - INFO - Processing result 2 from query 1: The ABS Capacity Development Initiative | Pacific Environment
+python-app  | 2025-03-28 16:52:37,524 - Processing - INFO - PDF document detected, using specialized handling
+python-app  | 2025-03-28 16:52:37,529 - Processing - INFO - Handling PDF document: https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:37,527 - Processing - INFO - Scraping webpage: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:37,536 - Processing - INFO - Sending HTTP request to https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:37,536 - Processing - INFO - Request attempt 1/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:37,545 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:37,546 - extraction.content - INFO - Processing result 3 from query 1: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ
+python-app  | 2025-03-28 16:52:37,549 - Processing - INFO - Scraping webpage: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:37,551 - Processing - INFO - PDF document detected, using specialized handling
+python-app  | 2025-03-28 16:52:37,552 - Processing - INFO - Handling PDF document: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:37,552 - extraction.content - INFO - Processing result 4 from query 1: [PDF] From Global to Local: The ABS Capacity Development Initiative
+python-app  | 2025-03-28 16:52:37,560 - Processing - INFO - Scraping webpage: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:37,563 - Processing - INFO - PDF document detected, using specialized handling
+python-app  | 2025-03-28 16:52:37,559 - extraction.extractor - INFO - Processing new URL: https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:37,564 - Processing - INFO - Handling PDF document: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:37,595 - extraction.extractor - INFO - Processing new URL: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:37,596 - extraction.content - INFO - Processing result 5 from query 1: ABS Capacity Development Initiative (GIZ) 2023-2025
+python-app  | 2025-03-28 16:52:37,597 - Processing - INFO - Scraping webpage: https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:37,598 - Processing - INFO - Sending HTTP request to https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:37,598 - Processing - INFO - Request attempt 1/3 for https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:37,632 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:37,634 - extraction.content - INFO - Processing result 6 from query 1: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE
+python-app  | 2025-03-28 16:52:37,635 - Processing - INFO - Scraping webpage: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:37,635 - Processing - INFO - PDF document detected, using specialized handling
+python-app  | 2025-03-28 16:52:37,637 - Processing - INFO - Handling PDF document: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:37,658 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:37,661 - extraction.content - INFO - Processing result 7 from query 1: Awareness-raising material on ABS
+python-app  | 2025-03-28 16:52:37,661 - Processing - INFO - Scraping webpage: https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:37,663 - Processing - INFO - Sending HTTP request to https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:37,666 - Processing - INFO - Request attempt 1/3 for https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:37,703 - extraction.content - INFO - Processing result 8 from query 1: General Information - ABS Biotrade
+python-app  | 2025-03-28 16:52:37,705 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:37,713 - Processing - INFO - Sending HTTP request to https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:37,713 - Processing - INFO - Request attempt 1/3 for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:37,705 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:37,749 - extraction.extractor - INFO - Processing new URL: https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:37,754 - extraction.content - INFO - Processing result 9 from query 1: ABS Biotrade: Biodiversity-Based Value Chains
+python-app  | 2025-03-28 16:52:37,758 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:37,761 - Processing - INFO - Sending HTTP request to https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:37,765 - Processing - INFO - Request attempt 1/3 for https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:37,766 - extraction.extractor - INFO - Query 1: Processing 10 new URLs, skipped 0
+python-app  |    Processing 10 new URLs
+python-app  | 2025-03-28 16:52:37,766 - extraction.content - INFO - Processing result 10 from query 1: Implementing access and benefit sharing for biodiversity - giz.de
+python-app  | 2025-03-28 16:52:37,779 - Processing - INFO - Scraping webpage: https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:37,780 - Processing - INFO - Sending HTTP request to https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:37,795 - Processing - INFO - Request attempt 1/3 for https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:38,058 - Processing - WARNING - Request attempt 1 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:38,633 - Processing - INFO - Received response in 0.85 seconds.
+python-app  | 2025-03-28 16:52:38,634 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:38,741 - Processing - INFO - Extracting title from webpage: https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:38,745 - Processing - INFO - Found title in title tag: Implementing access and benefit sharing for biodiversity - giz.de
+python-app  | 2025-03-28 16:52:38,747 - Processing - INFO - Extracting date from webpage: https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:38,810 - Processing - INFO - Found date in meta tag date: 03/28/2025 14:49
+python-app  | 2025-03-28 16:52:38,811 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:38,827 - Processing - INFO - Removed 13 elements from DOM
+python-app  | 2025-03-28 16:52:38,830 - Processing - INFO - Successfully scraped 3745 chars from https://www.giz.de/en/worldwide/151610.html in 1.05 seconds (cleaned from 5046 to 3745 chars)
+python-app  | 2025-03-28 16:52:38,830 - Processing - INFO - Extracted title: Implementing access and benefit sharing for biodiversity - giz.de
+python-app  | 2025-03-28 16:52:38,831 - Processing - INFO - Extracted date: 03/28/2025 14:49
+python-app  | 2025-03-28 16:52:38,831 - extraction.content - INFO - Running comprehensive content analysis for https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:39,048 - Processing - INFO - Received response in 1.45 seconds.
+python-app  | 2025-03-28 16:52:39,049 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:39,052 - Processing - INFO - Extracting title from webpage: https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,053 - Processing - INFO - Found title in title tag: Bistandsresultater
+python-app  | 2025-03-28 16:52:39,053 - Processing - INFO - Extracting date from webpage: https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,088 - Processing - INFO - No date information found
+python-app  | 2025-03-28 16:52:39,088 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:39,090 - Processing - INFO - Removed 4 elements from DOM
+python-app  | 2025-03-28 16:52:39,091 - Processing - INFO - Successfully scraped 65 chars from https://resultater.norad.no/agreement/QZA-23/0127 in 1.49 seconds (cleaned from 65 to 65 chars)
+python-app  | 2025-03-28 16:52:39,091 - Processing - INFO - Extracted title: Bistandsresultater
+python-app  | 2025-03-28 16:52:39,092 - Processing - INFO - Extracted date: None
+python-app  | 2025-03-28 16:52:39,092 - extraction.content - INFO - Running comprehensive content analysis for https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,092 - analysis - INFO - Content too short for comprehensive analysis
+python-app  | 2025-03-28 16:52:39,092 - extraction.content - INFO - Identified themes for https://resultater.norad.no/agreement/QZA-23/0127: ['ABS Initiative']
+python-app  | 2025-03-28 16:52:39,093 - extraction.content - INFO - Sentiment analysis for https://resultater.norad.no/agreement/QZA-23/0127: Neutral
+python-app  | 2025-03-28 16:52:39,093 - analysis - INFO - Content too short for summarization
+python-app  | 2025-03-28 16:52:39,093 - extraction.content - INFO - Generated new summary for https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,094 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,094 - extraction.content - INFO - Found geographic focus data for https://resultater.norad.no/agreement/QZA-23/0127: 0 locations
+python-app  | 2025-03-28 16:52:39,094 - extraction.content - INFO - Found project data for https://resultater.norad.no/agreement/QZA-23/0127: 0 projects
+python-app  | 2025-03-28 16:52:39,095 - extraction.content - INFO - Found resource data for https://resultater.norad.no/agreement/QZA-23/0127: 0 resources
+python-app  | 2025-03-28 16:52:39,095 - extraction.content - INFO - Found target audience data for https://resultater.norad.no/agreement/QZA-23/0127: 0 audiences
+python-app  | 2025-03-28 16:52:39,095 - extraction.content - INFO - Found benefits data for https://resultater.norad.no/agreement/QZA-23/0127: 0 examples
+python-app  | 2025-03-28 16:52:39,096 - extraction.content - INFO - Successfully processed https://resultater.norad.no/agreement/QZA-23/0127 with comprehensive metadata
+python-app  | 2025-03-28 16:52:39,100 - extraction.extractor - INFO - Skipping irrelevant content from https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:52:39,537 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:39,542 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:39,562 - Processing - INFO - Received response in 1.80 seconds.
+python-app  | 2025-03-28 16:52:39,563 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:39,665 - Processing - INFO - Extracting title from webpage: https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:39,665 - Processing - INFO - Found title in title tag: ABS Biotrade: Biodiversity-Based Value Chains
+python-app  | 2025-03-28 16:52:39,666 - Processing - INFO - Extracting date from webpage: https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:39,727 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:39,751 - extraction.content - INFO - Running comprehensive content analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:39,805 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:39,849 - extraction.content - INFO - Running comprehensive content analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:39,933 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:39,941 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:39,956 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:40,010 - extraction.content - INFO - Running comprehensive content analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:40,060 - Processing - INFO - Request attempt 2/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:40,292 - Processing - WARNING - Request attempt 2 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:40,295 - Processing - INFO - Received response in 2.63 seconds.
+python-app  | 2025-03-28 16:52:40,308 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:40,413 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:40,459 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:40,482 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:40,579 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:40,630 - Processing - INFO - Extracting title from webpage: https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:40,644 - Processing - INFO - Found title in title tag: Awareness-raising material  on ABS
+python-app  | 2025-03-28 16:52:40,659 - Processing - INFO - Extracting date from webpage: https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:40,758 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:40,766 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:40,851 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:40,854 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:40,980 - Processing - INFO - No date information found
+python-app  | 2025-03-28 16:52:40,987 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:41,060 - Processing - INFO - Removed 8 elements from DOM
+python-app  | 2025-03-28 16:52:41,069 - Processing - INFO - Successfully scraped 5545 chars from https://www.abs-biotrade.info/ in 3.31 seconds (cleaned from 9775 to 5545 chars)
+python-app  | 2025-03-28 16:52:41,075 - Processing - INFO - Extracted title: ABS Biotrade: Biodiversity-Based Value Chains
+python-app  | 2025-03-28 16:52:41,081 - Processing - INFO - Extracted date: None
+python-app  | 2025-03-28 16:52:41,103 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:41,184 - Processing - INFO - Found date using regex pattern in HTML: " content="2024
+python-app  | 2025-03-28 16:52:41,185 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:41,213 - Processing - INFO - Removed 25 elements from DOM
+python-app  | 2025-03-28 16:52:41,216 - Processing - INFO - Successfully scraped 7473 chars from https://www.cbd.int/abs/awareness-raising/ in 3.55 seconds (cleaned from 8122 to 7473 chars)
+python-app  | 2025-03-28 16:52:41,216 - Processing - INFO - Extracted title: Awareness-raising material  on ABS
+python-app  | 2025-03-28 16:52:41,217 - Processing - INFO - Extracted date: " content="2024
+python-app  | 2025-03-28 16:52:41,218 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:41,289 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,294 - analysis - INFO - Generated summary (639 chars)
+python-app  | 2025-03-28 16:52:41,296 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:41,623 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,627 - analysis - INFO - Generated summary (555 chars)
+python-app  | 2025-03-28 16:52:41,628 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:41,741 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,745 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:41,799 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,802 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:41,921 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,923 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:41,930 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:41,933 - analysis - INFO - Generated summary (545 chars)
+python-app  | 2025-03-28 16:52:41,935 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:41,938 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:41,939 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:41,938 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:41,945 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:42,284 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,289 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:42,290 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:42,293 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:42,293 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:42,295 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:42,307 - Processing - INFO - Request attempt 3/3 for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:42,415 - Processing - WARNING - Request attempt 3 failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative: 403 Client Error: Forbidden for url: https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:42,415 - Processing - ERROR - All 3 attempts failed for https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:42,419 - Processing - ERROR - Failed to retrieve content from https://www.sprep.org/publications/the-abs-capacity-development-initiative
+python-app  | 2025-03-28 16:52:42,420 - extraction.content - INFO - No content extracted from https://www.sprep.org/publications/the-abs-capacity-development-initiative, skipping
+python-app  | 2025-03-28 16:52:42,485 - Processing - INFO - Received response in 4.77 seconds.
+python-app  | 2025-03-28 16:52:42,486 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:42,567 - Processing - INFO - Extracting title from webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:42,568 - Processing - INFO - Found title in title tag: ABS Biotrade: General Information
+python-app  | 2025-03-28 16:52:42,568 - Processing - INFO - Extracting date from webpage: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:42,622 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,662 - analysis - INFO - Generated summary (656 chars)
+python-app  | 2025-03-28 16:52:42,663 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,683 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:42,690 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,740 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:42,776 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,783 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:42,786 - analysis - INFO - Generated summary (588 chars)
+python-app  | 2025-03-28 16:52:42,819 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:42,847 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:42,847 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:42,905 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:42,906 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:43,125 - Processing - INFO - No date information found
+python-app  | 2025-03-28 16:52:43,126 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:43,168 - Processing - INFO - Removed 9 elements from DOM
+python-app  | 2025-03-28 16:52:43,172 - Processing - INFO - Successfully scraped 5874 chars from https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/ in 5.46 seconds (cleaned from 12065 to 5874 chars)
+python-app  | 2025-03-28 16:52:43,172 - Processing - INFO - Extracted title: ABS Biotrade: General Information
+python-app  | 2025-03-28 16:52:43,173 - Processing - INFO - Extracted date: None
+python-app  | 2025-03-28 16:52:43,174 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:43,325 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,337 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:43,338 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:43,340 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:43,342 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:43,345 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:43,584 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,587 - analysis - INFO - Generated summary (688 chars)
+python-app  | 2025-03-28 16:52:43,588 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:43,608 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,613 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:43,694 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,699 - analysis - INFO - Generated summary (698 chars)
+python-app  | 2025-03-28 16:52:43,700 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:43,735 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,776 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:43,781 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:43,783 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:43,785 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:43,786 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:43,790 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:44,004 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:44,249 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:44,255 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:44,257 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:44,258 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:44,260 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:44,261 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:44,372 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:44,377 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:44,379 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:44,381 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:44,382 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:44,382 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:44,439 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:44,444 - analysis - INFO - Extracted benefits summary (1052 chars)
+python-app  | 2025-03-28 16:52:44,446 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:44,446 - extraction.content - INFO - Successfully got embedding vector for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:44,446 - extraction.content - INFO - Identified themes for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: ['Biodiversity Conservation', 'Access and Benefit Sharing', 'Nagoya Protocol', 'Genetic Resources', 'Traditional Knowledge']
+python-app  | 2025-03-28 16:52:44,449 - extraction.content - INFO - Sentiment analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: Neutral
+python-app  | 2025-03-28 16:52:44,450 - extraction.content - INFO - Got summary from analysis for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:44,452 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf
+python-app  | 2025-03-28 16:52:44,453 - extraction.content - INFO - Found geographic focus data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 locations
+python-app  | 2025-03-28 16:52:44,454 - extraction.content - INFO - Found project data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 projects
+python-app  | 2025-03-28 16:52:44,455 - extraction.content - INFO - Found resource data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 resources
+python-app  | 2025-03-28 16:52:44,456 - extraction.content - INFO - Found target audience data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 4 audiences
+python-app  | 2025-03-28 16:52:44,457 - extraction.content - INFO - Found benefits data for https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: 0 examples
+python-app  | 2025-03-28 16:52:44,458 - extraction.content - INFO - Successfully processed https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf with comprehensive metadata
+python-app  | 2025-03-28 16:52:44,460 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:44,481 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:44,493 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:44,498 - ContentDB - ERROR - Error storing item with URL https://2023.snrd-asia.org/download/abs_capacity_development_initiative_-_supporting_the_implementation_of_the_nagoya_protocol_on_access_and_benefit_sharing_abs/Factsheet.pdf: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:44,501 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:44,501 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:44,565 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,003 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,163 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,222 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,234 - analysis - INFO - Extracted benefits summary (593 chars)
+python-app  | 2025-03-28 16:52:45,236 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:45,237 - extraction.content - INFO - Successfully got embedding vector for https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:45,237 - extraction.content - INFO - Identified themes for https://www.giz.de/en/worldwide/151610.html: ['Biodiversity conservation', 'Genetic resources', 'Indigenous peoples', 'Stakeholder involvement', 'Policy integration']
+python-app  | 2025-03-28 16:52:45,238 - extraction.content - INFO - Sentiment analysis for https://www.giz.de/en/worldwide/151610.html: Neutral
+python-app  | 2025-03-28 16:52:45,239 - extraction.content - INFO - Got summary from analysis for https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:45,240 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:52:45,241 - extraction.content - INFO - Found geographic focus data for https://www.giz.de/en/worldwide/151610.html: 0 locations
+python-app  | 2025-03-28 16:52:45,241 - extraction.content - INFO - Found project data for https://www.giz.de/en/worldwide/151610.html: 0 projects
+python-app  | 2025-03-28 16:52:45,242 - extraction.content - INFO - Found resource data for https://www.giz.de/en/worldwide/151610.html: 0 resources
+python-app  | 2025-03-28 16:52:45,243 - extraction.content - INFO - Found target audience data for https://www.giz.de/en/worldwide/151610.html: 4 audiences
+python-app  | 2025-03-28 16:52:45,244 - extraction.content - INFO - Found benefits data for https://www.giz.de/en/worldwide/151610.html: 0 examples
+python-app  | 2025-03-28 16:52:45,244 - extraction.content - INFO - Successfully processed https://www.giz.de/en/worldwide/151610.html with comprehensive metadata
+python-app  | 2025-03-28 16:52:45,245 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:45,283 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:45,293 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:45,297 - ContentDB - ERROR - Error storing item with URL https://www.giz.de/en/worldwide/151610.html: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:45,298 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:45,300 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:45,386 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,398 - analysis - INFO - Extracted benefits summary (768 chars)
+python-app  | 2025-03-28 16:52:45,398 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:45,400 - extraction.content - INFO - Successfully got embedding vector for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:45,401 - extraction.content - INFO - Identified themes for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: ['Biodiversity Conservation', 'Traditional Knowledge', 'Genetic Resources', 'Access and Benefit Sharing', 'Capacity Building.']
+python-app  | 2025-03-28 16:52:45,403 - extraction.content - INFO - Sentiment analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: Neutral
+python-app  | 2025-03-28 16:52:45,405 - extraction.content - INFO - Got summary from analysis for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:45,405 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:45,405 - extraction.content - INFO - Found geographic focus data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 locations
+python-app  | 2025-03-28 16:52:45,406 - extraction.content - INFO - Found project data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 projects
+python-app  | 2025-03-28 16:52:45,406 - extraction.content - INFO - Found resource data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 resources
+python-app  | 2025-03-28 16:52:45,407 - extraction.content - INFO - Found target audience data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 4 audiences
+python-app  | 2025-03-28 16:52:45,407 - extraction.content - INFO - Found benefits data for https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: 0 examples
+python-app  | 2025-03-28 16:52:45,408 - extraction.content - INFO - Successfully processed https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf with comprehensive metadata
+python-app  | 2025-03-28 16:52:45,409 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:45,437 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:45,445 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:45,448 - ContentDB - ERROR - Error storing item with URL https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:45,449 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:45,450 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:45,761 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:45,772 - analysis - INFO - Generated summary (743 chars)
+python-app  | 2025-03-28 16:52:45,778 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:46,400 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:46,404 - analysis - INFO - Extracted benefits summary (1308 chars)
+python-app  | 2025-03-28 16:52:46,404 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:46,405 - extraction.content - INFO - Successfully got embedding vector for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:46,406 - extraction.content - INFO - Identified themes for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: ['Nature Conservation', 'Access and Benefit-sharing', 'Multi-donor Initiative', 'Biodiversity Conservation', 'Traditional Knowledge']
+python-app  | 2025-03-28 16:52:46,407 - extraction.content - INFO - Sentiment analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: Neutral
+python-app  | 2025-03-28 16:52:46,407 - extraction.content - INFO - Got summary from analysis for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:46,408 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:52:46,409 - extraction.content - INFO - Found geographic focus data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 locations
+python-app  | 2025-03-28 16:52:46,410 - extraction.content - INFO - Found project data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 projects
+python-app  | 2025-03-28 16:52:46,411 - extraction.content - INFO - Found resource data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 resources
+python-app  | 2025-03-28 16:52:46,411 - extraction.content - INFO - Found target audience data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 4 audiences
+python-app  | 2025-03-28 16:52:46,412 - extraction.content - INFO - Found benefits data for https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: 0 examples
+python-app  | 2025-03-28 16:52:46,413 - extraction.content - INFO - Successfully processed https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf with comprehensive metadata
+python-app  | 2025-03-28 16:52:46,415 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:46,432 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:46,440 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:46,443 - ContentDB - ERROR - Error storing item with URL https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:46,444 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:46,445 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:46,525 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:46,529 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:46,531 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:46,532 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:46,533 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:46,535 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:46,616 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:46,620 - analysis - INFO - Extracted benefits summary (787 chars)
+python-app  | 2025-03-28 16:52:46,622 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:46,622 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:46,623 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/: ['Biodiversity-based value chains', 'Access and benefit-sharing', 'Geographic Indicator status', 'Sector development', 'Community collaboration']
+python-app  | 2025-03-28 16:52:46,623 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/: Neutral
+python-app  | 2025-03-28 16:52:46,624 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:46,625 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:52:46,625 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/: 0 locations
+python-app  | 2025-03-28 16:52:46,626 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/: 0 projects
+python-app  | 2025-03-28 16:52:46,626 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/: 0 resources
+python-app  | 2025-03-28 16:52:46,627 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/: 5 audiences
+python-app  | 2025-03-28 16:52:46,628 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/: 0 examples
+python-app  | 2025-03-28 16:52:46,629 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/ with comprehensive metadata
+python-app  | 2025-03-28 16:52:46,630 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:46,648 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:46,656 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:46,659 - ContentDB - ERROR - Error storing item with URL https://www.abs-biotrade.info/: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:46,660 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:46,661 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:46,728 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:46,733 - analysis - INFO - Extracted benefits summary (1262 chars)
+python-app  | 2025-03-28 16:52:46,733 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:46,734 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:46,735 - extraction.content - INFO - Identified themes for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: ['Biodiversity conservation', 'Traditional knowledge', 'Genetic resources', 'Access and benefit sharing', 'Capacity building.']
+python-app  | 2025-03-28 16:52:46,735 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: Neutral
+python-app  | 2025-03-28 16:52:46,736 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:46,737 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:52:46,737 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 locations
+python-app  | 2025-03-28 16:52:46,738 - extraction.content - INFO - Found project data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 projects
+python-app  | 2025-03-28 16:52:46,738 - extraction.content - INFO - Found resource data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 resources
+python-app  | 2025-03-28 16:52:46,739 - extraction.content - INFO - Found target audience data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 4 audiences
+python-app  | 2025-03-28 16:52:46,740 - extraction.content - INFO - Found benefits data for https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: 0 examples
+python-app  | 2025-03-28 16:52:46,741 - extraction.content - INFO - Successfully processed https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf with comprehensive metadata
+python-app  | 2025-03-28 16:52:46,743 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:46,761 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:46,769 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:46,771 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:46,772 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:46,774 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:47,356 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:47,606 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:47,610 - analysis - INFO - Extracted benefits summary (1296 chars)
+python-app  | 2025-03-28 16:52:47,611 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:47,612 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:47,613 - extraction.content - INFO - Identified themes for https://www.cbd.int/abs/awareness-raising/: ['Awareness-raising', 'Genetic resources', 'Traditional knowledge', 'Nagoya Protocol', 'Access and benefit-sharing']
+python-app  | 2025-03-28 16:52:47,613 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/abs/awareness-raising/: Neutral
+python-app  | 2025-03-28 16:52:47,614 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:47,614 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/abs/awareness-raising/
+python-app  | 2025-03-28 16:52:47,614 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/abs/awareness-raising/: 0 locations
+python-app  | 2025-03-28 16:52:47,615 - extraction.content - INFO - Found project data for https://www.cbd.int/abs/awareness-raising/: 0 projects
+python-app  | 2025-03-28 16:52:47,615 - extraction.content - INFO - Found resource data for https://www.cbd.int/abs/awareness-raising/: 0 resources
+python-app  | 2025-03-28 16:52:47,616 - extraction.content - INFO - Found target audience data for https://www.cbd.int/abs/awareness-raising/: 6 audiences
+python-app  | 2025-03-28 16:52:47,617 - extraction.content - INFO - Found benefits data for https://www.cbd.int/abs/awareness-raising/: 0 examples
+python-app  | 2025-03-28 16:52:47,618 - extraction.content - INFO - Successfully processed https://www.cbd.int/abs/awareness-raising/ with comprehensive metadata
+python-app  | 2025-03-28 16:52:47,619 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:47,640 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:47,649 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:47,652 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/abs/awareness-raising/: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:47,654 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:47,654 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:49,076 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:49,080 - analysis - INFO - Extracted benefits summary (872 chars)
+python-app  | 2025-03-28 16:52:49,080 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:49,081 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:49,082 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: ['Biodiversity conservation', 'Sustainable use', 'Local livelihoods', 'Indigenous Peoples and local communities (IPLC)', 'Digital Sequence Information (DSI)']
+python-app  | 2025-03-28 16:52:49,083 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: Neutral
+python-app  | 2025-03-28 16:52:49,083 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:49,084 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:52:49,085 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 locations
+python-app  | 2025-03-28 16:52:49,086 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 projects
+python-app  | 2025-03-28 16:52:49,086 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 resources
+python-app  | 2025-03-28 16:52:49,087 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 9 audiences
+python-app  | 2025-03-28 16:52:49,088 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: 0 examples
+python-app  | 2025-03-28 16:52:49,089 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/ with comprehensive metadata
+python-app  | 2025-03-28 16:52:49,090 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:52:49,106 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:52:49,115 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:52:49,117 - ContentDB - ERROR - Error storing item with URL https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:52:49,118 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:52:49,119 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:52:50,120 - extraction.extractor - INFO - Query 2/3: 'ABS CDI'
+python-app  | 
+python-app  | 📝 QUERY 2/3:
+python-app  |    'ABS CDI'
+python-app  | 2025-03-28 16:52:50,122 - Search - INFO - Searching web for: 'ABS CDI' (limit: 10 results, language: English)
+python-app  |   Searching for: 'ABS CDI' in English...
+python-app  | 2025-03-28 16:52:51,092 - Search - INFO - Received 9 search results in 0.97 seconds
+python-app  |   Found 9 results in 0.97 seconds
+python-app  | 2025-03-28 16:52:51,095 - Search - INFO - Filtered to 9 relevant English results
+python-app  | 2025-03-28 16:52:51,095 - Search - INFO - Result 1: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:51,096 - Search - INFO - Result 2: honda st 1100 abs cdi - eBay - https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:51,096 - Search - INFO - Result 3: A9069005702 abs for Mercedes Sprinter III VAN RWD AWD 3.0 CDI ... - https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:51,097 - Search - INFO - Result 4: abs 4 pin cdi box ignition 50/70/90/110/125 atv dirt pit - Temu - https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,098 - Search - INFO - Result 5: Wholesale abs cdi That Are Simple And Effective - Alibaba.com - https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:51,099 - Search - INFO - Result 6: Perception Simmental - Buy Angus Beef Semen - ABS Global - https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:51,100 - Search - INFO - Result 7: Vespa Primavera/Sprint 150 iGET ABS Regulator, CDI & HT Coil - https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:51,100 - Search - INFO - Result 8: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 ... - https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:51,101 - Search - INFO - Result 9: [PDF] Digital Sequence Information | Pre-CBD COP16 Informal Work - https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:51,104 - extraction.extractor - INFO - Query 2 returned 9 results
+python-app  |    Found 9 search results
+python-app  | 2025-03-28 16:52:51,106 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:52:51,106 - extraction.extractor - INFO - Processing new URL: https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:51,107 - extraction.extractor - INFO - Processing new URL: https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:51,108 - extraction.extractor - INFO - Processing new URL: https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,108 - extraction.extractor - INFO - Processing new URL: https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:51,109 - extraction.content - INFO - Processing result 2 from query 2: honda st 1100 abs cdi - eBay
+python-app  | 2025-03-28 16:52:51,111 - Processing - INFO - Scraping webpage: https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:51,111 - Processing - INFO - Sending HTTP request to https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:51,109 - extraction.content - INFO - Processing result 3 from query 2: A9069005702 abs for Mercedes Sprinter III VAN RWD AWD 3.0 CDI ...
+python-app  | 2025-03-28 16:52:51,111 - extraction.content - INFO - Processing result 4 from query 2: abs 4 pin cdi box ignition 50/70/90/110/125 atv dirt pit - Temu
+python-app  | 2025-03-28 16:52:51,111 - extraction.content - INFO - Processing result 5 from query 2: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+python-app  | 2025-03-28 16:52:51,110 - extraction.extractor - INFO - Processing new URL: https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:51,112 - Processing - INFO - Request attempt 1/3 for https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:51,113 - Processing - INFO - Scraping webpage: https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:51,114 - Processing - INFO - Scraping webpage: https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,114 - Processing - INFO - Scraping webpage: https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:51,121 - Processing - INFO - Sending HTTP request to https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,122 - Processing - INFO - Sending HTTP request to https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:51,120 - Processing - INFO - Sending HTTP request to https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:51,115 - extraction.extractor - INFO - Processing new URL: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:51,122 - Processing - INFO - Request attempt 1/3 for https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,119 - extraction.content - INFO - Processing result 6 from query 2: Perception Simmental - Buy Angus Beef Semen - ABS Global
+python-app  | 2025-03-28 16:52:51,123 - Processing - INFO - Request attempt 1/3 for https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:51,124 - Processing - INFO - Request attempt 1/3 for https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:51,124 - extraction.extractor - INFO - Processing new URL: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:51,124 - extraction.content - INFO - Processing result 7 from query 2: Vespa Primavera/Sprint 150 iGET ABS Regulator, CDI & HT Coil
+python-app  | 2025-03-28 16:52:51,126 - Processing - INFO - Scraping webpage: https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:51,139 - Processing - INFO - Sending HTTP request to https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:51,139 - Processing - INFO - Request attempt 1/3 for https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:51,137 - Processing - INFO - Scraping webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:51,136 - extraction.extractor - INFO - Processing new URL: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:51,146 - extraction.extractor - INFO - Query 2: Processing 8 new URLs, skipped 1
+python-app  |    Processing 8 new URLs
+python-app  |    Skipped 1 already processed URLs
+python-app  | 2025-03-28 16:52:51,136 - extraction.content - INFO - Processing result 8 from query 2: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 ...
+python-app  | 2025-03-28 16:52:51,149 - Processing - INFO - Scraping webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:51,146 - extraction.content - INFO - Processing result 9 from query 2: [PDF] Digital Sequence Information | Pre-CBD COP16 Informal Work
+python-app  | 2025-03-28 16:52:51,145 - Processing - INFO - Sending HTTP request to https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:51,150 - Processing - INFO - Sending HTTP request to https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:51,152 - Processing - INFO - Scraping webpage: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:51,153 - Processing - INFO - Request attempt 1/3 for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:51,154 - Processing - INFO - PDF document detected, using specialized handling
+python-app  | 2025-03-28 16:52:51,152 - Processing - INFO - Request attempt 1/3 for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:51,160 - Processing - INFO - Handling PDF document: https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:51,638 - Processing - INFO - Received response in 0.52 seconds.
+python-app  | 2025-03-28 16:52:51,639 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:51,640 - Processing - INFO - Extracting title from webpage: https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,641 - Processing - INFO - Using search result title: abs 4 pin cdi box ignition 50/70/90/110/125 atv dirt pit - Temu
+python-app  | 2025-03-28 16:52:51,641 - Processing - INFO - Extracting date from webpage: https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html
+python-app  | 2025-03-28 16:52:51,650 - Processing - INFO - No date information found
+python-app  | 2025-03-28 16:52:51,651 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:51,653 - Processing - INFO - Removed 1 elements from DOM
+python-app  | 2025-03-28 16:52:51,657 - Processing - INFO - Successfully scraped 0 chars from https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html in 0.54 seconds (cleaned from 0 to 0 chars)
+python-app  | 2025-03-28 16:52:51,658 - Processing - INFO - Extracted title: abs 4 pin cdi box ignition 50/70/90/110/125 atv dirt pit - Temu
+python-app  | 2025-03-28 16:52:51,659 - Processing - INFO - Extracted date: None
+python-app  | 2025-03-28 16:52:51,659 - extraction.content - INFO - No content extracted from https://www.temu.com/abs-4-pin--cdi-box-ignition-for-50-70-90-110-125-atv-dirt--kart-motorcycle-accessories-g-601099512819801.html, skipping
+python-app  | 2025-03-28 16:52:52,335 - Processing - INFO - Received response in 1.22 seconds.
+python-app  | 2025-03-28 16:52:52,336 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:52,469 - Processing - INFO - Received response in 1.36 seconds.
+python-app  | 2025-03-28 16:52:52,476 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:52,478 - Processing - INFO - Extracting title from webpage: https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:52,485 - Processing - INFO - Found title in title tag: A9069005702 abs for Mercedes Sprinter III VAN RWD AWD 3.0 CDI (190 1774012  | eBay
+python-app  | 2025-03-28 16:52:52,493 - Processing - INFO - Extracting date from webpage: https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:52,670 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:52,729 - extraction.content - INFO - Running comprehensive content analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:52,776 - Processing - INFO - Received response in 1.65 seconds.
+python-app  | 2025-03-28 16:52:52,803 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:53,089 - Processing - INFO - Extracting title from webpage: https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:53,096 - Processing - INFO - Found title in title tag: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+python-app  | 2025-03-28 16:52:53,102 - Processing - INFO - Extracting date from webpage: https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:53,169 - Processing - INFO - Extracting title from webpage: https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:53,229 - Processing - INFO - Found title in title tag: honda  st 1100 abs  cdi   | eBay
+python-app  | 2025-03-28 16:52:53,522 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:53,541 - Processing - INFO - Extracting date from webpage: https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:53,659 - Processing - INFO - Found date using regex pattern in HTML: 5540-00-00
+python-app  | 2025-03-28 16:52:53,664 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:53,776 - Processing - INFO - Found date using regex pattern in HTML: Dec 17, 2024
+python-app  | 2025-03-28 16:52:53,777 - Processing - INFO - Removed 24 elements from DOM
+python-app  | 2025-03-28 16:52:53,793 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:53,807 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:53,811 - Processing - INFO - Successfully scraped 3671 chars from https://www.alibaba.com/showroom/abs-cdi.html in 2.69 seconds (cleaned from 3844 to 3671 chars)
+python-app  | 2025-03-28 16:52:53,853 - Processing - INFO - Received response in 2.71 seconds.
+python-app  | 2025-03-28 16:52:53,859 - Processing - INFO - Extracted title: Wholesale abs cdi That Are Simple And Effective - Alibaba.com
+python-app  | 2025-03-28 16:52:53,868 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:53,920 - Processing - INFO - Extracted date: 5540-00-00
+python-app  | 2025-03-28 16:52:53,954 - extraction.content - INFO - Running comprehensive content analysis for https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:54,043 - Processing - INFO - Removed 55 elements from DOM
+python-app  | 2025-03-28 16:52:54,073 - Processing - INFO - Successfully scraped 3781 chars from https://www.ebay.com/itm/135145796338 in 2.95 seconds (cleaned from 3877 to 3781 chars)
+python-app  | 2025-03-28 16:52:54,074 - Processing - INFO - Extracted title: A9069005702 abs for Mercedes Sprinter III VAN RWD AWD 3.0 CDI (190 1774012  | eBay
+python-app  | 2025-03-28 16:52:54,090 - Processing - INFO - Extracted date: Dec 17, 2024
+python-app  | 2025-03-28 16:52:54,098 - Processing - INFO - Received response in 2.95 seconds.
+python-app  | 2025-03-28 16:52:54,098 - extraction.content - INFO - Running comprehensive content analysis for https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:54,131 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:54,192 - Processing - INFO - Extracting title from webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:54,233 - Processing - INFO - Found title in title tag: ScooterWest.com -  Vespa Primavera/Sprint 150 iGET ABS  Regulator, CDI & HT Coil
+python-app  | 2025-03-28 16:52:54,249 - Processing - INFO - Extracting date from webpage: https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:54,867 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:54,963 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:55,062 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:55,259 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:55,324 - Processing - INFO - Extracting title from webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:55,358 - Processing - INFO - Found title in title tag: Amazon.com: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 200M 200S 200X ATC250R TRX200 1983-1985 : Automotive
+python-app  | 2025-03-28 16:52:55,369 - Processing - INFO - Extracting date from webpage: https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:55,714 - Processing - INFO - Found date using regex pattern in HTML: ItemQtyUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/updateItemQty\/","removeItemUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/removeItem\/","imageTemplate":"Magento_Catalog\/product\/image_with_borders","baseUrl":"https:\/\/www.scooterwest.com\/","minicartMaxItemsVisible":4,"websiteId":"1","maxItemsToDisplay":100,"storeId":"1","storeGroupId":"1","customerLoginUrl":"https:\/\/www.scooterwest.com\/customer\/account\/login\/referer\/aHR0cHM6Ly93d3cuc2Nvb3Rlcndlc3QuY29tL3Zlc3BhLXByaW1hdmVyYS1zcHJpbnQtMTUwLWlnZXQtYWJzLXJlZ3VsYXRvci1jZGktaHQtY29pbC5odG1sP3Nyc2x0aWQ9QWZtQk9vcGQ3UkZ0R2JURGt0YWtycFVYMDBTX3duNjB2TFVXelo1WVNRSEowRS1pN1Y4YmNaVXo~\/","isRedirectRequired":false,"autocomplete":"off","captcha":{"user_login":{"isCaseSensitive":false,"imageHeight":50,"imageSrc":"","refreshUrl":"https:\/\/www.scooterwest.com\/captcha\/refresh\/","isRequired":false,"timestamp":1743180773
+python-app  | 2025-03-28 16:52:55,719 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:55,754 - Processing - INFO - Received response in 4.62 seconds.
+python-app  | 2025-03-28 16:52:55,760 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:52:55,870 - Processing - INFO - Removed 72 elements from DOM
+python-app  | 2025-03-28 16:52:55,888 - Processing - INFO - Found date using regex pattern in HTML: Jun 08, 2024
+python-app  | 2025-03-28 16:52:55,894 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:55,924 - Processing - INFO - Successfully scraped 2498 chars from https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz in 4.78 seconds (cleaned from 4264 to 2498 chars)
+python-app  | 2025-03-28 16:52:56,014 - Processing - INFO - Extracted title: ScooterWest.com -  Vespa Primavera/Sprint 150 iGET ABS  Regulator, CDI & HT Coil
+python-app  | 2025-03-28 16:52:55,940 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:56,021 - Processing - INFO - Extracted date: ItemQtyUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/updateItemQty\/","removeItemUrl":"https:\/\/www.scooterwest.com\/checkout\/sidebar\/removeItem\/","imageTemplate":"Magento_Catalog\/product\/image_with_borders","baseUrl":"https:\/\/www.scooterwest.com\/","minicartMaxItemsVisible":4,"websiteId":"1","maxItemsToDisplay":100,"storeId":"1","storeGroupId":"1","customerLoginUrl":"https:\/\/www.scooterwest.com\/customer\/account\/login\/referer\/aHR0cHM6Ly93d3cuc2Nvb3Rlcndlc3QuY29tL3Zlc3BhLXByaW1hdmVyYS1zcHJpbnQtMTUwLWlnZXQtYWJzLXJlZ3VsYXRvci1jZGktaHQtY29pbC5odG1sP3Nyc2x0aWQ9QWZtQk9vcGQ3UkZ0R2JURGt0YWtycFVYMDBTX3duNjB2TFVXelo1WVNRSEowRS1pN1Y4YmNaVXo~\/","isRedirectRequired":false,"autocomplete":"off","captcha":{"user_login":{"isCaseSensitive":false,"imageHeight":50,"imageSrc":"","refreshUrl":"https:\/\/www.scooterwest.com\/captcha\/refresh\/","isRequired":false,"timestamp":1743180773
+python-app  | 2025-03-28 16:52:56,025 - Processing - INFO - Extracting title from webpage: https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:56,034 - analysis - INFO - Generated summary (740 chars)
+python-app  | 2025-03-28 16:52:56,064 - extraction.content - INFO - Running comprehensive content analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:52:56,091 - Processing - INFO - Found title in title tag: Perception Simmental - Buy Angus Beef Semen | ABS Global
+python-app  | 2025-03-28 16:52:56,167 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:56,174 - Processing - INFO - Extracting date from webpage: https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:56,202 - Processing - INFO - Removed 55 elements from DOM
+python-app  | 2025-03-28 16:52:56,316 - Processing - INFO - Successfully scraped 9097 chars from https://www.ebay.com/itm/121760783695 in 5.20 seconds (cleaned from 9197 to 9097 chars)
+python-app  | 2025-03-28 16:52:56,316 - Processing - INFO - Extracted title: honda  st 1100 abs  cdi   | eBay
+python-app  | 2025-03-28 16:52:56,349 - Processing - INFO - Extracted date: Jun 08, 2024
+python-app  | 2025-03-28 16:52:56,360 - extraction.content - INFO - Running comprehensive content analysis for https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:52:56,469 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:56,504 - analysis - INFO - Generated summary (488 chars)
+python-app  | 2025-03-28 16:52:56,510 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:56,741 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:56,811 - analysis - INFO - Generated summary (526 chars)
+python-app  | 2025-03-28 16:52:56,848 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:56,876 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:56,960 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:56,994 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:57,057 - Processing - INFO - Found date using regex pattern in HTML: ":"2022-01-05T10:36:13+00:00","dateModified":"2022-08-18T08:26:30+00:00","description":"Shop Perception for premium-quality Simmental semen. For assistance, contact our knowledgeable staff at 1-800-ABS-STUD. Buy Angus Beef Semen | ABS Global","breadcrumb":{"@id":"https://store.absglobal.com/product/perception/#breadcrumb"},"inLanguage":"en-GB","potentialAction":[{"@type":"ReadAction","target":["https://store.absglobal.com/product/perception/"]}]},{"@type":"ImageObject","inLanguage":"en-GB","@id":"https://store.absglobal.com/product/perception/#primaryimage","url":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018","contentUrl":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018
+python-app  | 2025-03-28 16:52:57,058 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:57,124 - Processing - INFO - Removed 119 elements from DOM
+python-app  | 2025-03-28 16:52:57,131 - Processing - INFO - Successfully scraped 4376 chars from https://store.absglobal.com/product/perception/ in 5.99 seconds (cleaned from 5906 to 4376 chars)
+python-app  | 2025-03-28 16:52:57,139 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:57,139 - Processing - INFO - Extracted title: Perception Simmental - Buy Angus Beef Semen | ABS Global
+python-app  | 2025-03-28 16:52:57,160 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:57,160 - Processing - INFO - Extracted date: ":"2022-01-05T10:36:13+00:00","dateModified":"2022-08-18T08:26:30+00:00","description":"Shop Perception for premium-quality Simmental semen. For assistance, contact our knowledgeable staff at 1-800-ABS-STUD. Buy Angus Beef Semen | ABS Global","breadcrumb":{"@id":"https://store.absglobal.com/product/perception/#breadcrumb"},"inLanguage":"en-GB","potentialAction":[{"@type":"ReadAction","target":["https://store.absglobal.com/product/perception/"]}]},{"@type":"ImageObject","inLanguage":"en-GB","@id":"https://store.absglobal.com/product/perception/#primaryimage","url":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018","contentUrl":"https://assets.absglobal.com/filestore/7/1/1/1_287b3bdcda63d11/7111scr_ada075c4de43c1b.jpg?v=1536698018
+python-app  | 2025-03-28 16:52:57,191 - extraction.content - INFO - Running comprehensive content analysis for https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:52:57,239 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:57,252 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:57,278 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:57,278 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:57,288 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:57,289 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:57,300 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:57,302 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:57,317 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:57,344 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:57,352 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:57,673 - Processing - INFO - Found date using regex pattern in HTML: December 13, 2019
+python-app  | 2025-03-28 16:52:57,673 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:52:57,755 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:57,781 - Processing - INFO - Removed 309 elements from DOM
+python-app  | 2025-03-28 16:52:57,781 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:57,797 - Processing - INFO - Successfully scraped 11945 chars from https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC in 6.65 seconds (cleaned from 19560 to 11945 chars)
+python-app  | 2025-03-28 16:52:57,798 - Processing - INFO - Extracted title: Amazon.com: CDI Igniter, ABS Car CDI Box Module Igniter Fits for Honda ATC 110 200M 200S 200X ATC250R TRX200 1983-1985 : Automotive
+python-app  | 2025-03-28 16:52:57,799 - Processing - INFO - Extracted date: December 13, 2019
+python-app  | 2025-03-28 16:52:57,800 - extraction.content - INFO - Running comprehensive content analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:52:57,807 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:57,808 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:57,811 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:57,812 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:58,015 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:58,041 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:58,178 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:58,181 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:58,240 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:58,244 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:52:58,443 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:58,447 - analysis - INFO - Generated summary (492 chars)
+python-app  | 2025-03-28 16:52:58,449 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:58,479 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,067 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,073 - analysis - INFO - Generated summary (557 chars)
+python-app  | 2025-03-28 16:52:59,074 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:59,182 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,187 - analysis - INFO - Extracted benefits summary (138 chars)
+python-app  | 2025-03-28 16:52:59,188 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:59,188 - extraction.content - INFO - Successfully got embedding vector for https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:59,190 - extraction.content - INFO - Identified themes for https://www.ebay.com/itm/135145796338: ['Mercedes Sprinter III', 'RWD', 'AWD', 'CDI', 'Furgon']
+python-app  | 2025-03-28 16:52:59,191 - extraction.content - INFO - Sentiment analysis for https://www.ebay.com/itm/135145796338: Neutral
+python-app  | 2025-03-28 16:52:59,192 - extraction.content - INFO - Got summary from analysis for https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:59,193 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:59,193 - extraction.content - INFO - Found geographic focus data for https://www.ebay.com/itm/135145796338: 0 locations
+python-app  | 2025-03-28 16:52:59,195 - extraction.content - INFO - Found project data for https://www.ebay.com/itm/135145796338: 0 projects
+python-app  | 2025-03-28 16:52:59,196 - extraction.content - INFO - Found resource data for https://www.ebay.com/itm/135145796338: 0 resources
+python-app  | 2025-03-28 16:52:59,196 - extraction.content - INFO - Found target audience data for https://www.ebay.com/itm/135145796338: 5 audiences
+python-app  | 2025-03-28 16:52:59,197 - extraction.content - INFO - Found benefits data for https://www.ebay.com/itm/135145796338: 0 examples
+python-app  | 2025-03-28 16:52:59,199 - extraction.content - INFO - Successfully processed https://www.ebay.com/itm/135145796338 with comprehensive metadata
+python-app  | 2025-03-28 16:52:59,200 - extraction.extractor - INFO - Skipping irrelevant content from https://www.ebay.com/itm/135145796338
+python-app  | 2025-03-28 16:52:59,230 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,234 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:59,236 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:59,238 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:59,241 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:59,244 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:59,405 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,410 - analysis - INFO - Extracted benefits summary (690 chars)
+python-app  | 2025-03-28 16:52:59,412 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:59,413 - extraction.content - INFO - Successfully got embedding vector for https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:59,414 - extraction.content - INFO - Identified themes for https://www.alibaba.com/showroom/abs-cdi.html: ['Wholesale products', 'Motorcycle accessories', 'Ignition systems', 'Safety equipment', 'Product offerings']
+python-app  | 2025-03-28 16:52:59,415 - extraction.content - INFO - Sentiment analysis for https://www.alibaba.com/showroom/abs-cdi.html: Neutral
+python-app  | 2025-03-28 16:52:59,415 - extraction.content - INFO - Got summary from analysis for https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:59,416 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:59,417 - extraction.content - INFO - Found geographic focus data for https://www.alibaba.com/showroom/abs-cdi.html: 0 locations
+python-app  | 2025-03-28 16:52:59,418 - extraction.content - INFO - Found project data for https://www.alibaba.com/showroom/abs-cdi.html: 0 projects
+python-app  | 2025-03-28 16:52:59,419 - extraction.content - INFO - Found resource data for https://www.alibaba.com/showroom/abs-cdi.html: 0 resources
+python-app  | 2025-03-28 16:52:59,420 - extraction.content - INFO - Found target audience data for https://www.alibaba.com/showroom/abs-cdi.html: 6 audiences
+python-app  | 2025-03-28 16:52:59,421 - extraction.content - INFO - Found benefits data for https://www.alibaba.com/showroom/abs-cdi.html: 0 examples
+python-app  | 2025-03-28 16:52:59,422 - extraction.content - INFO - Successfully processed https://www.alibaba.com/showroom/abs-cdi.html with comprehensive metadata
+python-app  | 2025-03-28 16:52:59,423 - extraction.extractor - INFO - Skipping irrelevant content from https://www.alibaba.com/showroom/abs-cdi.html
+python-app  | 2025-03-28 16:52:59,464 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,469 - analysis - INFO - Extracted benefits summary (798 chars)
+python-app  | 2025-03-28 16:52:59,470 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:52:59,471 - extraction.content - INFO - Successfully got embedding vector for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:59,472 - extraction.content - INFO - Identified themes for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: ['Digital Sequence Information', 'Pre-CBD COP16 Informal Work', 'Meridian-ABS', 'CDI', 'DSI', 'Workplan']
+python-app  | 2025-03-28 16:52:59,472 - extraction.content - INFO - Sentiment analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: Neutral
+python-app  | 2025-03-28 16:52:59,473 - extraction.content - INFO - Got summary from analysis for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:59,473 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:59,474 - extraction.content - INFO - Found geographic focus data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 locations
+python-app  | 2025-03-28 16:52:59,474 - extraction.content - INFO - Found project data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 projects
+python-app  | 2025-03-28 16:52:59,475 - extraction.content - INFO - Found resource data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 resources
+python-app  | 2025-03-28 16:52:59,476 - extraction.content - INFO - Found target audience data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 4 audiences
+python-app  | 2025-03-28 16:52:59,476 - extraction.content - INFO - Found benefits data for https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf: 0 examples
+python-app  | 2025-03-28 16:52:59,477 - extraction.content - INFO - Successfully processed https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf with comprehensive metadata
+python-app  | 2025-03-28 16:52:59,478 - extraction.extractor - INFO - Skipping irrelevant content from https://www.abs-biotrade.info/fileadmin/user_upload/Meridian-ABS_CDI_DSI_Informal_Process_Workplan_July_2024_Update.pdf
+python-app  | 2025-03-28 16:52:59,638 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,737 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,749 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:52:59,751 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:52:59,754 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:52:59,756 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:52:59,758 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:52:59,779 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:52:59,790 - analysis - INFO - Generated summary (461 chars)
+python-app  | 2025-03-28 16:52:59,792 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:59,860 - analysis - INFO - Generated summary (387 chars)
+python-app  | 2025-03-28 16:52:59,861 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:52:59,946 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:00,368 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:00,480 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:00,486 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:53:00,488 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:53:00,490 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:53:00,492 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:53:00,495 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:53:00,710 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:00,718 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:53:00,719 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:53:00,721 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:53:00,725 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:53:00,726 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:53:01,069 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:01,077 - analysis - INFO - Extracted benefits summary (138 chars)
+python-app  | 2025-03-28 16:53:01,078 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:01,079 - extraction.content - INFO - Successfully got embedding vector for https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:53:01,082 - extraction.content - INFO - Identified themes for https://www.ebay.com/itm/121760783695: ['honda st 1100 abs cdi', 'eBay', 'vehicle compatibility', 'used condition', 'seller information']
+python-app  | 2025-03-28 16:53:01,083 - extraction.content - INFO - Sentiment analysis for https://www.ebay.com/itm/121760783695: Neutral
+python-app  | 2025-03-28 16:53:01,084 - extraction.content - INFO - Got summary from analysis for https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:53:01,085 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:53:01,087 - extraction.content - INFO - Found geographic focus data for https://www.ebay.com/itm/121760783695: 0 locations
+python-app  | 2025-03-28 16:53:01,087 - extraction.content - INFO - Found project data for https://www.ebay.com/itm/121760783695: 0 projects
+python-app  | 2025-03-28 16:53:01,087 - extraction.content - INFO - Found resource data for https://www.ebay.com/itm/121760783695: 0 resources
+python-app  | 2025-03-28 16:53:01,090 - extraction.content - INFO - Found target audience data for https://www.ebay.com/itm/121760783695: 3 audiences
+python-app  | 2025-03-28 16:53:01,092 - extraction.content - INFO - Found benefits data for https://www.ebay.com/itm/121760783695: 0 examples
+python-app  | 2025-03-28 16:53:01,094 - extraction.content - INFO - Successfully processed https://www.ebay.com/itm/121760783695 with comprehensive metadata
+python-app  | 2025-03-28 16:53:01,097 - extraction.extractor - INFO - Skipping irrelevant content from https://www.ebay.com/itm/121760783695
+python-app  | 2025-03-28 16:53:01,150 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:01,206 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:01,214 - analysis - INFO - Extracted benefits summary (138 chars)
+python-app  | 2025-03-28 16:53:01,215 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:01,216 - extraction.content - INFO - Successfully got embedding vector for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:53:01,217 - extraction.content - INFO - Identified themes for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: ['Vespa Primavera/Sprint 150', 'Regulator', 'CDI', 'HT Coil', 'Scooter maintenance']
+python-app  | 2025-03-28 16:53:01,218 - extraction.content - INFO - Sentiment analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: Neutral
+python-app  | 2025-03-28 16:53:01,219 - extraction.content - INFO - Got summary from analysis for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:53:01,220 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:53:01,222 - extraction.content - INFO - Found geographic focus data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: 0 locations
+python-app  | 2025-03-28 16:53:01,224 - extraction.content - INFO - Found project data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: 0 projects
+python-app  | 2025-03-28 16:53:01,225 - extraction.content - INFO - Found resource data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: 0 resources
+python-app  | 2025-03-28 16:53:01,226 - extraction.content - INFO - Found target audience data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: 3 audiences
+python-app  | 2025-03-28 16:53:01,228 - extraction.content - INFO - Found benefits data for https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz: 0 examples
+python-app  | 2025-03-28 16:53:01,229 - extraction.content - INFO - Successfully processed https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz with comprehensive metadata
+python-app  | 2025-03-28 16:53:01,231 - extraction.extractor - INFO - Skipping irrelevant content from https://www.scooterwest.com/vespa-primavera-sprint-150-iget-abs-regulator-cdi-ht-coil.html?srsltid=AfmBOopd7RFtGbTDktakrpUX00S_wn60vLUWzZ5YSQHJ0E-i7V8bcZUz
+python-app  | 2025-03-28 16:53:01,329 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:02,451 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:02,455 - analysis - INFO - Extracted benefits summary (579 chars)
+python-app  | 2025-03-28 16:53:02,456 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:02,458 - extraction.content - INFO - Successfully got embedding vector for https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:53:02,459 - extraction.content - INFO - Identified themes for https://store.absglobal.com/product/perception/: ['Bull breeding', 'Genetics', 'Calving ease', 'Carcass merit', 'DNA testing']
+python-app  | 2025-03-28 16:53:02,460 - extraction.content - INFO - Sentiment analysis for https://store.absglobal.com/product/perception/: Neutral
+python-app  | 2025-03-28 16:53:02,461 - extraction.content - INFO - Got summary from analysis for https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:53:02,462 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:53:02,463 - extraction.content - INFO - Found geographic focus data for https://store.absglobal.com/product/perception/: 0 locations
+python-app  | 2025-03-28 16:53:02,464 - extraction.content - INFO - Found project data for https://store.absglobal.com/product/perception/: 0 projects
+python-app  | 2025-03-28 16:53:02,465 - extraction.content - INFO - Found resource data for https://store.absglobal.com/product/perception/: 0 resources
+python-app  | 2025-03-28 16:53:02,466 - extraction.content - INFO - Found target audience data for https://store.absglobal.com/product/perception/: 1 audiences
+python-app  | 2025-03-28 16:53:02,467 - extraction.content - INFO - Found benefits data for https://store.absglobal.com/product/perception/: 0 examples
+python-app  | 2025-03-28 16:53:02,468 - extraction.content - INFO - Successfully processed https://store.absglobal.com/product/perception/ with comprehensive metadata
+python-app  | 2025-03-28 16:53:02,470 - extraction.extractor - INFO - Skipping irrelevant content from https://store.absglobal.com/product/perception/
+python-app  | 2025-03-28 16:53:03,252 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:03,260 - analysis - INFO - Extracted benefits summary (680 chars)
+python-app  | 2025-03-28 16:53:03,261 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:03,262 - extraction.content - INFO - Successfully got embedding vector for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:53:03,264 - extraction.content - INFO - Identified themes for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: ['CDI Igniter', 'ABS Car CDI Box Module', 'Ignition Parts', 'Honda ATC', 'TRX200.']
+python-app  | 2025-03-28 16:53:03,266 - extraction.content - INFO - Sentiment analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: Neutral
+python-app  | 2025-03-28 16:53:03,267 - extraction.content - INFO - Got summary from analysis for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:53:03,268 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:53:03,269 - extraction.content - INFO - Found geographic focus data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 locations
+python-app  | 2025-03-28 16:53:03,270 - extraction.content - INFO - Found project data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 projects
+python-app  | 2025-03-28 16:53:03,271 - extraction.content - INFO - Found resource data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 resources
+python-app  | 2025-03-28 16:53:03,272 - extraction.content - INFO - Found target audience data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 4 audiences
+python-app  | 2025-03-28 16:53:03,273 - extraction.content - INFO - Found benefits data for https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC: 0 examples
+python-app  | 2025-03-28 16:53:03,274 - extraction.content - INFO - Successfully processed https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC with comprehensive metadata
+python-app  | 2025-03-28 16:53:03,275 - extraction.extractor - INFO - Skipping irrelevant content from https://us.amazon.com/Igniter-Module-ATC250R-TRX200-1983-1985/dp/B08257RZVC
+python-app  | 2025-03-28 16:53:04,276 - extraction.extractor - INFO - Query 3/3: 'ABS Initiative'
+python-app  | 
+python-app  | 📝 QUERY 3/3:
+python-app  |    'ABS Initiative'
+python-app  | 2025-03-28 16:53:04,278 - Search - INFO - Searching web for: 'ABS Initiative' (limit: 10 results, language: English)
+python-app  |   Searching for: 'ABS Initiative' in English...
+python-app  | 2025-03-28 16:53:05,165 - Search - INFO - Received 10 search results in 0.89 seconds
+python-app  |   Found 10 results in 0.89 seconds
+python-app  | 2025-03-28 16:53:05,169 - Search - INFO - Filtered to 9 relevant English results
+python-app  | 2025-03-28 16:53:05,170 - Search - INFO - Result 1: [PDF] From Global to Local: The ABS Capacity Development Initiative - https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:53:05,170 - Search - INFO - Result 2: [PDF] The ABS Capacity Development Initiative A Multi-Donor ... - GIZ - https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:53:05,171 - Search - INFO - Result 3: [PDF] FRoM GLoBAL To LoCAL: ABS CAPACITy DEvELoPMENT INITIATIvE - https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:53:05,172 - Search - INFO - Result 4: ABS Capacity Development Initiative (GIZ) 2023-2025 - https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:53:05,172 - Search - INFO - Result 5: ABS Initiative - ERuDeF - https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:05,173 - Search - INFO - Result 6: General Information - ABS Biotrade - https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:53:05,174 - Search - INFO - Result 7: Awareness-raising material on ABS - https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:05,174 - Search - INFO - Result 8: ABS Biotrade: Biodiversity-Based Value Chains - https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:53:05,175 - Search - INFO - Result 9: Implementing access and benefit sharing for biodiversity - giz.de - https://www.giz.de/en/worldwide/151610.html
+python-app  |    Found 9 search results
+python-app  | 2025-03-28 16:53:05,178 - extraction.extractor - INFO - Query 3 returned 9 results
+python-app  | 2025-03-28 16:53:05,180 - extraction.extractor - INFO - Skipping URL already processed: https://www.cbd.int/development/doc/cop11-mega-posters/ABS-CDI.pdf
+python-app  | 2025-03-28 16:53:05,181 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/de/downloads/giz2024-en-programme-document-ABS-CDI-update-post-COP.pdf
+python-app  | 2025-03-28 16:53:05,181 - extraction.extractor - INFO - Skipping URL already processed: https://www.meft.gov.na/files/files/Access%20and%20Benefit-sharing%20(ABS)%20Capacit%20y%20Development;%20A%20multi-donor%20initiative%20spanning%20nature%20conservation%20Initiative%20Flyer%202012.pdf
+python-app  | 2025-03-28 16:53:05,182 - extraction.extractor - INFO - Skipping URL already processed: https://resultater.norad.no/agreement/QZA-23/0127
+python-app  | 2025-03-28 16:53:05,183 - extraction.extractor - INFO - Processing new URL: https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:05,184 - extraction.extractor - INFO - Skipping URL already processed: https://www.abs-biotrade.info/projects/abs-capacity-development/general-information/
+python-app  | 2025-03-28 16:53:05,185 - extraction.content - INFO - Processing result 5 from query 3: ABS Initiative - ERuDeF
+python-app  | 2025-03-28 16:53:05,186 - extraction.extractor - INFO - Processing new URL: https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:05,187 - Processing - INFO - Scraping webpage: https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:05,188 - extraction.extractor - INFO - Skipping URL already processed: https://www.abs-biotrade.info/
+python-app  | 2025-03-28 16:53:05,188 - extraction.content - INFO - Processing result 7 from query 3: Awareness-raising material on ABS
+python-app  | 2025-03-28 16:53:05,189 - Processing - INFO - Sending HTTP request to https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:05,190 - extraction.extractor - INFO - Skipping URL already processed: https://www.giz.de/en/worldwide/151610.html
+python-app  | 2025-03-28 16:53:05,191 - Processing - INFO - Scraping webpage: https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:05,192 - Processing - INFO - Request attempt 1/3 for https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:05,194 - extraction.extractor - INFO - Query 3: Processing 2 new URLs, skipped 7
+python-app  | 2025-03-28 16:53:05,195 - Processing - INFO - Sending HTTP request to https://www.cbd.int/abs/awareness-raising
+python-app  |    Processing 2 new URLs
+python-app  |    Skipped 7 already processed URLs
+python-app  | 2025-03-28 16:53:05,203 - Processing - INFO - Request attempt 1/3 for https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:06,486 - Processing - INFO - Received response in 1.29 seconds.
+python-app  | 2025-03-28 16:53:06,486 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:53:06,545 - Processing - INFO - Extracting title from webpage: https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:06,545 - Processing - INFO - Found title in title tag: Awareness-raising material  on ABS
+python-app  | 2025-03-28 16:53:06,546 - Processing - INFO - Extracting date from webpage: https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:06,768 - Processing - INFO - Found date using regex pattern in HTML: " content="2024
+python-app  | 2025-03-28 16:53:06,769 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:53:06,794 - Processing - INFO - Removed 25 elements from DOM
+python-app  | 2025-03-28 16:53:06,797 - Processing - INFO - Successfully scraped 7473 chars from https://www.cbd.int/abs/awareness-raising in 1.60 seconds (cleaned from 8122 to 7473 chars)
+python-app  | 2025-03-28 16:53:06,798 - Processing - INFO - Extracted title: Awareness-raising material  on ABS
+python-app  | 2025-03-28 16:53:06,798 - Processing - INFO - Extracted date: " content="2024
+python-app  | 2025-03-28 16:53:06,799 - extraction.content - INFO - Running comprehensive content analysis for https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:06,895 - Processing - INFO - Received response in 1.71 seconds.
+python-app  | 2025-03-28 16:53:06,896 - Processing - INFO - Parsing HTML content
+python-app  | 2025-03-28 16:53:06,950 - Processing - INFO - Extracting title from webpage: https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:06,951 - Processing - INFO - Found title in title tag: ABS Initiative - ERuDeF
+python-app  | 2025-03-28 16:53:06,952 - Processing - INFO - Extracting date from webpage: https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:06,955 - Processing - INFO - Found date in meta tag article:published_time: 2019-10-04T19:45:55+00:00
+python-app  | 2025-03-28 16:53:06,956 - Processing - INFO - Removing script, style, and navigation elements
+python-app  | 2025-03-28 16:53:06,979 - Processing - INFO - Removed 24 elements from DOM
+python-app  | 2025-03-28 16:53:06,981 - Processing - INFO - Successfully scraped 2529 chars from https://erudef.org/abs-initiative-cameroon/ in 1.79 seconds (cleaned from 2893 to 2529 chars)
+python-app  | 2025-03-28 16:53:06,982 - Processing - INFO - Extracted title: ABS Initiative - ERuDeF
+python-app  | 2025-03-28 16:53:06,982 - Processing - INFO - Extracted date: 2019-10-04T19:45:55+00:00
+python-app  | 2025-03-28 16:53:06,984 - extraction.content - INFO - Running comprehensive content analysis for https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:07,413 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:07,415 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:53:08,063 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:08,066 - analysis - INFO - Successfully generated English embedding vector (1536 dimensions)
+python-app  | 2025-03-28 16:53:09,160 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:09,164 - analysis - INFO - Generated summary (737 chars)
+python-app  | 2025-03-28 16:53:09,165 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:53:09,518 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:09,522 - analysis - INFO - Generated summary (590 chars)
+python-app  | 2025-03-28 16:53:09,523 - analysis - ERROR - Error in sentiment analysis: '\n  "sentiment"'
+python-app  | 2025-03-28 16:53:09,805 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:09,809 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:53:09,810 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:53:09,812 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:53:09,815 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:53:09,816 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:53:10,544 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:10,549 - analysis - ERROR - Error extracting ABS mentions: '\n  "mentions"'
+python-app  | 2025-03-28 16:53:10,550 - analysis - ERROR - Error extracting geographic focus: '\n  "locations"'
+python-app  | 2025-03-28 16:53:10,552 - analysis - ERROR - Error extracting project details: '\n  "projects"'
+python-app  | 2025-03-28 16:53:10,553 - analysis - ERROR - Error extracting organizations: '\n  "organizations"'
+python-app  | 2025-03-28 16:53:10,553 - analysis - ERROR - Error extracting resources: '\n  "resources"'
+python-app  | 2025-03-28 16:53:10,686 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:11,402 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:12,868 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:12,875 - analysis - INFO - Extracted benefits summary (1096 chars)
+python-app  | 2025-03-28 16:53:12,876 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:12,878 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:12,879 - extraction.content - INFO - Identified themes for https://www.cbd.int/abs/awareness-raising: ['Genetic Resources', 'Traditional Knowledge', 'Nagoya Protocol', 'Access and Benefit-sharing', 'Communication Materials']
+python-app  | 2025-03-28 16:53:12,880 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/abs/awareness-raising: Neutral
+python-app  | 2025-03-28 16:53:12,881 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:12,882 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/abs/awareness-raising
+python-app  | 2025-03-28 16:53:12,882 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/abs/awareness-raising: 0 locations
+python-app  | 2025-03-28 16:53:12,883 - extraction.content - INFO - Found project data for https://www.cbd.int/abs/awareness-raising: 0 projects
+python-app  | 2025-03-28 16:53:12,884 - extraction.content - INFO - Found resource data for https://www.cbd.int/abs/awareness-raising: 0 resources
+python-app  | 2025-03-28 16:53:12,885 - extraction.content - INFO - Found target audience data for https://www.cbd.int/abs/awareness-raising: 11 audiences
+python-app  | 2025-03-28 16:53:12,886 - extraction.content - INFO - Found benefits data for https://www.cbd.int/abs/awareness-raising: 0 examples
+python-app  | 2025-03-28 16:53:12,888 - extraction.content - INFO - Successfully processed https://www.cbd.int/abs/awareness-raising with comprehensive metadata
+python-app  | 2025-03-28 16:53:12,890 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:53:12,918 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:53:12,931 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:53:12,936 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/abs/awareness-raising: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:53:12,937 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:53:12,939 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:53:13,133 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+python-app  | 2025-03-28 16:53:13,140 - analysis - INFO - Extracted benefits summary (775 chars)
+python-app  | 2025-03-28 16:53:13,141 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+python-app  | 2025-03-28 16:53:13,142 - extraction.content - INFO - Successfully got embedding vector for https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:13,143 - extraction.content - INFO - Identified themes for https://erudef.org/abs-initiative-cameroon/: ['Access and Benefit Sharing', 'Genetic Resources', 'Traditional Knowledge', 'Conservation', 'Stakeholders / Partners']
+python-app  | 2025-03-28 16:53:13,145 - extraction.content - INFO - Sentiment analysis for https://erudef.org/abs-initiative-cameroon/: Neutral
+python-app  | 2025-03-28 16:53:13,146 - extraction.content - INFO - Got summary from analysis for https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:13,147 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://erudef.org/abs-initiative-cameroon/
+python-app  | 2025-03-28 16:53:13,148 - extraction.content - INFO - Found geographic focus data for https://erudef.org/abs-initiative-cameroon/: 0 locations
+python-app  | 2025-03-28 16:53:13,149 - extraction.content - INFO - Found project data for https://erudef.org/abs-initiative-cameroon/: 0 projects
+python-app  | 2025-03-28 16:53:13,150 - extraction.content - INFO - Found resource data for https://erudef.org/abs-initiative-cameroon/: 0 resources
+python-app  | 2025-03-28 16:53:13,151 - extraction.content - INFO - Found target audience data for https://erudef.org/abs-initiative-cameroon/: 4 audiences
+python-app  | 2025-03-28 16:53:13,152 - extraction.content - INFO - Found benefits data for https://erudef.org/abs-initiative-cameroon/: 0 examples
+python-app  | 2025-03-28 16:53:13,153 - extraction.content - INFO - Successfully processed https://erudef.org/abs-initiative-cameroon/ with comprehensive metadata
+python-app  | 2025-03-28 16:53:13,154 - ContentDB - INFO - Storing 1 results in database
+python-app  | 2025-03-28 16:53:13,181 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+python-app  | 2025-03-28 16:53:13,191 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+python-app  | LINE 2:                     INSERT INTO content_embeddings
+python-app  |                                         ^
+python-app  | . Storing as JSON.
+python-app  | 2025-03-28 16:53:13,196 - ContentDB - ERROR - Error storing item with URL https://erudef.org/abs-initiative-cameroon/: current transaction is aborted, commands ignored until end of transaction block
+python-app  | 
+python-app  | 2025-03-28 16:53:13,198 - ContentDB - INFO - Successfully stored 1 records in database
+python-app  | 2025-03-28 16:53:13,198 - ContentDB - INFO - Failed to store 1 records
+python-app  | 2025-03-28 16:53:14,199 - extraction.extractor - INFO - Web content extraction completed in 37.96 seconds. Status: success. Successfully found 10 new results
+python-app  | 2025-03-28 16:53:14,203 - WebExtractor - INFO - Web extractor completed successfully in 37.96 seconds with 10 results
+python-app  | Web extraction completed successfully with 10 new results
+python-app  | 2025-03-28 16:53:14,205 - root - INFO - Web extraction successful. Found 10 results in English
+python-app  | ✅ Web extraction complete. 10 English items retrieved.
+python-app  | 2025-03-28 16:53:14,211 - ConnectionDB - INFO - Creating database connection
+python-app  | 2025-03-28 16:53:14,213 - ConnectionDB - INFO - Database connection created successfully
+python-app  | 2025-03-28 16:53:14,231 - root - ERROR - Error handling extraction results: (psycopg2.errors.UndefinedTable) relation "content_data" does not exist
+python-app  | LINE 1: SELECT link FROM content_data
+python-app  |                          ^
+python-app  | 
+python-app  | [SQL: SELECT link FROM content_data]
+python-app  | (Background on this error at: https://sqlalche.me/e/20/f405)
+python-app  | ❌ Error processing extraction results: (psycopg2.errors.UndefinedTable) relation "content_data" does not exist
+python-app  | LINE 1: SELECT link FROM content_data
+python-app  |                          ^
+python-app  | 
+python-app  | [SQL: SELECT link FROM content_data]
+python-app  | (Background on this error at: https://sqlalche.me/e/20/f405)
+python-app  | 2025-03-28 16:53:14,233 - ContentDB - INFO - Fetching data from database (limit: 100, filters: None)
+python-app  | 2025-03-28 16:53:14,233 - ConnectionDB - INFO - Creating database connection
+python-app  | 2025-03-28 16:53:14,234 - ConnectionDB - INFO - Database connection created successfully
+python-app  | 2025-03-28 16:53:15,095 - ContentDB - INFO - Fetched 0 rows from database

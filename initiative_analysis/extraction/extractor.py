@@ -64,7 +64,7 @@ class WebExtractor:
             try:
                 conn = get_db_connection()
                 cursor = conn.cursor()
-                cursor.execute("SELECT link FROM content_data")
+                cursor.execute("SELECT link FROM content_sources")
                 rows = cursor.fetchall()
                 for row in rows:
                     existing_urls.add(row[0])

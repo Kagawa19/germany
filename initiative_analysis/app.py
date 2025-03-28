@@ -1,88 +1,138 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import time
 import os
 import logging
-import json
-
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
-
-# Import local modules
-from extraction.extractor import WebExtractor
-from database.operations import store_extract_data, fetch_data, get_all_content, create_schema
-from database.connection import get_sqlalchemy_engine
-from ui.dashboard import dashboard_page, initiative_dashboard, initiative_comparison
-from ui.data_explorer import view_data_page, export_content_by_language
-from ui.extraction_ui import run_web_extraction, initialization_page
-from utils.logging import configure_logging
+from datetime import datetime
 
 # Configure logging
-logger = configure_logging("main")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(f"app_log_{datetime.now().strftime('%Y%m%d')}.log"),
+        logging.StreamHandler()
+    ]
+)
 
-# Load environment variables
-load_dotenv()
+logger = logging.getLogger("ABS_Initiative_App")
+
+# Import UI components
+from ui.dashboard import dashboard_page, abs_mentions_explorer, geographic_analysis
+from ui.data_explorer import view_data_page, export_content, export_content_by_language
+from ui.extraction_ui import run_web_extraction, initialization_page
 
 # Set page config
 st.set_page_config(
-    page_title="Initiative Analysis Dashboard",
-    page_icon="🌍",
+    page_title="ABS Initiative Metadata Explorer",
+    page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
 
-# Sidebar for application navigation
-st.sidebar.title("Navigation")
-app_mode = st.sidebar.selectbox(
-    "Choose the app mode", 
-    ["Dashboard", "Initiative Analysis", "Initiative Comparison", "View Data", "Web Extraction", "Database Initialization", "Export Data"]
-)
-logger.info(f"User selected app mode: {app_mode}")
-
-# Main application logic
-if app_mode == "Dashboard":
-    st.title("Initiative Analysis Dashboard")
-    dashboard_page()
-
-elif app_mode == "Initiative Analysis":
-    initiative_dashboard()
-
-elif app_mode == "Initiative Comparison":
-    initiative_comparison()
-
-elif app_mode == "View Data":
-    st.title("Content Data Explorer")
-    view_data_page()
-
-elif app_mode == "Export Data":
-    st.title("Export Content Data")
-    export_content_by_language()
+def main():
+    """Main application entry point"""
+    st.sidebar.title("ABS Initiative Metadata Explorer")
     
-elif app_mode == "Web Extraction":
-    st.title("Web Content Extraction")
-    run_web_extraction()
+    # Check if the prompts directory exists
+    prompts_dir = os.path.join(os.path.dirname(__file__), "prompts")
+    if not os.path.exists(prompts_dir):
+        try:
+            os.makedirs(prompts_dir)
+            logger.info(f"Created prompts directory at {prompts_dir}")
+            st.sidebar.warning("Prompts directory was missing and has been created. You'll need to add prompt templates.")
+        except Exception as e:
+            logger.error(f"Failed to create prompts directory: {str(e)}")
+            st.sidebar.error("Could not create prompts directory. Check permissions.")
+    
+    # Navigation
+    app_mode = st.sidebar.selectbox(
+        "Select Mode",
+        ["Dashboard", "Data Explorer", "Mentions Explorer", "Geographic Analysis", 
+         "Export Data", "Web Extraction", "Database Setup"]
+    )
+    
+    # Display the selected page
+    if app_mode == "Dashboard":
+        dashboard_page()
+    
+    elif app_mode == "Data Explorer":
+        view_data_page()
+    
+    elif app_mode == "Mentions Explorer":
+        abs_mentions_explorer()
+    
+    elif app_mode == "Geographic Analysis":
+        geographic_analysis()
+    
+    elif app_mode == "Export Data":
+        st.title("Export ABS Initiative Data")
+        
+        export_type = st.radio(
+            "Export Type",
+            ["Standard Export", "Language-Based Export"]
+        )
+        
+        if export_type == "Standard Export":
+            export_content()
+        else:
+            st.subheader("Export by Language")
+            
+            # Get available languages
+            from database.connection import get_sqlalchemy_engine
+            from sqlalchemy import text
+            import pandas as pd
+            
+            engine = get_sqlalchemy_engine()
+            languages_query = text("SELECT DISTINCT language FROM content_sources WHERE language IS NOT NULL ORDER BY language")
+            
+            try:
+                # Add "All" option for exporting all languages separately
+                languages = ["All"] + [l[0] for l in pd.read_sql(languages_query, engine)['language']]
+                selected_language = st.selectbox("Select Language to Export", languages)
+                
+                if st.button("Prepare Language Export"):
+                    export_content_by_language(selected_language)
+            except Exception as e:
+                st.error(f"Error fetching languages: {str(e)}")
+                logger.error(f"Language query error: {str(e)}")
+    
+    elif app_mode == "Web Extraction":
+        st.title("Web Content Extraction")
+        
+        # Language selection
+        language = st.selectbox(
+            "Select Language for Extraction",
+            ["English", "German", "French", "Spanish", "Portuguese"]
+        )
+        
+        # Configuration options
+        max_queries = st.number_input("Maximum Number of Queries (0 = unlimited)", min_value=0, value=3)
+        if max_queries == 0:
+            max_queries = None
+            
+        max_results = st.number_input("Maximum Results per Query (0 = unlimited)", min_value=0, value=10)
+        if max_results == 0:
+            max_results = None
+        
+        # Start extraction button
+        if st.button("Start Web Extraction", type="primary"):
+            max_queries_label = max_queries if max_queries else "unlimited"
+            max_results_label = max_results if max_results else "unlimited"
+            
+            logger.info(f"Starting extraction - Language: {language}, Max Queries: {max_queries_label}, Max Results: {max_results_label}")
+            st.info(f"Starting extraction with the following settings: Language: {language}, Max Queries: {max_queries_label}, Max Results per Query: {max_results_label}")
+            
+            run_web_extraction(max_queries, max_results, language)
+    
+    elif app_mode == "Database Setup":
+        initialization_page()
+    
+    # Footer
+    st.sidebar.markdown("---")
+    st.sidebar.info(
+        "ABS Initiative Metadata Explorer allows you to analyze and visualize "
+        "data related to the ABS Capacity Development Initiative across various "
+        "sources, languages, and contexts."
+    )
 
-elif app_mode == "Database Initialization":
-    initialization_page()
-
-# Custom styling
-st.markdown("""
-<style>
-    .stApp {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Footer
-st.markdown("---")
-st.markdown("© 2025 Initiative Analysis Dashboard")
-
-# Run the main app if this file is executed directly
 if __name__ == "__main__":
-    logger.info("Application main method executed")
-    print("Application started via main method")
+    main()

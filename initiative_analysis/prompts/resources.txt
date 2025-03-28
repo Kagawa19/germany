@@ -1,0 +1,23 @@
+Extract resources mentioned in the text that are related to the ABS Initiative, such as publications, tools, case studies, or other materials.
+
+Text excerpt:
+{excerpt}
+
+For each resource:
+1. Identify its type (publication, tool, case study, website, guideline, etc.)
+2. Extract its name or title
+3. Note any URL or location information
+4. Extract any description of what the resource contains or its purpose
+
+Return in JSON format with the following structure:
+{
+  "resources": [
+    {
+      "type": "resource type",
+      "name": "resource name",
+      "url": "URL if available",
+      "description": "description of the resource"
+    },
+    ...
+  ]
+}

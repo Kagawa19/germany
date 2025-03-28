@@ -1,0 +1,31 @@
+Identify all specific mentions of the ABS Initiative or its variants in the text.
+
+Text to analyze:
+{content}
+
+Look for these name variants and their contexts:
+- ABS Initiative
+- ABS Capacity Development Initiative
+- ABS CDI
+- Initiative APA
+- Access and Benefit Sharing Initiative
+- Any other variants or translations
+
+For each mention:
+1. Extract the exact name variant used
+2. Include surrounding context (the sentence or paragraph containing the mention)
+3. Identify the type of mention (passing reference, detailed description, project partner, etc.)
+4. Assess the relevance/importance of this mention in the document (scale 0.0-1.0)
+
+Return in JSON format with the following structure:
+{
+  "mentions": [
+    {
+      "variant": "exact name variant",
+      "context": "surrounding text",
+      "type": "mention type",
+      "relevance": 0.0-1.0
+    },
+    ...
+  ]
+}

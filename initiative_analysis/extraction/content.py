@@ -46,7 +46,7 @@ class Processing:
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
         Process a single search result to extract and analyze content.
-        Enhanced with proper embedding generation and summary handling.
+        Enhanced with comprehensive metadata extraction using the updated Analysis class.
         
         Args:
             result: The search result dict with link, title, etc.
@@ -73,66 +73,123 @@ class Processing:
                 logger.info(f"No content extracted from {url}, skipping")
                 return None
             
-            # Default initiative values since identify_initiative has been removed
+            # Default initiative values
             initiative_key = "abs_initiative"
-            initiative_score = 0.5
-            logger.info(f"Using default initiative for {url}: {initiative_key}")
+            initiative_name = "ABS Initiative"
             
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
             
-            # Generate embeddings first - make this a required step
-            embedding = []
-            try:
-                if len(content) > 300:
-                    # Use the Analysis class method through the analyzer instance
-                    embedding = self.analyzer.generate_embedding(content, self.language)
-                    logger.info(f"Successfully generated {self.language} embedding vector for {url}")
-            except Exception as e:
-                logger.error(f"Error generating embedding: {str(e)}")
+            # Use the comprehensive analyze_content method from the Analysis class
+            # This will run all analyses in one go
+            logger.info(f"Running comprehensive content analysis for {url}")
+            analysis_result = self.analyzer.analyze_content(
+                content=content,
+                title=extracted_title or title,
+                url=url, 
+                language=self.language
+            )
             
-            # Identify themes using the content
-            themes = ["ABS Initiative"]  # Default theme
-            try:
-                # Use the Analysis class method through the analyzer instance
-                themes = self.analyzer.identify_themes(content)
-                if not themes or len(themes) == 0:
-                    themes = ["ABS Initiative"]
-            except Exception as e:
-                logger.warning(f"Theme identification failed: {str(e)}")
+            if not analysis_result:
+                logger.warning(f"Comprehensive analysis failed for {url}")
+                analysis_result = {}  # Fallback to empty dict
             
-            # Analyze sentiment
-            sentiment = "Neutral"  # Default sentiment
-            try:
-                # Use the Analysis class method through the analyzer instance
-                sentiment = self.analyzer.analyze_sentiment(content)
-            except Exception as e:
-                logger.warning(f"Sentiment analysis failed: {str(e)}")
+            # Extract all the analysis results with appropriate fallbacks
             
-            # Generate summary if needed
-            if not clean_summary or len(clean_summary) < 50:
+            # Get embedding
+            embedding = analysis_result.get("embedding", [])
+            if embedding:
+                logger.info(f"Successfully got embedding vector for {url}")
+            
+            # Get themes
+            themes = analysis_result.get("themes", ["ABS Initiative"])
+            if not themes:
+                themes = ["ABS Initiative"]  # Default fallback
+            logger.info(f"Identified themes for {url}: {themes}")
+            
+            # Get sentiment
+            sentiment_info = {}
+            if "overall_sentiment" in analysis_result:
+                sentiment = analysis_result.get("overall_sentiment", "Neutral")
+                sentiment_score = analysis_result.get("sentiment_score", 0.0)
+                sentiment_confidence = analysis_result.get("sentiment_confidence", 0.0)
+                
+                sentiment_info = {
+                    "overall_sentiment": sentiment,
+                    "sentiment_score": sentiment_score,
+                    "sentiment_confidence": sentiment_confidence
+                }
+            else:
+                sentiment = "Neutral"  # Default fallback
+                sentiment_info = {
+                    "overall_sentiment": "Neutral",
+                    "sentiment_score": 0.0,
+                    "sentiment_confidence": 0.0
+                }
+            logger.info(f"Sentiment analysis for {url}: {sentiment}")
+            
+            # Get or generate summary
+            if "summary" in analysis_result and analysis_result["summary"]:
+                clean_summary = analysis_result["summary"]
+                logger.info(f"Got summary from analysis for {url}")
+            elif not clean_summary or len(clean_summary) < 50:
+                # Try to generate one more time
                 try:
-                    # Use the Analysis class method through the analyzer instance
                     clean_summary = self.analyzer.generate_summary(content, extracted_title or title, url, self.language)
                     logger.info(f"Generated new summary for {url}")
                 except Exception as e:
                     logger.warning(f"Summary generation failed: {str(e)}")
                     clean_summary = content[:300] + "..." if len(content) > 300 else content
             
-            # Calculate relevance score
-            relevance_score = 0.0
-            try:
-                # Use the Analysis class method through the analyzer instance
-                relevance_score = self.analyzer._calculate_relevance_score({
-                    "content": content,
-                    "title": extracted_title or title,
-                    "link": url,
-                    "initiative_score": initiative_score,
-                    "embedding": embedding,
-                    "date": date
-                })
-            except Exception as e:
-                logger.warning(f"Error calculating relevance score: {str(e)}")
+            # Get ABS mentions
+            abs_mentions = analysis_result.get("abs_mentions", [])
+            logger.info(f"Found {len(abs_mentions)} ABS Initiative mentions in {url}")
+            
+            # Get geographic focus
+            geographic_focus = analysis_result.get("geographic_focus", [])
+            logger.info(f"Found geographic focus data for {url}: {len(geographic_focus)} locations")
+            
+            # Get organizational information
+            organizations = analysis_result.get("organizations", [])
+            if organizations:
+                # Add the domain-extracted organization if not present
+                org_names = [org.get("name", "").lower() for org in organizations]
+                if organization.lower() not in org_names and organization != "Unknown":
+                    organizations.append({
+                        "name": organization,
+                        "organization_type": "website owner",
+                        "relationship": "source",
+                        "website": url,
+                        "description": f"Source of the content at {url}"
+                    })
+                logger.info(f"Found organizational data for {url}: {len(organizations)} organizations")
+            else:
+                # Create minimal organization entry
+                organizations = [{
+                    "name": organization,
+                    "organization_type": "website owner",
+                    "relationship": "source",
+                    "website": url,
+                    "description": f"Source of the content at {url}"
+                }]
+            
+            # Get project details
+            projects = analysis_result.get("projects", [])
+            logger.info(f"Found project data for {url}: {len(projects)} projects")
+            
+            # Get resources
+            resources = analysis_result.get("resources", [])
+            logger.info(f"Found resource data for {url}: {len(resources)} resources")
+            
+            # Get target audiences
+            target_audiences = analysis_result.get("target_audiences", [])
+            logger.info(f"Found target audience data for {url}: {len(target_audiences)} audiences")
+            
+            # Get benefits information
+            benefits_summary = analysis_result.get("benefits_summary", "")
+            benefit_categories = analysis_result.get("benefit_categories", {})
+            benefit_examples = analysis_result.get("benefit_examples", [])
+            logger.info(f"Found benefits data for {url}: {len(benefit_examples)} examples")
             
             # Format the result with all processed data
             result_data = {
@@ -144,16 +201,24 @@ class Processing:
                 "themes": themes,
                 "organization": organization,
                 "sentiment": sentiment,
+                "sentiment_info": sentiment_info,
                 "language": self.language,
-                "initiative": "ABS Initiative",
+                "initiative": initiative_name,
                 "initiative_key": initiative_key,
-                "initiative_score": initiative_score,
+                "abs_mentions": abs_mentions,
+                "geographic_focus": geographic_focus,
+                "organizations": organizations,
+                "projects": projects,
+                "resources": resources,
+                "target_audiences": target_audiences,
+                "benefits_summary": benefits_summary,
+                "benefit_categories": benefit_categories,
+                "benefit_examples": benefit_examples,
                 "embedding": embedding,
-                "relevance_score": relevance_score,
                 "extraction_timestamp": datetime.now().isoformat()
             }
             
-            logger.info(f"Successfully processed {url} (initiative: {initiative_key}, score: {initiative_score:.2f}, language: {self.language})")
+            logger.info(f"Successfully processed {url} with comprehensive metadata")
             return result_data
                 
         except Exception as e:

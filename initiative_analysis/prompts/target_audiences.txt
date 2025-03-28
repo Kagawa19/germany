@@ -1,0 +1,14 @@
+Identify the target audiences or beneficiaries mentioned in the text that are intended to benefit from the ABS Initiative's activities.
+
+Text excerpt:
+{excerpt}
+
+Look for mentions of:
+- Specific stakeholder groups
+- Indigenous peoples and local communities
+- Government officials or departments
+- Private sector entities
+- Researchers or academic institutions
+- Other target populations
+
+Return a comma-separated list of specific audience types mentioned.

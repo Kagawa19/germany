@@ -1,0 +1,26 @@
+Extract details of specific projects, workshops, trainings, or implementations mentioned in the text that are related to the ABS Initiative.
+
+Text excerpt:
+{excerpt}
+
+For each project:
+1. Identify its name or title
+2. Determine the type (e.g., workshop, training, policy development, research)
+3. Extract any dates mentioned (start date, end date)
+4. Identify its current status (planned, ongoing, completed)
+5. Extract any description of its goals, activities, or outcomes
+
+Return in JSON format with the following structure:
+{
+  "projects": [
+    {
+      "name": "project name",
+      "type": "project type",
+      "start_date": "YYYY-MM-DD or null",
+      "end_date": "YYYY-MM-DD or null",
+      "status": "planned/ongoing/completed",
+      "description": "description of the project"
+    },
+    ...
+  ]
+}

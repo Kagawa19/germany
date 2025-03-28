@@ -1,0 +1,13 @@
+Analyze this paragraph to determine which benefit category it best fits into, and how strongly it represents that category.
+
+Paragraph:
+{paragraph}
+
+Categories:
+{categories}
+
+Return a JSON object with:
+{
+  "category": "most appropriate category",
+  "score": 0.0-1.0
+}

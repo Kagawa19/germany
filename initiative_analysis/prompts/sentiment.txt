@@ -1,0 +1,19 @@
+Analyze the sentiment of the following text related to the ABS Initiative or similar capacity development initiatives.
+Consider the tone, language, and context to determine whether the sentiment is Positive, Negative, or Neutral.
+
+Text to analyze:
+{content}
+
+When determining sentiment, consider:
+- Language that expresses opinions or evaluations
+- Descriptions of successes, achievements, or positive outcomes
+- Mentions of challenges, problems, or criticisms
+- Factual reporting versus subjective perspectives
+- Context and overall tone
+
+Respond in JSON format with the following structure:
+{
+  "sentiment": "Positive/Negative/Neutral",
+  "score": 0.0-1.0,
+  "confidence": 0.0-1.0
+}

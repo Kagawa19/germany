@@ -1,0 +1,24 @@
+Extract all geographic locations mentioned in the text that are related to the ABS Initiative's work or focus areas.
+
+Text excerpt:
+{excerpt}
+
+Identify countries, regions, and geographic scopes mentioned in relation to:
+- Project implementation sites
+- Target regions
+- Partner countries
+- Participating nations
+- Funding source countries
+- Conference or event locations
+
+Return in JSON format with the following structure:
+{
+  "locations": [
+    {
+      "country": "country name",
+      "region": "region name", 
+      "scope": "national/regional/continental/global"
+    },
+    ...
+  ]
+}

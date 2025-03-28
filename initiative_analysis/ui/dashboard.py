@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 
 from database.connection import get_sqlalchemy_engine
-from database.operations import fetch_data
+from database.operations import fetch_data, get_geographic_statistics, search_abs_mentions, get_abs_name_variants
 from sqlalchemy import text
 
 logger = logging.getLogger("Dashboard")
@@ -29,13 +29,20 @@ def dashboard_page():
         st.metric("Total Documents", len(df))
     
     with col2:
-        org_count = df['organization'].nunique() if 'organization' in df.columns else 0
+        # Count unique organizations across all documents
+        org_count = 0
+        if 'organizations' in df.columns:
+            all_orgs = set()
+            for org_list in df['organizations'].dropna():
+                if org_list:
+                    all_orgs.update(org_list)
+            org_count = len(all_orgs)
         st.metric("Organizations", org_count)
     
     with col3:
+        # Count unique themes across all rows
         theme_count = 0
         if 'themes' in df.columns:
-            # Count unique themes across all rows
             all_themes = set()
             for themes_list in df['themes'].dropna():
                 if themes_list:
@@ -44,35 +51,41 @@ def dashboard_page():
         st.metric("Themes", theme_count)
     
     with col4:
-        # Count initiatives
-        if 'initiative' in df.columns:
-            initiative_count = df['initiative'].nunique()
-            st.metric("Initiatives", initiative_count)
-        else:
-            # Convert to datetime if it's not
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date'], errors='coerce')
-                date_range = (df['date'].max() - df['date'].min()).days if not df['date'].isna().all() else 0
-            else:
-                date_range = 0
-            st.metric("Date Range (days)", date_range)
+        # Count countries
+        country_count = 0
+        if 'countries' in df.columns:
+            all_countries = set()
+            for countries_list in df['countries'].dropna():
+                if countries_list:
+                    all_countries.update(countries_list)
+            country_count = len(all_countries)
+        st.metric("Countries", country_count)
 
     # Create visualizations if we have sufficient data
     if len(df) > 0:
         # Create tabs for different visualizations
-        tab1, tab2, tab3, tab4 = st.tabs(["Organizations", "Themes", "Initiatives", "Timeline"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Organizations", "Themes", "Geography", "Name Variants"])
         
         with tab1:
-            if 'organization' in df.columns:
-                # Organization distribution
-                org_counts = df['organization'].value_counts().reset_index()
+            if 'organizations' in df.columns:
+                # Flatten the organizations lists to count occurrences
+                all_orgs = []
+                for org_list in df['organizations'].dropna():
+                    if org_list:
+                        all_orgs.extend(org_list)
+                
+                # Count occurrences
+                org_counts = pd.Series(all_orgs).value_counts().reset_index()
                 org_counts.columns = ['Organization', 'Count']
+                
+                # Only show top 15 for readability
+                org_counts = org_counts.head(15)
                 
                 fig = px.bar(
                     org_counts, 
                     x='Organization', 
                     y='Count',
-                    title='Content by Organization',
+                    title='Top Organizations in Content',
                     color='Count',
                     color_continuous_scale='blues'
                 )
@@ -80,24 +93,25 @@ def dashboard_page():
         
         with tab2:
             if 'themes' in df.columns:
-                # Theme distribution
-                theme_counts = {}
+                # Flatten the themes lists to count occurrences
+                all_themes = []
                 for themes_list in df['themes'].dropna():
                     if themes_list:
-                        for theme in themes_list:
-                            theme_counts[theme] = theme_counts.get(theme, 0) + 1
+                        all_themes.extend(themes_list)
                 
-                theme_df = pd.DataFrame({
-                    'Theme': list(theme_counts.keys()),
-                    'Count': list(theme_counts.values())
-                }).sort_values('Count', ascending=False)
+                # Count occurrences
+                theme_counts = pd.Series(all_themes).value_counts().reset_index()
+                theme_counts.columns = ['Theme', 'Count']
                 
-                if not theme_df.empty:
+                # Only show top 15 for readability
+                theme_counts = theme_counts.head(15)
+                
+                if not theme_counts.empty:
                     fig = px.bar(
-                        theme_df,
+                        theme_counts,
                         x='Count',
                         y='Theme',
-                        title='Content by Theme',
+                        title='Top Themes in Content',
                         orientation='h',
                         color='Count',
                         color_continuous_scale='greens'
@@ -109,445 +123,351 @@ def dashboard_page():
                 st.info("Theme data not available in the dataset")
         
         with tab3:
-            if 'initiative' in df.columns:
-                # Initiative distribution
-                initiative_counts = df['initiative'].value_counts().reset_index()
-                initiative_counts.columns = ['Initiative', 'Count']
+            # Get geographic statistics
+            geo_stats = get_geographic_statistics()
+            
+            # Create a dataframe for countries
+            if geo_stats and 'countries' in geo_stats and geo_stats['countries']:
+                countries_df = pd.DataFrame(geo_stats['countries'])
                 
                 fig = px.bar(
-                    initiative_counts, 
-                    x='Initiative', 
-                    y='Count',
-                    title='Content by Initiative',
-                    color='Count',
-                    color_continuous_scale='oranges'
+                    countries_df, 
+                    x='country', 
+                    y='count',
+                    title='Countries Mentioned in Content',
+                    color='count',
+                    color_continuous_scale='blues'
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Initiative data not available in the dataset")
+                
+                # Add a map visualization
+                try:
+                    # Convert country names to ISO codes if needed
+                    fig_map = px.choropleth(
+                        countries_df,
+                        locations='country',
+                        locationmode='country names',
+                        color='count',
+                        title='Global Distribution of Mentions',
+                        color_continuous_scale='blues'
+                    )
+                    st.plotly_chart(fig_map, use_container_width=True)
+                except Exception as e:
+                    st.warning(f"Could not generate map visualization: {str(e)}")
+            
+            # Show regional distribution
+            if geo_stats and 'regions' in geo_stats and geo_stats['regions']:
+                regions_df = pd.DataFrame(geo_stats['regions'])
+                
+                fig = px.pie(
+                    regions_df,
+                    values='count',
+                    names='region',
+                    title='Regional Distribution of Focus'
+                )
+                st.plotly_chart(fig, use_container_width=True)
         
         with tab4:
-            if 'date' in df.columns:
-                # Timeline visualization
-                df['date'] = pd.to_datetime(df['date'], errors='coerce')
-                date_counts = df.dropna(subset=['date']).groupby(df['date'].dt.strftime('%Y-%m')).size().reset_index()
-                date_counts.columns = ['Month', 'Count']
+            # Get name variants
+            name_variants = get_abs_name_variants()
+            
+            if name_variants:
+                # Create a dataframe from name variants
+                # Get frequency of each variant from database
+                engine = get_sqlalchemy_engine()
+                variant_counts = []
                 
-                if not date_counts.empty:
-                    fig = px.line(
-                        date_counts,
-                        x='Month',
+                try:
+                    for variant in name_variants:
+                        query = text("""
+                        SELECT COUNT(*) 
+                        FROM abs_mentions 
+                        WHERE name_variant = :variant
+                        """)
+                        
+                        with engine.connect() as conn:
+                            count = conn.execute(query, {"variant": variant}).scalar()
+                            variant_counts.append({"Variant": variant, "Count": count})
+                    
+                    # Create dataframe
+                    variants_df = pd.DataFrame(variant_counts)
+                    variants_df = variants_df.sort_values("Count", ascending=False)
+                    
+                    # Create visualization
+                    fig = px.bar(
+                        variants_df,
+                        x='Variant',
                         y='Count',
-                        title='Content Timeline',
-                        markers=True
+                        title='Frequency of ABS Initiative Name Variants',
+                        color='Count',
+                        color_continuous_scale='oranges'
                     )
                     st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("Not enough date data for timeline visualization")
+                    
+                    # Show table for reference
+                    st.subheader("All ABS Initiative Name Variants")
+                    st.dataframe(variants_df)
+                    
+                except Exception as e:
+                    st.error(f"Error fetching name variant counts: {str(e)}")
+                    st.write(name_variants)
             else:
-                st.info("Date data not available in the dataset")
-    else:
-        st.info("Not enough data available for visualizations. Extract more content first.")
+                st.info("No name variants found in the database")
+    
+    # Display sentiment distribution
+    st.subheader("Content Sentiment Analysis")
+    
+    # Create sentiment visualization
+    try:
+        engine = get_sqlalchemy_engine()
+        sentiment_query = text("""
+        SELECT overall_sentiment, COUNT(*) as count
+        FROM sentiment_analysis
+        GROUP BY overall_sentiment
+        ORDER BY count DESC
+        """)
+        
+        sentiment_df = pd.read_sql(sentiment_query, engine)
+        
+        if not sentiment_df.empty:
+            # Create pie chart
+            fig = px.pie(
+                sentiment_df,
+                values='count',
+                names='overall_sentiment',
+                title='Sentiment Distribution',
+                color='overall_sentiment',
+                color_discrete_map={
+                    'Positive': 'green',
+                    'Neutral': 'gray',
+                    'Negative': 'red'
+                }
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No sentiment data available")
+            
+    except Exception as e:
+        st.error(f"Error fetching sentiment data: {str(e)}")
         
     # Display a sample of recent content
     st.subheader("Recent Content")
     recent_df = df.head(5)
     if not recent_df.empty:
-        for _, row in recent_df.iterrows():
+        for i, row in recent_df.iterrows():
             with st.expander(f"{row['title']}"):
-                st.write(f"**Date:** {row['date']}")
-                if 'initiative' in row and pd.notna(row['initiative']):
-                    st.write(f"**Initiative:** {row['initiative']}")
-                st.write(f"**Organization:** {row['organization'] if pd.notna(row['organization']) else 'N/A'}")
-                st.write(f"**Summary:** {row['summary'] if pd.notna(row['summary']) else 'No summary available'}")
-                st.write(f"**Link:** {row['link']}")
+                st.write(f"**Date:** {row['publication_date']}")
+                st.write(f"**Sentiment:** {row['overall_sentiment']}")
+                
+                # Show themes if available
+                if 'themes' in row and row['themes']:
+                    st.write(f"**Themes:** {', '.join(row['themes'])}")
+                
+                # Show organizations if available
+                if 'organizations' in row and row['organizations']:
+                    st.write(f"**Organizations:** {', '.join(row['organizations'])}")
+                
+                # Show countries if available
+                if 'countries' in row and row['countries']:
+                    st.write(f"**Countries:** {', '.join(row['countries'])}")
+                
+                st.write(f"**Summary:** {row['content_summary']}")
+                st.write(f"**URL:** {row['url']}")
     else:
         st.info("No content available. Extract content first.")
 
-def initiative_dashboard():
-    """Display initiative-specific dashboard with metrics and visualizations."""
-    st.title("Initiative Analysis Dashboard")
+def abs_mentions_explorer():
+    """
+    Page for exploring specific mentions of ABS Initiative name variants.
+    """
+    st.title("ABS Initiative Mentions Explorer")
     
-    # Add initiative filter to sidebar
-    st.sidebar.header("Initiative Selection")
+    # Get all name variants
+    name_variants = get_abs_name_variants()
     
-    # Get list of initiatives
-    engine = get_sqlalchemy_engine()
-    initiatives_query = text("SELECT DISTINCT initiative FROM content_data WHERE initiative IS NOT NULL ORDER BY initiative")
-    initiatives = ["All Initiatives"] + [i[0] for i in pd.read_sql(initiatives_query, engine)['initiative']]
+    if not name_variants:
+        st.warning("No ABS Initiative name variants found in the database.")
+        st.info("Please extract content first to populate the database with mentions.")
+        return
     
-    # Add initiative filter dropdown
-    selected_initiative = st.sidebar.selectbox("Select Initiative", initiatives)
+    # Add custom search option
+    search_options = ["All Variants"] + name_variants + ["Custom Search"]
+    selected_option = st.selectbox("Select Name Variant", search_options)
     
-    # Fetch data filtered by initiative if selected
-    filters = {}
-    if selected_initiative != "All Initiatives":
-        filters['initiative'] = selected_initiative
+    search_term = ""
     
-    df = fetch_data(limit=1000, filters=filters)
+    if selected_option == "Custom Search":
+        search_term = st.text_input("Enter search term")
+    elif selected_option != "All Variants":
+        search_term = selected_option
     
-    # Initiative metrics header
-    st.header("Initiative Metrics")
-    
-    # Create metrics for the selected initiative or all initiatives
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Total Documents", len(df))
-    
-    with col2:
-        # Count documents with benefits
-        benefits_count = df['benefits_to_germany'].notna().sum() 
-        st.metric("Documents with Benefits", benefits_count)
-    
-    with col3:
-        # Count unique organizations
-        org_count = df['organization'].nunique()
-        st.metric("Organizations", org_count)
-    
-    with col4:
-        # Count unique themes
-        theme_count = 0
-        if 'themes' in df.columns:
-            all_themes = set()
-            for themes_list in df['themes'].dropna():
-                if themes_list:
-                    all_themes.update(themes_list)
-            theme_count = len(all_themes)
-        st.metric("Themes", theme_count)
-    
-    # Initiative overview section
-    st.subheader(f"{'Overview of All Initiatives' if selected_initiative == 'All Initiatives' else f'Overview of {selected_initiative}'}")
-    
-    # If showing all initiatives, display a comparison
-    if selected_initiative == "All Initiatives" and 'initiative' in df.columns:
-        initiative_counts = df['initiative'].value_counts().reset_index()
-        initiative_counts.columns = ['Initiative', 'Document Count']
+    if search_term:
+        # Search for mentions
+        mentions = search_abs_mentions(search_term)
         
-        # Create bar chart
+        if mentions:
+            st.success(f"Found {len(mentions)} mentions of '{search_term}'")
+            
+            # Display mentions
+            for i, mention in enumerate(mentions):
+                with st.expander(f"{i+1}. {mention['title']} ({mention['date']})"):
+                    st.markdown(f"**Context:** {mention['context']}")
+                    st.markdown(f"**Name Variant:** {mention['name_variant']}")
+                    st.markdown(f"**Relevance Score:** {mention['relevance_score']:.2f}")
+                    st.markdown(f"**URL:** {mention['url']}")
+        else:
+            st.info(f"No mentions found for '{search_term}'")
+    
+    elif selected_option == "All Variants":
+        # Show distribution of all variants
+        try:
+            engine = get_sqlalchemy_engine()
+            query = text("""
+            SELECT name_variant, COUNT(*) as count
+            FROM abs_mentions
+            GROUP BY name_variant
+            ORDER BY count DESC
+            """)
+            
+            df = pd.read_sql(query, engine)
+            
+            if not df.empty:
+                # Create visualization
+                fig = px.bar(
+                    df,
+                    x='name_variant',
+                    y='count',
+                    title='Distribution of ABS Initiative Name Variants',
+                    color='count',
+                    color_continuous_scale='viridis'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Show table
+                st.subheader("All Name Variants")
+                st.dataframe(df)
+            else:
+                st.info("No variant data available")
+                
+        except Exception as e:
+            st.error(f"Error fetching variant distribution: {str(e)}")
+
+def geographic_analysis():
+    """
+    Page for geographic analysis of ABS Initiative mentions.
+    """
+    st.title("Geographic Analysis")
+    
+    # Get geographic statistics
+    geo_stats = get_geographic_statistics()
+    
+    if not geo_stats or not geo_stats.get('countries'):
+        st.warning("No geographic data found in the database.")
+        st.info("Please extract content first to populate the database with geographic information.")
+        return
+    
+    # Create tabs for different views
+    tab1, tab2, tab3 = st.tabs(["Countries", "Regions", "Project Map"])
+    
+    with tab1:
+        # Create a dataframe for countries
+        countries_df = pd.DataFrame(geo_stats['countries'])
+        
+        # Top countries bar chart
         fig = px.bar(
-            initiative_counts,
-            x='Initiative',
-            y='Document Count',
-            title='Documents by Initiative',
-            color='Document Count',
+            countries_df.head(15), 
+            x='country', 
+            y='count',
+            title='Top Countries Mentioned',
+            color='count',
             color_continuous_scale='blues'
         )
         st.plotly_chart(fig, use_container_width=True)
-    
-    # Benefit categories analysis
-    st.subheader("Benefit Categories Analysis")
-    
-    # Extract benefit categories from JSON
-    benefit_categories = []
-    for _, row in df.iterrows():
-        if isinstance(row.get('benefit_categories'), dict):
-            for category, score in row['benefit_categories'].items():
-                if score > 0.2:  # Only include significant categories
-                    benefit_categories.append({
-                        'category': category.replace('_', ' ').title(),
-                        'score': score,
-                        'initiative': row.get('initiative', 'Unknown')
-                    })
-        elif isinstance(row.get('benefit_categories'), str):
-            try:
-                categories_dict = json.loads(row['benefit_categories'])
-                for category, score in categories_dict.items():
-                    if score > 0.2:  # Only include significant categories
-                        benefit_categories.append({
-                            'category': category.replace('_', ' ').title(),
-                            'score': score,
-                            'initiative': row.get('initiative', 'Unknown')
-                        })
-            except:
-                pass
-    
-    if benefit_categories:
-        # Create DataFrame from benefit categories
-        benefit_df = pd.DataFrame(benefit_categories)
         
-        # Aggregate by category
-        agg_benefits = benefit_df.groupby('category')['score'].mean().reset_index()
-        agg_benefits = agg_benefits.sort_values('score', ascending=False)
-        
-        # Create horizontal bar chart
-        fig = px.bar(
-            agg_benefits,
-            x='score',
-            y='category',
-            title='Average Benefit Category Scores',
-            orientation='h',
-            color='score',
-            color_continuous_scale='Blues'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No benefit category data available for visualization.")
-    
-    # Initiative timeline
-    st.subheader("Initiative Timeline")
-    
-    if 'date' in df.columns and not df['date'].isna().all():
-        # Convert to datetime if not already
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
-        
-        # Group by month and count
-        timeline = df.groupby(df['date'].dt.strftime('%Y-%m'))['id'].count().reset_index()
-        timeline.columns = ['Month', 'Document Count']
-        
-        fig = px.line(
-            timeline, 
-            x='Month', 
-            y='Document Count',
-            title=f"{'All Initiatives' if selected_initiative == 'All Initiatives' else selected_initiative} - Timeline",
-            markers=True
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Insufficient date data for timeline visualization.")
-    
-    # Display benefit examples
-    st.subheader("Benefit Examples")
-    
-    # Create tabs for benefit categories
-    benefit_tabs = st.tabs([
-        "Environmental Benefits", 
-        "Economic Benefits", 
-        "Social Benefits", 
-        "Strategic Benefits"
-    ])
-    
-    # Map tab indices to category keys
-    category_keys = [
-        "environmental_benefits",
-        "economic_benefits", 
-        "social_benefits",
-        "strategic_benefits"
-    ]
-    
-    # Function to extract examples for a category
-    def get_examples_for_category(category):
-        examples = []
-        for _, row in df.iterrows():
-            # Handle examples in different formats
-            if isinstance(row.get('benefit_examples'), list):
-                for example in row['benefit_examples']:
-                    if example.get('category') == category:
-                        examples.append({
-                            'text': example['text'],
-                            'initiative': row.get('initiative', 'Unknown'),
-                            'link': row['link'],
-                            'title': row['title'],
-                            'word_count': example.get('word_count', 0)
-                        })
-            elif isinstance(row.get('benefit_examples'), str):
-                try:
-                    examples_list = json.loads(row['benefit_examples'])
-                    for example in examples_list:
-                        if example.get('category') == category:
-                            examples.append({
-                                'text': example['text'],
-                                'initiative': row.get('initiative', 'Unknown'),
-                                'link': row['link'],
-                                'title': row['title'],
-                                'word_count': example.get('word_count', 0)
-                            })
-                except:
-                    pass
-        return examples
-    
-    # Populate each tab with examples
-    for i, tab in enumerate(benefit_tabs):
-        with tab:
-            category = category_keys[i]
-            examples = get_examples_for_category(category)
-            
-            if examples:
-                for example in examples:
-                    with st.expander(f"{example['title'][:80]}..."):
-                        st.write(example['text'])
-                        st.caption(f"Source: {example['link']}")
-            else:
-                st.info(f"No {category.replace('_', ' ').title()} examples found.")
-
-def initiative_comparison():
-    """Compare metrics between initiatives."""
-    st.title("Initiative Comparison")
-    
-    # Fetch all data
-    df = fetch_data(limit=1000)
-    
-    # Get list of initiatives
-    if 'initiative' in df.columns:
-        initiatives = df['initiative'].dropna().unique().tolist()
-    else:
-        st.warning("No initiative data available for comparison.")
-        return
-    
-    if len(initiatives) < 2:
-        st.warning("Not enough initiatives to compare. Please extract more data with initiative information.")
-        return
-    
-    # Create comparison metrics
-    st.subheader("Key Metrics Comparison")
-    
-    # Create DataFrame for comparison
-    comparison_data = []
-    
-    for initiative in initiatives:
-        initiative_df = df[df['initiative'] == initiative]
-        
-        # Calculate metrics
-        doc_count = len(initiative_df)
-        benefit_count = initiative_df['benefits_to_germany'].notna().sum()
-        org_count = initiative_df['organization'].nunique()
-        
-        # Get average sentiment
-        sentiment_map = {'Positive': 1, 'Neutral': 0, 'Negative': -1}
-        sentiment_values = initiative_df['sentiment'].map(sentiment_map)
-        avg_sentiment = sentiment_values.mean() if not sentiment_values.empty else 0
-        
-        # Add to comparison data
-        comparison_data.append({
-            'Initiative': initiative,
-            'Documents': doc_count,
-            'Benefit Examples': benefit_count,
-            'Organizations': org_count,
-            'Sentiment Score': avg_sentiment
-        })
-    
-    # Create comparison DataFrame
-    comp_df = pd.DataFrame(comparison_data)
-    
-    # Display as a styled table
-    st.dataframe(comp_df.style.highlight_max(axis=0), use_container_width=True)
-    
-    # Create a radar chart for comparison
-    st.subheader("Initiative Comparison - Radar Chart")
-    
-    # Normalize metrics for radar chart
-    radar_df = comp_df.copy()
-    for col in ['Documents', 'Benefit Examples', 'Organizations', 'Sentiment Score']:
-        max_val = radar_df[col].max()
-        if max_val > 0:  # Avoid division by zero
-            radar_df[col] = radar_df[col] / max_val
-    
-    # Create radar chart
-    categories = ['Documents', 'Benefit Examples', 'Organizations', 'Sentiment Score']
-    
-    fig = go.Figure()
-    
-    for _, row in radar_df.iterrows():
-        fig.add_trace(go.Scatterpolar(
-            r=[row[cat] for cat in categories],
-            theta=categories,
-            fill='toself',
-            name=row['Initiative']
-        ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1]
+        # World map
+        try:
+            fig_map = px.choropleth(
+                countries_df,
+                locations='country',
+                locationmode='country names',
+                color='count',
+                title='Global Distribution of Mentions',
+                color_continuous_scale='blues'
             )
-        ),
-        showlegend=True
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Compare themes between initiatives
-    st.subheader("Theme Distribution by Initiative")
-    
-    # Extract theme data by initiative
-    theme_by_initiative = {}
-    
-    for initiative in initiatives:
-        initiative_df = df[df['initiative'] == initiative]
-        theme_counts = {}
+            st.plotly_chart(fig_map, use_container_width=True)
+        except Exception as e:
+            st.warning(f"Could not generate map visualization: {str(e)}")
         
-        for _, row in initiative_df.iterrows():
-            if row.get('themes') and isinstance(row['themes'], list):
-                for theme in row['themes']:
-                    theme_counts[theme] = theme_counts.get(theme, 0) + 1
+        # Show full table of countries
+        st.subheader("All Countries")
+        st.dataframe(countries_df)
+    
+    with tab2:
+        # Create a dataframe for regions
+        if 'regions' in geo_stats and geo_stats['regions']:
+            regions_df = pd.DataFrame(geo_stats['regions'])
+            
+            # Regions pie chart
+            fig = px.pie(
+                regions_df,
+                values='count',
+                names='region',
+                title='Distribution by Region'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Regions bar chart
+            fig = px.bar(
+                regions_df, 
+                x='region', 
+                y='count',
+                title='Mentions by Region',
+                color='count',
+                color_continuous_scale='greens'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Show full table of regions
+            st.subheader("All Regions")
+            st.dataframe(regions_df)
+        else:
+            st.info("No region data available")
+    
+    with tab3:
+        # Create visualization of project locations
+        st.subheader("Project Locations")
         
-        theme_by_initiative[initiative] = theme_counts
-    
-    # Create a combined dataframe for visualization
-    theme_comparison_data = []
-    
-    for initiative, themes in theme_by_initiative.items():
-        for theme, count in themes.items():
-            theme_comparison_data.append({
-                'Initiative': initiative,
-                'Theme': theme,
-                'Count': count
-            })
-    
-    if theme_comparison_data:
-        theme_comp_df = pd.DataFrame(theme_comparison_data)
-        
-        # Create grouped bar chart
-        fig = px.bar(
-            theme_comp_df,
-            x='Theme',
-            y='Count',
-            color='Initiative',
-            title='Theme Distribution by Initiative',
-            barmode='group'
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No theme data available for comparison.")
-    
-    # Compare benefit categories between initiatives
-    st.subheader("Benefit Categories by Initiative")
-    
-    # Extract benefit categories from JSON by initiative
-    benefit_categories = []
-    
-    for _, row in df.iterrows():
-        if 'initiative' in row and pd.notna(row['initiative']):
-            if isinstance(row.get('benefit_categories'), dict):
-                for category, score in row['benefit_categories'].items():
-                    if score > 0.2:  # Only include significant categories
-                        benefit_categories.append({
-                            'category': category.replace('_', ' ').title(),
-                            'score': score,
-                            'initiative': row['initiative']
-                        })
-            elif isinstance(row.get('benefit_categories'), str):
-                try:
-                    categories_dict = json.loads(row['benefit_categories'])
-                    for category, score in categories_dict.items():
-                        if score > 0.2:  # Only include significant categories
-                            benefit_categories.append({
-                                'category': category.replace('_', ' ').title(),
-                                'score': score,
-                                'initiative': row['initiative']
-                            })
-                except:
-                    pass
-    
-    if benefit_categories:
-        # Create DataFrame from benefit categories
-        benefit_df = pd.DataFrame(benefit_categories)
-        
-        # Aggregate by category and initiative
-        agg_benefits = benefit_df.groupby(['initiative', 'category'])['score'].mean().reset_index()
-        
-        # Create grouped bar chart
-        fig = px.bar(
-            agg_benefits,
-            x='category',
-            y='score',
-            color='initiative',
-            title='Benefit Categories by Initiative',
-            barmode='group'
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No benefit category data available for comparison.")
+        try:
+            engine = get_sqlalchemy_engine()
+            query = text("""
+            SELECT pd.project_name, gf.country, COUNT(*) as mentions
+            FROM project_details pd
+            JOIN geographic_focus gf ON pd.source_id = gf.source_id
+            WHERE gf.country IS NOT NULL AND gf.country != ''
+            GROUP BY pd.project_name, gf.country
+            ORDER BY mentions DESC
+            """)
+            
+            projects_df = pd.read_sql(query, engine)
+            
+            if not projects_df.empty:
+                # Create bubble map
+                fig = px.scatter_geo(
+                    projects_df,
+                    locations='country',
+                    locationmode='country names',
+                    size='mentions',
+                    hover_name='project_name',
+                    title='Project Locations',
+                    size_max=25
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Show project-country table
+                st.subheader("Projects by Country")
+                st.dataframe(projects_df)
+            else:
+                st.info("No project location data available")
+                
+        except Exception as e:
+            st.error(f"Error fetching project location data: {str(e)}")

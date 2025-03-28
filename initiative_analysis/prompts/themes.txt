@@ -1,0 +1,8 @@
+Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
+
+Text excerpt:
+{excerpt}
+
+Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects being discussed such as "Biodiversity Conservation", "Traditional Knowledge", "Genetic Resources", etc.
+
+Return ONLY a comma-separated list of identified themes without explanations or additional text.
