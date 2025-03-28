@@ -35,5 +35,5 @@ RUN python -m spacy download en_core_web_md
 # Copy the application code
 COPY . .
 
-# Default command to run the application
-CMD ["python", "main.py"]
+# Default command to run the application from initiative_analysis folder
+CMD ["python", "-m", "streamlit", "run", "initiative_analysis/app.py"]

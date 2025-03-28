@@ -3,6 +3,8 @@ import logging
 import psycopg2
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
+
 from config.settings import DATABASE_URL, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 logger = logging.getLogger("ConnectionDB")
@@ -35,7 +37,6 @@ def get_db_connection():
         logger.error(f"Error connecting to database: {str(e)}")
         raise
 
-@st.cache_resource
 def get_sqlalchemy_engine():
     logger.info("Creating database connection")
     try:

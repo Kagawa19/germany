@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build: .
@@ -12,21 +14,19 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-      - PYDEVD_DISABLE_FILE_VALIDATION=1  # Added to disable validation
+      - PYDEVD_DISABLE_FILE_VALIDATION=1  # Disable file validation
     volumes:
       - ./:/app
     ports:
       - "8000:8000"
       - "8501:8501"
-      - "5678:5678"  # Port for debugger
+      - "5678:5678"  # Debugger port
     networks:
       - app-network
     restart: unless-stopped
-    # Updated command with -Xfrozen_modules=off flag
-    command: ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "main.py"]
+    command: ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "initiative_analysis/app.py"]
 
   postgres:
-    # Postgres config remains unchanged
     image: postgres:14-alpine
     container_name: postgres-db
     environment:

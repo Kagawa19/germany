@@ -2,6 +2,10 @@ import re
 from datetime import datetime
 import html
 from typing import Optional
+import logging
+
+logger = logging.getLogger("TextProcessing")
+
 
 def clean_html_entities(text):
         """Clean HTML entities and common encoding issues in text"""

@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 import requests
 import logging
 import re
@@ -8,9 +9,39 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Tuple, Any
+from dotenv import load_dotenv
 
-class WebExtractor:
+# Import the Analysis class
+from extraction.analysis import Analysis, get_openai_client
+
+logger = logging.getLogger("Processing")
+
+class Processing:
     """Extension of WebExtractor with content extraction methods."""
+    
+    def __init__(self, language="English"):
+        """
+        Initialize the Processing class.
+        
+        Args:
+            language: Content language (English, German, French)
+        """
+        # Set language - validate and default to English if invalid
+        valid_languages = ["English", "German", "French"]
+        self.language = language if language in valid_languages else "English"
+        
+        # Create an instance of the Analysis class to use its methods
+        self.analyzer = Analysis()
+        
+        # Load environment variables
+        load_dotenv()
+        
+        # Initialize OpenAI API key for analysis functions
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        if self.openai_api_key:
+            logger.info("OpenAI API key loaded from environment variables")
+        else:
+            logger.warning("OpenAI API key not found in environment variables")
     
     def process_search_result(self, result, query_index, result_index, processed_urls):
         """
@@ -42,14 +73,10 @@ class WebExtractor:
                 logger.info(f"No content extracted from {url}, skipping")
                 return None
             
-            # Get initiative info but don't filter on it
-            initiative_key, initiative_score = self.identify_initiative(content)
-            
-            # Always default to 'abs_initiative' if none found to avoid filtering out content
-            if initiative_key == "unknown":
-                initiative_key = "abs_initiative"
-                initiative_score = 0.1  # Minimum score to ensure inclusion
-                logger.info(f"No specific initiative detected in {url}, defaulting to generic ABS Initiative")
+            # Default initiative values since identify_initiative has been removed
+            initiative_key = "abs_initiative"
+            initiative_score = 0.5
+            logger.info(f"Using default initiative for {url}: {initiative_key}")
             
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
@@ -58,51 +85,54 @@ class WebExtractor:
             embedding = []
             try:
                 if len(content) > 300:
-                    embedding = self.generate_embedding(content)
+                    # Use the Analysis class method through the analyzer instance
+                    embedding = self.analyzer.generate_embedding(content, self.language)
                     logger.info(f"Successfully generated {self.language} embedding vector for {url}")
             except Exception as e:
                 logger.error(f"Error generating embedding: {str(e)}")
             
             # Identify themes using the content
+            themes = ["ABS Initiative"]  # Default theme
             try:
-                themes = self.identify_themes(content)
+                # Use the Analysis class method through the analyzer instance
+                themes = self.analyzer.identify_themes(content)
+                if not themes or len(themes) == 0:
+                    themes = ["ABS Initiative"]
             except Exception as e:
                 logger.warning(f"Theme identification failed: {str(e)}")
-                themes = ["ABS Initiative"]  # Default theme
-            
-            # Ensure we have at least one theme
-            if not themes:
-                themes = ["ABS Initiative"]
             
             # Analyze sentiment
+            sentiment = "Neutral"  # Default sentiment
             try:
-                sentiment = self.analyze_sentiment(content)
+                # Use the Analysis class method through the analyzer instance
+                sentiment = self.analyzer.analyze_sentiment(content)
             except Exception as e:
                 logger.warning(f"Sentiment analysis failed: {str(e)}")
-                sentiment = "Neutral"  # Default sentiment
             
-            # Generate summary if needed - FIXED: pass content, title, and URL to generate_summary
+            # Generate summary if needed
             if not clean_summary or len(clean_summary) < 50:
                 try:
-                    clean_summary = self.generate_summary(content, extracted_title or title, url)
+                    # Use the Analysis class method through the analyzer instance
+                    clean_summary = self.analyzer.generate_summary(content, extracted_title or title, url, self.language)
                     logger.info(f"Generated new summary for {url}")
                 except Exception as e:
                     logger.warning(f"Summary generation failed: {str(e)}")
                     clean_summary = content[:300] + "..." if len(content) > 300 else content
             
-            # Calculate relevance score if the method exists
+            # Calculate relevance score
             relevance_score = 0.0
-            if hasattr(self, '_calculate_relevance_score'):
-                try:
-                    relevance_score = self._calculate_relevance_score({
-                        "content": content,
-                        "title": extracted_title or title,
-                        "link": url,
-                        "initiative_score": initiative_score,
-                        "embedding": embedding
-                    })
-                except Exception as e:
-                    logger.warning(f"Error calculating relevance score: {str(e)}")
+            try:
+                # Use the Analysis class method through the analyzer instance
+                relevance_score = self.analyzer._calculate_relevance_score({
+                    "content": content,
+                    "title": extracted_title or title,
+                    "link": url,
+                    "initiative_score": initiative_score,
+                    "embedding": embedding,
+                    "date": date
+                })
+            except Exception as e:
+                logger.warning(f"Error calculating relevance score: {str(e)}")
             
             # Format the result with all processed data
             result_data = {
@@ -203,10 +233,6 @@ class WebExtractor:
             logger.error(f"Unexpected error scraping {url}: {str(e)}", exc_info=True)
             return "", "", None, None
     
-    
-    
-    
-
     def handle_pdf_document(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:
         """
         Create confident summaries for PDF documents based on metadata analysis.
@@ -262,12 +288,9 @@ class WebExtractor:
             # Try to use OpenAI for a better summary
             try:
                 from openai import OpenAI
-                import os
-                from dotenv import load_dotenv
                 
-                # Load environment variables and get API key
-                load_dotenv()
-                api_key = os.getenv("OPENAI_API_KEY")
+                # Get API key from class
+                api_key = self.openai_api_key
                 
                 # If API key is available, use OpenAI
                 if api_key:
@@ -312,7 +335,6 @@ class WebExtractor:
         except Exception as e:
             logger.error(f"Error handling PDF document: {str(e)}")
             return f"PDF Document: {url}", "PDF Document", None, f"ABS Initiative document available at {url}"
-    
     
     def extract_date_from_content(self, html_content: str, url: str, soup: BeautifulSoup) -> Optional[str]:
         """
@@ -488,8 +510,6 @@ class WebExtractor:
         domain = url.split("//")[-1].split("/")[0]
         logger.info(f"Using domain as fallback title: {domain}")
         return domain
-    
-    
         
     def get_page_content(self, url, timeout=15, max_retries=2):
         """
@@ -605,29 +625,31 @@ class WebExtractor:
         except:
             return "Unknown"
 
-    def _contains_relevant_content(result_data):
-            """Check if result data contains relevant ABS content."""
-            if not result_data.get('content'):
-                return False
+    def _contains_relevant_content(self, result_data):
+        """
+        Check if result data contains relevant ABS content.
+        
+        Args:
+            result_data: Result data dictionary
+            
+        Returns:
+            Boolean indicating if content is relevant
+        """
+        if not result_data.get('content'):
+            return False
                 
-            content = result_data.get('content', '').lower()
-            title = result_data.get('title', '').lower()
-            
-            # Get language-appropriate ABS terms
-            abs_terms = {
-                "English": ["abs initiative", "capacity development", "benefit sharing", "genetic resources"],
-                "German": ["abs-initiative", "kapazitätsentwicklung", "vorteilsausgleich", "genetische ressourcen"],
-                "French": ["initiative apa", "développement des capacités", "partage des avantages", "ressources génétiques"]
-            }
-            
-            # Use terms for the current language
-            terms = abs_terms.get(self.language, abs_terms["English"])
-            
-            # Check for relevant terms
-            return any(term in content or term in title for term in terms)
+        content = result_data.get('content', '').lower()
+        title = result_data.get('title', '').lower()
         
-        # Attach the methods to the instance
-        self._is_junk_domain = _is_junk_domain
-        self._contains_relevant_content = _contains_relevant_content
+        # Get language-appropriate ABS terms
+        abs_terms = {
+            "English": ["abs initiative", "capacity development", "benefit sharing", "genetic resources"],
+            "German": ["abs-initiative", "kapazitätsentwicklung", "vorteilsausgleich", "genetische ressourcen"],
+            "French": ["initiative apa", "développement des capacités", "partage des avantages", "ressources génétiques"]
+        }
         
-
+        # Use terms for the current language
+        terms = abs_terms.get(self.language, abs_terms["English"])
+        
+        # Check for relevant terms
+        return any(term in content or term in title for term in terms)

@@ -730,4 +730,125 @@ def semantic_search(query_text, top_k=5):
     
     try:
         # Generate embedding for query
-        response = client.embeddings.
+        response = client.embeddings.create(
+            model="text-embedding-ada-002",
+            input=query_text
+        )
+        
+        query_embedding = response.data[0].embedding
+        
+        # Get database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if we're using pgvector or JSONB storage
+        try:
+            # Try pgvector approach first (using cosine similarity)
+            query = """
+            SELECT id, link, title, date, summary, themes, organization
+            FROM content_data
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %s
+            LIMIT %s;
+            """
+            
+            cursor.execute(query, (json.dumps(query_embedding), top_k))
+        except Exception as e:
+            logger.warning(f"pgvector query failed, falling back to JSONB: {str(e)}")
+            # Fall back to manual calculation with JSONB
+            query = """
+            SELECT id, link, title, date, summary, themes, organization, embedding
+            FROM content_data
+            WHERE embedding IS NOT NULL
+            LIMIT 100;
+            """
+            
+            cursor.execute(query)
+            
+            # Get all results with embeddings
+            results = cursor.fetchall()
+            
+            # Calculate similarity manually for each result
+            results_with_scores = []
+            for row in results:
+                try:
+                    # Parse embedding from JSONB
+                    embedding = json.loads(row[7]) if row[7] else []
+                    
+                    if embedding:
+                        # Calculate cosine similarity
+                        similarity = cosine_similarity(query_embedding, embedding)
+                        
+                        # Create result with similarity score
+                        result = {
+                            "id": row[0],
+                            "link": row[1], 
+                            "title": row[2],
+                            "date": row[3],
+                            "summary": row[4],
+                            "themes": row[5],
+                            "organization": row[6],
+                            "similarity": similarity
+                        }
+                        
+                        results_with_scores.append(result)
+                except Exception as calc_error:
+                    logger.error(f"Error calculating similarity: {str(calc_error)}")
+            
+            # Sort by similarity (highest first) and limit to top_k
+            results_with_scores.sort(key=lambda x: x.get("similarity", 0), reverse=True)
+            
+            cursor.close()
+            conn.close()
+            
+            return results_with_scores[:top_k]
+        
+        # Process results from pgvector approach
+        column_names = [desc[0] for desc in cursor.description]
+        
+        results = []
+        for row in cursor.fetchall():
+            result = dict(zip(column_names, row))
+            results.append(result)
+        
+        cursor.close()
+        conn.close()
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Error in semantic search: {str(e)}")
+        return []
+
+def cosine_similarity(vec1, vec2):
+    """
+    Calculate cosine similarity between two vectors.
+    
+    Args:
+        vec1: First vector
+        vec2: Second vector
+        
+    Returns:
+        Cosine similarity score (0-1)
+    """
+    import math
+    
+    if not vec1 or not vec2 or len(vec1) != len(vec2):
+        return 0
+    
+    try:
+        # Calculate dot product
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        
+        # Calculate magnitudes
+        magnitude1 = math.sqrt(sum(a * a for a in vec1))
+        magnitude2 = math.sqrt(sum(b * b for b in vec2))
+        
+        # Calculate cosine similarity
+        if magnitude1 == 0 or magnitude2 == 0:
+            return 0
+            
+        return dot_product / (magnitude1 * magnitude2)
+    except Exception as e:
+        logger.error(f"Error calculating cosine similarity: {str(e)}")
+        return 0

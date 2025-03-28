@@ -12,6 +12,11 @@ from sqlalchemy import text
 
 logger = logging.getLogger("ExtractionUI")
 
+import logging
+import pandas as pd
+import streamlit as st
+from sqlalchemy.sql import text
+
 def run_web_extraction(max_queries=None, max_results_per_query=None, language="English"):
     """
     Run web extraction process with configurable parameters.
@@ -70,8 +75,6 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
 
             # First check the status
             if results["status"] == "success":
-                # This is a successful extraction regardless of whether new results were found
-                
                 if results["results"]:
                     # Case 1: Success with results
                     result_count = len(results["results"])
@@ -183,6 +186,7 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed: {str(e)}")
             print(f"❌ Critical error during web extraction in {language}: {str(e)}")
+
 
 def initialization_page():
     """Display database initialization and schema setup page."""

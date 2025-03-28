@@ -7,10 +7,207 @@ import json
 import random
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Tuple, Any
+from dotenv import load_dotenv
 
-class WebExtractor:
+logger = logging.getLogger("Search")
+
+class Search:
     """Extension of WebExtractor with search-related methods."""
     
+    def __init__(self, language="English", search_api_key=None):
+        """
+        Initialize the Search class with necessary attributes.
+        
+        Args:
+            language: Content language (English, German, French)
+            search_api_key: API key for search service
+        """
+        # Load environment variables
+        load_dotenv()
+        
+        # Set language - validate and default to English if invalid
+        valid_languages = ["English", "German", "French"]
+        self.language = language if language in valid_languages else "English"
+        
+        # Set API keys
+        self.search_api_key = search_api_key or os.getenv('SERPER_API_KEY')
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        
+        if self.openai_api_key:
+            logger.info("OpenAI API key loaded from environment variables")
+        else:
+            logger.warning("OpenAI API key not found in environment variables")
+        
+        # Configure language-specific search settings
+        self.lang_settings = {
+            "English": {"gl": "us", "hl": "en", "domains": [".com", ".org", ".uk", ".us", ".int"]},
+            "German": {"gl": "de", "hl": "de", "domains": [".de", ".at", ".ch"]},
+            "French": {"gl": "fr", "hl": "fr", "domains": [".fr", ".be", ".ch", ".ca"]}
+        }.get(self.language, {"gl": "us", "hl": "en", "domains": [".com", ".org"]})
+        
+        # Initialize the search_queries attribute
+        self.search_queries = [
+            "ABS Capacity Development Initiative",
+            "ABS CDI",
+            "ABS Initiative",
+            "Access and Benefit Sharing Initiative"
+        ]
+
+        # Define common words to use for partial matching
+        self.common_terms = {
+            "English": [
+                "ABS", "Initiative", "capacity", "development", "benefit", 
+                "sharing", "access", "support", "resources", "implementation", 
+                "genetic", "CBD", "GIZ", "knowledge", "program", "biodiversity"
+            ],
+            "German": [
+                "ABS", "Initiative", "Kapazität", "Entwicklung", "Vorteil", 
+                "Ausgleich", "Zugang", "Unterstützung", "Ressourcen", 
+                "Implementierung", "genetisch", "CBD", "GIZ", "Wissen", 
+                "Programm", "Biodiversität"
+            ],
+            "French": [
+                "APA", "Initiative", "capacité", "développement", "avantage", 
+                "partage", "accès", "soutien", "ressources", "mise en œuvre", 
+                "génétique", "CBD", "GIZ", "connaissance", "programme", "biodiversité"
+            ]
+        }
+        
+        # Expand context terms with more specific ABS-related terminology
+        self.context_terms = {
+            "English": [
+                "biodiversity", "genetic resources", "traditional knowledge", 
+                "Nagoya Protocol", "indigenous communities", "conservation", 
+                "sustainable development", "bioprospecting", 
+                "benefit-sharing mechanism", "biotrade", 
+                "natural resources management", "capacity building", 
+                "stakeholder engagement", "legal framework", 
+                "access and benefit sharing", "biological diversity"
+            ],
+            "German": [
+                "Biodiversität", "genetische Ressourcen", "traditionelles Wissen", 
+                "Nagoya-Protokoll", "indigene Gemeinschaften", "Konservierung", 
+                "nachhaltige Entwicklung", "Bioprospektierung", 
+                "Vorteilsausgleichsmechanismus", "Biohandel", 
+                "Naturressourcenmanagement", "Kapazitätsaufbau", 
+                "Stakeholder-Engagement", "rechtlicher Rahmen", 
+                "Zugang und Vorteilsausgleich", "biologische Vielfalt"
+            ],
+            "French": [
+                "biodiversité", "ressources génétiques", "connaissances traditionnelles", 
+                "Protocole de Nagoya", "communautés autochtones", "conservation", 
+                "développement durable", "bioprospection", 
+                "mécanisme de partage des avantages", "biocommerce", 
+                "gestion des ressources naturelles", "renforcement des capacités", 
+                "engagement des parties prenantes", "cadre juridique", 
+                "accès et partage des avantages", "diversité biologique"
+            ]
+        }
+
+        # Update related organizations
+        self.related_orgs = [
+            "GIZ", "BMZ", "SCBD", "CBD", "UNDP", "UNEP", 
+            "African Union", "EU", "European Union", 
+            "Swiss SECO", "Norwegian NORAD", 
+            "COMIFAC", "SADC", "ECOWAS", "SIDA"
+        ]
+
+        # Define all ABS initiative names in different languages with expanded lists
+        self.abs_names = {
+            "English": [
+                "ABS Capacity Development Initiative",
+                "ABS CDI",
+                "ABS Capacity Development Initiative for Africa",
+                "ABS Initiative",
+                "Access and Benefit Sharing Initiative"
+            ],
+            "German": [
+                "Initiative für Zugang und Vorteilsausgleich",
+                "ABS-Kapazitätenentwicklungsinitiative für Afrika",
+                "ABS-Initiative"
+            ],
+            "French": [
+                "Initiative pour le renforcement des capacités en matière d'APA",
+                "Initiative Accès et Partage des Avantages",
+                "Initiative APA"
+            ]
+        }
+        
+        # Initialize OpenAI client if API key is available
+        self.openai_client = None
+        if self.openai_api_key:
+            try:
+                from openai import OpenAI
+                self.openai_client = OpenAI(api_key=self.openai_api_key)
+                logger.info("OpenAI client initialized successfully")
+            except ImportError:
+                logger.warning("OpenAI package not installed - some features will be limited")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+
+    def get_openai_client(self):
+        """
+        Get the OpenAI client instance.
+        
+        Returns:
+            OpenAI client or None if not available
+        """
+        if self.openai_client:
+            return self.openai_client
+            
+        # Try to initialize client if not done already
+        if self.openai_api_key:
+            try:
+                from openai import OpenAI
+                self.openai_client = OpenAI(api_key=self.openai_api_key)
+                logger.info("OpenAI client initialized on demand")
+                return self.openai_client
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client on demand: {str(e)}")
+                
+        return None
+
+    def generate_embedding(self, text: str) -> List[float]:
+        """
+        Generate embeddings for text using OpenAI.
+        Support multilingual content.
+        
+        Args:
+            text: Text to generate embeddings for
+            
+        Returns:
+            List of embedding values or empty list if failed
+        """
+        if not text or len(text) < 10:
+            logger.warning(f"Text too short for {self.language} embedding generation")
+            return []
+        
+        try:
+            # Get OpenAI client
+            client = self.get_openai_client()
+            if not client:
+                logger.warning(f"OpenAI client not available for {self.language} embedding generation")
+                return []
+            
+            # Truncate text if too long (OpenAI has token limits)
+            max_tokens = 8000  # Approximate limit for embedding models
+            truncated_text = text[:32000] if len(text) > 32000 else text
+            
+            # Generate embedding
+            response = client.embeddings.create(
+                model="text-embedding-ada-002",  # This model supports multilingual text
+                input=truncated_text
+            )
+            
+            # Extract embedding values
+            embedding = response.data[0].embedding
+            
+            logger.info(f"Successfully generated {self.language} embedding vector ({len(embedding)} dimensions)")
+            return embedding
+        
+        except Exception as e:
+            logger.error(f"Error generating {self.language} embedding: {str(e)}")
+            return []
 
     def _enhance_search_query(self, query):
         """
@@ -39,7 +236,6 @@ class WebExtractor:
             ]
             
             # Select a random domain to prioritize (to diversify results across searches)
-            import random
             selected_domain = random.choice(quality_domains)
             
             # 30% chance to add site: operator to focus on high-quality domains
@@ -269,7 +465,6 @@ class WebExtractor:
         
         return final_queries
     
-        
     def _is_junk_domain(self, domain):
         """
         Check if a domain is likely to be a junk domain that won't have relevant content.
@@ -297,9 +492,6 @@ class WebExtractor:
                 return True
         
         return False
-
-    
-            
     
     def search_web(self, query: str, num_results: int = 20) -> List[Dict]:
         """

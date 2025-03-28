@@ -3,6 +3,7 @@ import logging
 import json
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 import nltk
 from nltk.tokenize import sent_tokenize
 from typing import Dict, List, Optional, Tuple, Any
@@ -10,10 +11,33 @@ from typing import Dict, List, Optional, Tuple, Any
 from dotenv import load_dotenv
 from openai import OpenAI
 
-class WebExtractor:
+logger = logging.getLogger("analysis")
+
+class Analysis:
     """Extension of WebExtractor with content analysis methods."""
     
-    def analyze_sentiment(content: str) -> str:
+    def __init__(self):
+        """Initialize Analysis class"""
+        # Load environment variables
+        load_dotenv()
+        
+        # Load OpenAI API key
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        if self.openai_api_key:
+            logger.info("OpenAI API key loaded from environment variables")
+        else:
+            logger.warning("OpenAI API key not found in environment variables")
+        
+        # Initialize OpenAI client
+        self.openai_client = None
+        if self.openai_api_key:
+            try:
+                self.openai_client = OpenAI(api_key=self.openai_api_key)
+                logger.info("OpenAI client initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+    
+    def analyze_sentiment(self, content: str) -> str:
         """
         Analyze sentiment using simple keyword-based approach.
         This function replaces AI-based sentiment analysis.
@@ -51,161 +75,143 @@ class WebExtractor:
         else:
             return "Neutral"
 
-
-
-
-
     def identify_themes(self, content: str) -> List[str]:
-            """
-            Identify diverse themes in content using OpenAI with a data-driven approach.
-            Does not include "ABS Initiative" as a default theme.
-            
-            Args:
-                content: Content text to analyze
-                
-            Returns:
-                List of identified themes
-            """
-            # Skip if content is too short
-            if not content or len(content) < 100:
-                return ["Content Analysis", "Documentation"]
-            
-            # Try to use OpenAI for theme extraction
-            try:
-                from openai import OpenAI
-                import os
-                from dotenv import load_dotenv
-                
-                # Load environment variables and get API key
-                load_dotenv()
-                api_key = os.getenv("OPENAI_API_KEY")
-                
-                # If API key is available, use OpenAI
-                if api_key:
-                    client = OpenAI(api_key=api_key)
-                    
-                    # Prepare content - limit to first 3000 chars to save tokens
-                    excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-                    
-                    # Create a prompt for theme extraction without suggesting ABS Initiative
-                    prompt = f"""
-        Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
-
-        Text excerpt:
-        {excerpt}
-
-        Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects being discussed such as "Biodiversity Conservation", "Traditional Knowledge", "Genetic Resources", etc.
-
-        Return ONLY a comma-separated list of identified themes without explanations or additional text.
         """
-
-                    # Make API call
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=0.7,  # Slightly higher temperature for more diversity
-                        max_tokens=100
-                    )
-                    
-                    # Extract themes from response
-                    ai_themes_text = response.choices[0].message.content.strip()
-                    
-                    # Convert to list and clean up each theme
-                    ai_themes = [theme.strip() for theme in ai_themes_text.split(',')]
-                    
-                    # Remove any empty themes
-                    ai_themes = [theme for theme in ai_themes if theme]
-                    
-                    # Ensure we have at least some themes
-                    if ai_themes and len(ai_themes) >= 2:
-                        return ai_themes
-            
-            except Exception as e:
-                # Log the error but continue to fallback method
-                logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
-            
-            # Fallback approach without using "ABS Initiative" as default
-            import re
-            from collections import Counter
-            
-            # Define some substantive topics related to biodiversity and conservation
-            potential_topics = [
-                "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
-                "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
-                "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
-                "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
-                "Technology Transfer", "Capacity Building", "International Cooperation",
-                "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
-            ]
-            
-            # Check which topics are present in the content
-            found_topics = []
-            content_lower = content.lower()
-            
-            for topic in potential_topics:
-                if topic.lower() in content_lower:
-                    found_topics.append(topic)
-                    # Stop once we have 5 topics
-                    if len(found_topics) >= 5:
-                        break
-            
-            # If we found specific topics, return them
-            if found_topics:
-                return found_topics
-            
-            # Otherwise use a more general approach - extract key terms
-            # Extract all words and simple phrases
-            text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
-            words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
-            
-            # Count word frequencies
-            word_counts = Counter(words)
-            
-            # Remove common stopwords
-            stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
-                        "about", "which", "there", "where", "when", "what", "have", "will", "they", 
-                        "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
-                        "capacity", "through", "between", "information", "because", "system", "process"}
-            
-            # Filter out stop words
-            potential_themes = {word: count for word, count in word_counts.items() 
-                            if word not in stopwords and count > 1}
-            
-            # Extract 5 most common potential theme words
-            top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
-            
-            # If we couldn't find good topic words, return generic research categories
-            if not top_words:
-                return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
-            
-            return top_words
+        Identify diverse themes in content using OpenAI with a data-driven approach.
+        Does not include "ABS Initiative" as a default theme.
         
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of identified themes
+        """
+        # Skip if content is too short
+        if not content or len(content) < 100:
+            return ["Content Analysis", "Documentation"]
+        
+        # Try to use OpenAI for theme extraction
+        try:
+            # If API key is available, use OpenAI
+            if self.openai_client:
+                # Prepare content - limit to first 3000 chars to save tokens
+                excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+                
+                # Create a prompt for theme extraction without suggesting ABS Initiative
+                prompt = f"""
+    Analyze this text and identify the main substantive themes it discusses. Focus on the actual subject matter.
+
+    Text excerpt:
+    {excerpt}
+
+    Extract exactly 5 specific, substantive themes from this content. Do NOT use generic themes like "ABS Initiative" or "Capacity Development" unless they're discussed in detail as topics themselves. Focus on the actual subjects being discussed such as "Biodiversity Conservation", "Traditional Knowledge", "Genetic Resources", etc.
+
+    Return ONLY a comma-separated list of identified themes without explanations or additional text.
+    """
+
+                # Make API call
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,  # Slightly higher temperature for more diversity
+                    max_tokens=100
+                )
+                
+                # Extract themes from response
+                ai_themes_text = response.choices[0].message.content.strip()
+                
+                # Convert to list and clean up each theme
+                ai_themes = [theme.strip() for theme in ai_themes_text.split(',')]
+                
+                # Remove any empty themes
+                ai_themes = [theme for theme in ai_themes if theme]
+                
+                # Ensure we have at least some themes
+                if ai_themes and len(ai_themes) >= 2:
+                    return ai_themes
+        
+        except Exception as e:
+            # Log the error but continue to fallback method
+            logger.warning(f"Error using OpenAI for theme extraction: {str(e)}. Falling back to simple content analysis.")
+        
+        # Fallback approach without using "ABS Initiative" as default
+        from collections import Counter
+        
+        # Define some substantive topics related to biodiversity and conservation
+        potential_topics = [
+            "Biodiversity", "Conservation", "Sustainable Development", "Genetic Resources",
+            "Traditional Knowledge", "Indigenous Rights", "Policy Development", 
+            "Legal Framework", "Compliance", "Implementation", "Benefit Sharing",
+            "Sustainable Use", "Ecosystem Services", "Stakeholder Engagement",
+            "Technology Transfer", "Capacity Building", "International Cooperation",
+            "Research", "Innovation", "Monitoring", "Evaluation", "Governance"
+        ]
+        
+        # Check which topics are present in the content
+        found_topics = []
+        content_lower = content.lower()
+        
+        for topic in potential_topics:
+            if topic.lower() in content_lower:
+                found_topics.append(topic)
+                # Stop once we have 5 topics
+                if len(found_topics) >= 5:
+                    break
+        
+        # If we found specific topics, return them
+        if found_topics:
+            return found_topics
+        
+        # Otherwise use a more general approach - extract key terms
+        # Extract all words and simple phrases
+        text = re.sub(r'[^\w\s]', ' ', content_lower)  # Remove punctuation
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Find words of 4+ characters
+        
+        # Count word frequencies
+        word_counts = Counter(words)
+        
+        # Remove common stopwords
+        stopwords = {"this", "that", "these", "those", "with", "from", "their", "would", "could", "should", 
+                    "about", "which", "there", "where", "when", "what", "have", "will", "they", 
+                    "them", "then", "than", "were", "been", "being", "other", "initiative", "development",
+                    "capacity", "through", "between", "information", "because", "system", "process"}
+        
+        # Filter out stop words
+        potential_themes = {word: count for word, count in word_counts.items() 
+                        if word not in stopwords and count > 1}
+        
+        # Extract 5 most common potential theme words
+        top_words = [word.capitalize() for word, _ in sorted(potential_themes.items(), key=lambda x: x[1], reverse=True)[:5]]
+        
+        # If we couldn't find good topic words, return generic research categories
+        if not top_words:
+            return ["Policy Analysis", "Research Findings", "Environmental Studies", "International Relations", "Resource Management"]
+        
+        return top_words
     
-   
-    
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str, language: str = "English") -> List[float]:
         """
         Generate embeddings for text using OpenAI.
         Support multilingual content.
         
         Args:
             text: Text to generate embeddings for
+            language: Content language for logging
             
         Returns:
             List of embedding values or empty list if failed
         """
         if not text or len(text) < 10:
-            logger.warning(f"Text too short for {self.language} embedding generation")
+            logger.warning(f"Text too short for {language} embedding generation")
             return []
         
         try:
-            # Get OpenAI client
-            from content_db import get_openai_client
-            client = get_openai_client()
+            # Get OpenAI client from instance
+            client = self.openai_client
             if not client:
-                logger.warning(f"OpenAI client not available for {self.language} embedding generation")
+                logger.warning(f"OpenAI client not available for {language} embedding generation")
                 return []
             
             # Truncate text if too long (OpenAI has token limits)
@@ -221,14 +227,14 @@ class WebExtractor:
             # Extract embedding values
             embedding = response.data[0].embedding
             
-            logger.info(f"Successfully generated {self.language} embedding vector ({len(embedding)} dimensions)")
+            logger.info(f"Successfully generated {language} embedding vector ({len(embedding)} dimensions)")
             return embedding
         
         except Exception as e:
-            logger.error(f"Error generating {self.language} embedding: {str(e)}")
+            logger.error(f"Error generating {language} embedding: {str(e)}")
             return []
     
-    def generate_summary(self, content, title="", url=""):
+    def generate_summary(self, content, title="", url="", language="English"):
         """
         Generate a high-quality summary using OpenAI API with semantic understanding.
         Properly utilizes embeddings for enhanced semantic analysis.
@@ -237,13 +243,11 @@ class WebExtractor:
             content: Content text to summarize
             title: Content title for context
             url: Source URL for context
+            language: Content language
             
         Returns:
             AI-generated summary text
         """
-        import logging
-        logger = logging.getLogger("WebExtractor")
-        
         # Skip if no content or too short
         if not content or len(content) < 100:
             logger.info("Content too short for summarization")
@@ -252,7 +256,7 @@ class WebExtractor:
         # Generate embedding for the content
         embedding = None
         try:
-            embedding = self.generate_embedding(content)
+            embedding = self.generate_embedding(content, language)
             if embedding and len(embedding) > 0:
                 logger.info(f"Successfully generated embedding vector ({len(embedding)} dimensions)")
             else:
@@ -260,23 +264,12 @@ class WebExtractor:
         except Exception as e:
             logger.warning(f"Embedding generation failed: {str(e)}")
 
-        # Get OpenAI client
+        # Check if OpenAI client is available
+        if not self.openai_client:
+            logger.warning("OpenAI client not available for summary generation")
+            return content[:300] + "..." if len(content) > 300 else content
+        
         try:
-            from openai import OpenAI
-            import os
-            from dotenv import load_dotenv
-            
-            # Load environment variables
-            load_dotenv()
-            
-            # Get API key
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            if not openai_api_key:
-                logger.warning("OPENAI_API_KEY not found in environment")
-                return "API key unavailable for summary generation."
-            
-            client = OpenAI(api_key=openai_api_key)
-            
             # Truncate content to save on tokens
             excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
             
@@ -293,28 +286,28 @@ class WebExtractor:
             
             # Create a detailed, context-aware prompt that leverages embeddings when available
             prompt = f"""
-    Provide a concise, factual summary of the following content about the ABS Initiative.
+Provide a concise, factual summary of the following content about the ABS Initiative.
 
-    {embedding_context}
+{embedding_context}
 
-    Content Context:
-    - Title: {title}
-    - Source URL: {url}
-    - Language: {self.language if hasattr(self, 'language') else 'English'}
+Content Context:
+- Title: {title}
+- Source URL: {url}
+- Language: {language}
 
-    Content Excerpt:
-    {excerpt}
+Content Excerpt:
+{excerpt}
 
-    Summary Requirements:
-    1. 3-5 sentences that capture the main points and key information
-    2. Focus on factual information directly stated in the content
-    3. Maintain the original intent and tone of the content
-    4. Include specific details about the ABS Initiative, access and benefit sharing, or traditional knowledge if present
-    5. Be clear, concise, and well-structured
-    """
+Summary Requirements:
+1. 3-5 sentences that capture the main points and key information
+2. Focus on factual information directly stated in the content
+3. Maintain the original intent and tone of the content
+4. Include specific details about the ABS Initiative, access and benefit sharing, or traditional knowledge if present
+5. Be clear, concise, and well-structured
+"""
 
             # Generate summary
-            response = client.chat.completions.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are an expert at creating concise, accurate summaries that capture the essence of content about the ABS Initiative and related topics."},
@@ -348,6 +341,7 @@ class WebExtractor:
             # Better error handling without falling back to content truncation
             logger.error(f"Summary generation error: {str(e)}")
             return f"Unable to generate summary due to technical issues. Error: {str(e)[:100]}..."
+    
     def validate_summary(self, summary, original_content):
         """
         Validate that a summary contains only information present in the original content.
@@ -359,8 +353,7 @@ class WebExtractor:
         Returns:
             Dictionary with validation results
         """
-        client = get_openai_client()
-        if not client:
+        if not self.openai_client:
             # If we can't validate, assume it's valid but log a warning
             logger.warning("Cannot validate summary: OpenAI client not available")
             return {"valid": True, "issues": []}
@@ -368,29 +361,29 @@ class WebExtractor:
         try:
             # Create a validation prompt
             validation_prompt = f"""
-    Your task is to verify if the summary below contains ONLY information that is explicitly stated in the original content.
+Your task is to verify if the summary below contains ONLY information that is explicitly stated in the original content.
 
-    Summary to validate:
-    {summary}
+Summary to validate:
+{summary}
 
-    Original content:
-    {original_content}
+Original content:
+{original_content}
 
-    Check for these issues:
-    1. Hallucinations - information in the summary not present in the original
-    2. Misrepresentations - information that distorts what's in the original
-    3. Omissions of critical context that change meaning
+Check for these issues:
+1. Hallucinations - information in the summary not present in the original
+2. Misrepresentations - information that distorts what's in the original
+3. Omissions of critical context that change meaning
 
-    Return a JSON object with the following structure:
-    {{
-    "valid": true/false,
-    "issues": ["specific issue 1", "specific issue 2", ...],
-    "explanation": "Brief explanation of validation result"
-    }}
-    """
+Return a JSON object with the following structure:
+{{
+"valid": true/false,
+"issues": ["specific issue 1", "specific issue 2", ...],
+"explanation": "Brief explanation of validation result"
+}}
+"""
 
             # Make API call for validation
-            response = client.chat.completions.create(
+            response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "user", "content": validation_prompt}
@@ -477,19 +470,20 @@ class WebExtractor:
         
         return min(1.0, score)
 
+# Standalone function that Analysis class can use
 def get_openai_client():
-        """Get or initialize OpenAI client."""
-        try:
-            from openai import OpenAI
-            from dotenv import load_dotenv
-            import os
-            
-            load_dotenv()
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            if not openai_api_key:
-                return None
-            
-            return OpenAI(api_key=openai_api_key)
-        except Exception as e:
-            logger.error(f"Error initializing OpenAI client: {str(e)}")
+    """Get or initialize OpenAI client."""
+    try:
+        from openai import OpenAI
+        from dotenv import load_dotenv
+        import os
+        
+        load_dotenv()
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
             return None
+        
+        return OpenAI(api_key=openai_api_key)
+    except Exception as e:
+        logger.error(f"Error initializing OpenAI client: {str(e)}")
+        return None
