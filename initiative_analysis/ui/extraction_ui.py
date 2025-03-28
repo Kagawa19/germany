@@ -89,12 +89,12 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     try:
                         # Database operations
                         engine = get_sqlalchemy_engine()
-                        existing_urls_query = text("SELECT link FROM content_sources")
-                        existing_urls = set(pd.read_sql(existing_urls_query, engine)['link'])
+                        existing_urls_query = text("SELECT url FROM content_sources")
+                        existing_urls = set(pd.read_sql(existing_urls_query, engine)['url'])
 
                         # Filter out duplicate URLs
                         original_count = len(results["results"])
-                        results["results"] = [r for r in results["results"] if r.get("link") not in existing_urls]
+                        results["results"] = [r for r in results["results"] if r.get("url") not in existing_urls]
                         filtered_count = original_count - len(results["results"])
 
                         if filtered_count > 0:
@@ -121,7 +121,7 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                             try:
                                 engine = get_sqlalchemy_engine()
                                 ids_str = ','.join(str(id) for id in stored_ids)
-                                query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment, language, initiative FROM content_sources WHERE id IN ({ids_str})")
+                                query = text(f"SELECT id, url, title, publication_date, content_summary as summary, language, source_type FROM content_sources WHERE id IN ({ids_str})")
                                 saved_df = pd.read_sql(query, engine)
 
                                 if not saved_df.empty:

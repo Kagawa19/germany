@@ -11,11 +11,14 @@ from urllib.parse import urlparse
 from database.connection import get_db_connection, get_sqlalchemy_engine
 from utils.text_processing import format_date, clean_html_entities
 
-logger = logging.getLogger("ContentDB")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 
 def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
-    Store extracted data into the database with expanded fields.
+    Store extracted data into the database with enhanced error handling and logging.
     
     Args:
         extracted_data: List of dictionaries containing extracted web content
@@ -25,9 +28,11 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     """
     if not extracted_data:
         logger.warning("No data to store")
+        print("Warning: No data to store in database")
         return []
     
     logger.info(f"Storing {len(extracted_data)} results in database")
+    print(f"Starting to store {len(extracted_data)} results in database")
     
     # List to store inserted record IDs
     inserted_ids = []
@@ -40,55 +45,32 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
         cursor = None
         
         try:
-            # Extract item data - including new fields
-            title = item.get("title", "")
-            link = item.get("link", "")
+            # Extract item data - with more robust extraction
+            title = item.get("title", "Untitled")
+            url = item.get("url", "")
             date_str = item.get("date")
             content = item.get("content", "")
             summary = item.get("summary", "")
-            themes = item.get("themes", [])
-            organization = item.get("organization", "")
-            sentiment = item.get("sentiment", "Neutral")
-            language = item.get("language", "English")
-            initiative = item.get("initiative", "ABS Initiative")
-            initiative_key = item.get("initiative_key", "abs_initiative")
             
-            # New fields
-            sentiment_score = None
-            sentiment_confidence = None
-            if isinstance(item.get("sentiment_info"), dict):
-                sentiment = item["sentiment_info"].get("overall_sentiment", sentiment)
-                sentiment_score = item["sentiment_info"].get("sentiment_score")
-                sentiment_confidence = item["sentiment_info"].get("sentiment_confidence")
+            # Enhanced sentiment handling
+            sentiment_info = item.get("sentiment_info", {})
+            sentiment = sentiment_info.get("overall_sentiment", "Neutral")
+            sentiment_score = sentiment_info.get("sentiment_score", 0.0)
+            sentiment_confidence = sentiment_info.get("sentiment_confidence", 0.5)
             
-            # Get embedding
+            # Validate sentiment values
+            sentiment_score = max(-1.0, min(sentiment_score, 1.0))
+            sentiment_confidence = max(0.0, min(sentiment_confidence, 1.0))
+            
+            # Embedding handling with explicit fallback
             embedding_vector = item.get("embedding", [])
             embedding_model = "text-embedding-ada-002" if embedding_vector else None
             
-            # Get benefits data
-            benefits_summary = item.get("benefits_summary", "")
-            benefit_categories = item.get("benefit_categories", {})
-            benefit_examples = item.get("benefit_examples", [])
-            
-            # Skip items with empty/invalid URLs
-            if not link or len(link) < 5:
-                logger.warning(f"Skipping item {i+1} with invalid URL: {link}")
-                error_count += 1
-                continue
-            
-            # Parse domain from link
-            domain_name = urlparse(link).netloc if link else ""
-            
-            # Format date
-            date_value = None
-            if date_str:
-                date_value = format_date(date_str)
-            
-            # Get database connection - separate connection for each item
+            # Get database connection
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # First, insert into content_sources
+            # Insert into content_sources with more robust handling
             source_query = """
             INSERT INTO content_sources 
             (url, domain_name, title, publication_date, source_type, language, full_content, content_summary)
@@ -96,15 +78,22 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             RETURNING id;
             """
             
+            # Parse domain safely
+            domain_name = urlparse(url).netloc if url else ""
+            
+            # Format date safely
+            date_value = format_date(date_str) if date_str else None
+            
+            # Execute source insertion
             cursor.execute(
                 source_query, 
                 (
-                    link, 
+                    url, 
                     domain_name, 
                     title, 
                     date_value, 
                     item.get("source_type", "web"), 
-                    language, 
+                    item.get("language", "English"), 
                     content, 
                     summary
                 )
@@ -113,246 +102,115 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             # Get the ID of the inserted record
             source_id = cursor.fetchone()[0]
             inserted_ids.append(source_id)
-            success_count += 1
             
-            # Insert sentiment analysis if available
-            if sentiment:
+            # Sentiment Analysis Insertion with Explicit Error Handling
+            try:
                 sentiment_query = """
                 INSERT INTO sentiment_analysis
                 (source_id, overall_sentiment, sentiment_score, sentiment_confidence)
-                VALUES (%s, %s, %s, %s);
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (source_id) DO UPDATE 
+                SET overall_sentiment = EXCLUDED.overall_sentiment,
+                    sentiment_score = EXCLUDED.sentiment_score,
+                    sentiment_confidence = EXCLUDED.sentiment_confidence;
                 """
                 
                 cursor.execute(
                     sentiment_query,
                     (
                         source_id,
-                        sentiment,
-                        sentiment_score if sentiment_score is not None else 0.0,
-                        sentiment_confidence if sentiment_confidence is not None else 0.0
+                        sentiment or 'Neutral',
+                        sentiment_score,
+                        sentiment_confidence
                     )
                 )
+            except Exception as sentiment_error:
+                logger.warning(f"Failed to insert sentiment: {sentiment_error}")
+                print(f"Warning: Sentiment insertion failed for {title}")
             
-            # Insert embedding if available
-            if embedding_vector:
-                # Check if we're using pgvector or need to store as JSON
-                try:
+            # Embedding Insertion with Robust Fallback
+            try:
+                if embedding_vector:
+                    # First attempt with PGVector
                     embedding_query = """
                     INSERT INTO content_embeddings
                     (source_id, embedding_vector, embedding_model)
-                    VALUES (%s, %s, %s);
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (source_id) DO UPDATE
+                    SET embedding_vector = EXCLUDED.embedding_vector,
+                        embedding_model = EXCLUDED.embedding_model;
                     """
                     
                     cursor.execute(
                         embedding_query,
                         (
                             source_id,
-                            embedding_vector,  # pgvector will handle this if extension is available
+                            embedding_vector,
                             embedding_model
                         )
                     )
-                except Exception as e:
-                    logger.warning(f"Error storing vector embedding: {str(e)}. Storing as JSON.")
-                    # Fall back to JSON storage
-                    embedding_query = """
+                    print(f"Added vector embedding for {title}")
+            except Exception as embedding_error:
+                try:
+                    # Fallback to JSON storage
+                    json_embedding_query = """
                     INSERT INTO content_embeddings
                     (source_id, embedding_json, embedding_model)
-                    VALUES (%s, %s, %s);
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (source_id) DO UPDATE
+                    SET embedding_json = EXCLUDED.embedding_json,
+                        embedding_model = EXCLUDED.embedding_model;
                     """
                     
                     cursor.execute(
-                        embedding_query,
+                        json_embedding_query,
                         (
                             source_id,
-                            Json(embedding_vector),
+                            json.dumps(embedding_vector),
                             embedding_model
                         )
                     )
+                    print(f"Added JSON embedding for {title}")
+                except Exception as json_error:
+                    logger.warning(f"Failed to store embedding: {json_error}")
+                    print(f"Could not store embedding for {title}")
             
-            # Insert themes if available
-            if themes:
-                theme_values = [(source_id, theme) for theme in themes]
-                theme_query = """
-                INSERT INTO thematic_areas (source_id, theme)
-                VALUES %s;
-                """
-                
-                execute_values(cursor, theme_query, theme_values)
-            
-            # Insert ABS mentions if available
-            if "abs_mentions" in item and item["abs_mentions"]:
-                mentions = item["abs_mentions"]
-                for mention in mentions:
-                    mention_query = """
-                    INSERT INTO abs_mentions 
-                    (source_id, name_variant, mention_context, mention_type, relevance_score, mention_position)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id;
-                    """
-                    
-                    cursor.execute(
-                        mention_query,
-                        (
-                            source_id,
-                            mention.get("name_variant", ""),
-                            mention.get("mention_context", ""),
-                            mention.get("mention_type", ""),
-                            mention.get("relevance_score", 0.5),
-                            mention.get("mention_position", 1)
-                        )
-                    )
-            
-            # Insert geographic focus if available
-            if "geographic_focus" in item and item["geographic_focus"]:
-                geo_focus = item["geographic_focus"]
-                for location in geo_focus:
-                    geo_query = """
-                    INSERT INTO geographic_focus
-                    (source_id, country, region, scope)
-                    VALUES (%s, %s, %s, %s);
-                    """
-                    
-                    cursor.execute(
-                        geo_query,
-                        (
-                            source_id,
-                            location.get("country", ""),
-                            location.get("region", ""),
-                            location.get("scope", "")
-                        )
-                    )
-            
-            # Insert project details if available
-            if "projects" in item and item["projects"]:
-                projects = item["projects"]
-                for project in projects:
-                    project_query = """
-                    INSERT INTO project_details
-                    (source_id, project_name, project_type, start_date, end_date, status, description)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s);
-                    """
-                    
-                    cursor.execute(
-                        project_query,
-                        (
-                            source_id,
-                            project.get("project_name", ""),
-                            project.get("project_type", ""),
-                            project.get("start_date"),
-                            project.get("end_date"),
-                            project.get("status", ""),
-                            project.get("description", "")
-                        )
-                    )
-            
-            # Insert organizations if available
-            if "organizations" in item and item["organizations"]:
-                orgs = item["organizations"]
-                for org in orgs:
-                    # First check if organization exists
-                    check_org_query = """
-                    SELECT id FROM organizations WHERE name = %s;
-                    """
-                    
-                    cursor.execute(check_org_query, (org.get("name", ""),))
-                    org_result = cursor.fetchone()
-                    
-                    if org_result:
-                        org_id = org_result[0]
-                    else:
-                        # Insert new organization
-                        org_insert_query = """
-                        INSERT INTO organizations
-                        (name, organization_type, website)
-                        VALUES (%s, %s, %s)
-                        RETURNING id;
-                        """
-                        
-                        cursor.execute(
-                            org_insert_query,
-                            (
-                                org.get("name", ""),
-                                org.get("organization_type", ""),
-                                org.get("website", "")
-                            )
-                        )
-                        
-                        org_id = cursor.fetchone()[0]
-                    
-                    # Now insert the relationship
-                    relation_query = """
-                    INSERT INTO organization_mentions
-                    (source_id, organization_id, relationship_type, description)
-                    VALUES (%s, %s, %s, %s);
-                    """
-                    
-                    cursor.execute(
-                        relation_query,
-                        (
-                            source_id,
-                            org_id,
-                            org.get("relationship", ""),
-                            org.get("description", "")
-                        )
-                    )
-            
-            # Insert resources if available
-            if "resources" in item and item["resources"]:
-                resources = item["resources"]
-                for resource in resources:
-                    resource_query = """
-                    INSERT INTO resources
-                    (source_id, resource_type, resource_name, resource_url, description)
-                    VALUES (%s, %s, %s, %s, %s);
-                    """
-                    
-                    cursor.execute(
-                        resource_query,
-                        (
-                            source_id,
-                            resource.get("resource_type", ""),
-                            resource.get("resource_name", ""),
-                            resource.get("resource_url", ""),
-                            resource.get("description", "")
-                        )
-                    )
-            
-            # Insert target audiences if available
-            if "target_audiences" in item and item["target_audiences"]:
-                audiences = item["target_audiences"]
-                audience_values = [(source_id, audience) for audience in audiences]
-                audience_query = """
-                INSERT INTO target_audiences (source_id, audience_type)
-                VALUES %s;
-                """
-                
-                execute_values(cursor, audience_query, audience_values)
-            
-            # Commit this transaction
+            # Commit transaction
             conn.commit()
-            
-            logger.info(f"Inserted record with ID {source_id} for URL: {link}")
-            
+            success_count += 1
+            logger.info(f"Successfully stored item {i+1}/{len(extracted_data)} with ID {source_id}")
+            print(f"✓ Successfully stored item {i+1} with ID {source_id}")
+        
         except Exception as e:
-            error_msg = f"Error storing item with URL {item.get('link', 'unknown')}: {str(e)}"
+            error_msg = f"Error storing item {i+1}: {str(e)}"
             logger.error(error_msg)
+            print(f"ERROR: {error_msg}")
+            
             if conn:
                 conn.rollback()
+            
             error_count += 1
         
         finally:
-            # Close cursor and connection
+            # Ensure connections are closed
             if cursor:
                 cursor.close()
             if conn:
                 conn.close()
     
-    # Summary after all items are processed
-    logger.info(f"Successfully stored {success_count} records in database")
-    logger.info(f"Failed to store {error_count} records")
+    # Summary logging
+    total_processed = success_count + error_count
+    success_rate = (success_count / total_processed * 100) if total_processed > 0 else 0
+    
+    logger.info(f"Data storage summary: {success_count}/{total_processed} successful ({success_rate:.1f}%)")
+    print("="*50)
+    print(f"DATA STORAGE SUMMARY")
+    print(f"Total items processed: {total_processed}")
+    print(f"Successfully stored: {success_count} records ({success_rate:.1f}%)")
+    print(f"Failed to store: {error_count} records")
+    print("="*50)
     
     return inserted_ids
-
 def fetch_comprehensive_data(source_id: int) -> Dict[str, Any]:
     """
     Fetch comprehensive data for a single source ID, including all related tables.

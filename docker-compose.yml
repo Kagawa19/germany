@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   app:
     build: .
@@ -27,12 +26,13 @@ services:
     command: ["python", "-Xfrozen_modules=off", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "streamlit", "run", "initiative_analysis/app.py"]
 
   postgres:
-    image: postgres:14-alpine
+    image: pgvector/pgvector:pg14
     container_name: postgres-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=appdb
+      - POSTGRES_EXTENSIONS=vector
     ports:
       - "5432:5432"
     volumes:
