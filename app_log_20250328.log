@@ -15299,3 +15299,11 @@ DETAIL:  Key (url)=() already exists.
 2025-03-28 20:00:19,741 - database.operations - INFO - Fetched 1 rows from database
 2025-03-28 20:00:19,750 - database.operations - INFO - Fetching comprehensive data for source ID: 1
 2025-03-28 20:00:19,770 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 20:01:23,625 - ConnectionDB - INFO - Creating database connection
+2025-03-28 20:01:23,627 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 20:01:23,664 - database.operations - INFO - Fetching data from database (limit: 500, filters: {})
+2025-03-28 20:01:23,665 - ConnectionDB - INFO - Creating database connection
+2025-03-28 20:01:23,666 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 20:01:24,340 - database.operations - INFO - Fetched 1 rows from database
+2025-03-28 20:01:24,348 - database.operations - INFO - Fetching comprehensive data for source ID: 1
+2025-03-28 20:01:24,366 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
