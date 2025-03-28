@@ -2905,3 +2905,47 @@ LINE 2:                     INSERT INTO content_embeddings
 
 2025-03-28 17:05:34,743 - ContentDB - INFO - Successfully stored 1 records in database
 2025-03-28 17:05:34,744 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:05:37,799 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-03-28 17:05:37,808 - analysis - INFO - Extracted benefits summary (1856 chars)
+2025-03-28 17:05:37,809 - analysis - ERROR - Error extracting benefit categories: '\n  "environmental_benefits"'
+2025-03-28 17:05:37,811 - extraction.content - INFO - Successfully got embedding vector for https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:05:37,812 - extraction.content - INFO - Identified themes for https://www.cbd.int/abs/awareness-raising: ['Awareness-raising', 'Genetic resources', 'Traditional knowledge', 'Access and benefit-sharing', 'Nagoya Protocol']
+2025-03-28 17:05:37,813 - extraction.content - INFO - Sentiment analysis for https://www.cbd.int/abs/awareness-raising: Neutral
+2025-03-28 17:05:37,814 - extraction.content - INFO - Got summary from analysis for https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:05:37,815 - extraction.content - INFO - Found 0 ABS Initiative mentions in https://www.cbd.int/abs/awareness-raising
+2025-03-28 17:05:37,815 - extraction.content - INFO - Found geographic focus data for https://www.cbd.int/abs/awareness-raising: 0 locations
+2025-03-28 17:05:37,815 - extraction.content - INFO - Found project data for https://www.cbd.int/abs/awareness-raising: 0 projects
+2025-03-28 17:05:37,817 - extraction.content - INFO - Found resource data for https://www.cbd.int/abs/awareness-raising: 0 resources
+2025-03-28 17:05:37,817 - extraction.content - INFO - Found target audience data for https://www.cbd.int/abs/awareness-raising: 1 audiences
+2025-03-28 17:05:37,818 - extraction.content - INFO - Found benefits data for https://www.cbd.int/abs/awareness-raising: 0 examples
+2025-03-28 17:05:37,819 - extraction.content - INFO - Successfully processed https://www.cbd.int/abs/awareness-raising with comprehensive metadata
+2025-03-28 17:05:37,820 - ContentDB - INFO - Storing 1 results in database
+2025-03-28 17:05:37,851 - ConnectionDB - INFO - Successfully connected to database: appdb on postgres
+2025-03-28 17:05:37,860 - ContentDB - WARNING - Error storing vector embedding: relation "content_embeddings" does not exist
+LINE 2:                     INSERT INTO content_embeddings
+                                        ^
+. Storing as JSON.
+2025-03-28 17:05:37,865 - ContentDB - ERROR - Error storing item with URL https://www.cbd.int/abs/awareness-raising: current transaction is aborted, commands ignored until end of transaction block
+
+2025-03-28 17:05:37,867 - ContentDB - INFO - Successfully stored 1 records in database
+2025-03-28 17:05:37,868 - ContentDB - INFO - Failed to store 1 records
+2025-03-28 17:05:38,868 - extraction.extractor - INFO - Web content extraction completed in 39.43 seconds. Status: success. Successfully found 10 new results
+2025-03-28 17:05:38,873 - WebExtractor - INFO - Web extractor completed successfully in 39.43 seconds with 10 results
+2025-03-28 17:05:38,875 - root - INFO - Web extraction successful. Found 10 results in English
+2025-03-28 17:05:38,883 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:05:38,886 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:05:38,907 - root - ERROR - Error handling extraction results: (psycopg2.errors.UndefinedTable) relation "content_data" does not exist
+LINE 1: SELECT link FROM content_data
+                         ^
+
+[SQL: SELECT link FROM content_data]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-03-28 17:05:38,912 - ContentDB - INFO - Fetching data from database (limit: 100, filters: None)
+2025-03-28 17:05:38,914 - ConnectionDB - INFO - Creating database connection
+2025-03-28 17:05:38,916 - ConnectionDB - INFO - Database connection created successfully
+2025-03-28 17:05:38,946 - ContentDB - ERROR - Error fetching data: (psycopg2.errors.UndefinedTable) relation "v_abs_content_analysis" does not exist
+LINE 1: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_...
+                      ^
+
+[SQL: SELECT * FROM v_abs_content_analysis ORDER BY max_relevance_score DESC, publication_date DESC LIMIT 100]
+(Background on this error at: https://sqlalche.me/e/20/f405)

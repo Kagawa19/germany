@@ -89,7 +89,7 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     try:
                         # Database operations
                         engine = get_sqlalchemy_engine()
-                        existing_urls_query = text("SELECT link FROM content_data")
+                        existing_urls_query = text("SELECT link FROM content_sources")
                         existing_urls = set(pd.read_sql(existing_urls_query, engine)['link'])
 
                         # Filter out duplicate URLs
@@ -121,7 +121,7 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                             try:
                                 engine = get_sqlalchemy_engine()
                                 ids_str = ','.join(str(id) for id in stored_ids)
-                                query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment, language, initiative FROM content_data WHERE id IN ({ids_str})")
+                                query = text(f"SELECT id, link, title, date, summary, themes, organization, sentiment, language, initiative FROM content_sources WHERE id IN ({ids_str})")
                                 saved_df = pd.read_sql(query, engine)
 
                                 if not saved_df.empty:
@@ -199,38 +199,38 @@ def initialization_page():
     
     # Create a code block with the SQL schema
     sql_schema = """
-    -- Add new columns to the content_data table if they don't exist
+    -- Add new columns to the content_sources table if they don't exist
     DO $
     BEGIN
         -- Check if initiative column exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='content_data' AND column_name='initiative') THEN
-            ALTER TABLE content_data ADD COLUMN initiative VARCHAR(100);
+                      WHERE table_name='content_sources' AND column_name='initiative') THEN
+            ALTER TABLE content_sources ADD COLUMN initiative VARCHAR(100);
         END IF;
 
         -- Check if initiative_key column exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='content_data' AND column_name='initiative_key') THEN
-            ALTER TABLE content_data ADD COLUMN initiative_key VARCHAR(50);
+                      WHERE table_name='content_sources' AND column_name='initiative_key') THEN
+            ALTER TABLE content_sources ADD COLUMN initiative_key VARCHAR(50);
         END IF;
 
         -- Check if benefit_categories column exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='content_data' AND column_name='benefit_categories') THEN
-            ALTER TABLE content_data ADD COLUMN benefit_categories JSONB;
+                      WHERE table_name='content_sources' AND column_name='benefit_categories') THEN
+            ALTER TABLE content_sources ADD COLUMN benefit_categories JSONB;
         END IF;
 
         -- Check if benefit_examples column exists
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='content_data' AND column_name='benefit_examples') THEN
-            ALTER TABLE content_data ADD COLUMN benefit_examples JSONB;
+                      WHERE table_name='content_sources' AND column_name='benefit_examples') THEN
+            ALTER TABLE content_sources ADD COLUMN benefit_examples JSONB;
         END IF;
     END
     $;
 
     -- Create indexes for new columns
-    CREATE INDEX IF NOT EXISTS idx_content_data_initiative ON content_data (initiative);
-    CREATE INDEX IF NOT EXISTS idx_content_data_initiative_key ON content_data (initiative_key);
+    CREATE INDEX IF NOT EXISTS idx_content_sources_initiative ON content_sources (initiative);
+    CREATE INDEX IF NOT EXISTS idx_content_sources_initiative_key ON content_sources (initiative_key);
     """
     
     st.code(sql_schema, language="sql")
@@ -256,11 +256,11 @@ def initialization_page():
         engine = get_sqlalchemy_engine()
         
         with engine.connect() as conn:
-            # Check if content_data table exists
+            # Check if content_sources table exists
             table_exists_query = text("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables 
-                    WHERE table_name = 'content_data'
+                    WHERE table_name = 'content_sources'
                 );
             """)
             table_exists = conn.execute(table_exists_query).scalar_one()
@@ -271,7 +271,7 @@ def initialization_page():
                 # Check for initiative columns
                 initiative_col_query = text("""
                     SELECT column_name FROM information_schema.columns 
-                    WHERE table_name = 'content_data' AND 
+                    WHERE table_name = 'content_sources' AND 
                     column_name IN ('initiative', 'initiative_key', 'benefit_categories', 'benefit_examples');
                 """)
                 
@@ -298,14 +298,14 @@ def initialization_page():
                     st.write("❌ Benefit examples column missing")
                 
                 # Count records
-                count_query = text("SELECT COUNT(*) FROM content_data")
+                count_query = text("SELECT COUNT(*) FROM content_sources")
                 record_count = conn.execute(count_query).scalar_one()
                 st.write(f"📊 Total records: {record_count}")
                 
                 # Count initiatives
                 initiative_count_query = text("""
                     SELECT COUNT(DISTINCT initiative) 
-                    FROM content_data 
+                    FROM content_sources 
                     WHERE initiative IS NOT NULL
                 """)
                 initiative_count = conn.execute(initiative_count_query).scalar_one()
