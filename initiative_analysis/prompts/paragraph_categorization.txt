@@ -1,13 +1,15 @@
+Here is the text with an additional curly brace added everywhere there was already a single curly brace:
+
 Analyze this paragraph to determine which benefit category it best fits into, and how strongly it represents that category.
 
-Paragraph:
-{paragraph}
+Paragraph: 
+{{paragraph}}
 
 Categories:
-{categories}
+{{categories}}
 
 Return a JSON object with:
-{
+{{
   "category": "most appropriate category",
-  "score": 0.0-1.0
-}
+  "score": 0.0-1.0  
+}}

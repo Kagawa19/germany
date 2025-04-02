@@ -1,6 +1,6 @@
 Identify all specific mentions of the ABS Initiative or its variants in the text.
 
-Text to analyze:
+Text to analyze: 
 {content}
 
 Look for these name variants and their contexts:
@@ -18,14 +18,14 @@ For each mention:
 4. Assess the relevance/importance of this mention in the document (scale 0.0-1.0)
 
 Return in JSON format with the following structure:
-{
+{{
   "mentions": [
-    {
+    {{
       "variant": "exact name variant",
       "context": "surrounding text",
       "type": "mention type",
       "relevance": 0.0-1.0
-    },
+    }},
     ...
   ]
-}
+}}

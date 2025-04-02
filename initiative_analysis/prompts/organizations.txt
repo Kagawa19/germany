@@ -1,25 +1,23 @@
 Extract all organizations mentioned in the text, particularly those related to the ABS Initiative or its projects.
-
-Text excerpt:
-{excerpt}
-
+Text excerpt: {{excerpt}}
 For each organization:
-1. Identify its name
-2. Determine its type (e.g., government, NGO, international organization, private sector)
-3. Identify its relationship to the ABS Initiative (partner, funder, beneficiary, implementer)
-4. Extract any website if mentioned
-5. Note any description of its role or activities
+
+Identify its name
+Determine its type (e.g., government, NGO, international organization, private sector)
+Identify its relationship to the ABS Initiative (partner, funder, beneficiary, implementer)
+Extract any website if mentioned
+Note any description of its role or activities
 
 Return in JSON format with the following structure:
-{
-  "organizations": [
-    {
-      "name": "organization name",
-      "type": "organization type",
-      "relationship": "relationship to ABS Initiative",
-      "website": "website if available",
-      "description": "brief description of role"
-    },
-    ...
-  ]
-}
+{{
+"organizations": [
+{{
+"name": "organization name",
+"type": "organization type",
+"relationship": "relationship to ABS Initiative",
+"website": "website if available",
+"description": "brief description of role"
+}},
+...
+]
+}}

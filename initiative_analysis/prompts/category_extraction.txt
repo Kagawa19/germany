@@ -1,18 +1,16 @@
 Analyze the text and categorize benefits mentioned into these categories:
-- environmental_benefits
-- economic_benefits
-- social_benefits
-- strategic_benefits
+
+environmental_benefits
+economic_benefits
+social_benefits
+strategic_benefits
 
 Assess how strongly each category is represented in the text on a scale of 0.0-1.0.
-
-Text:
-{excerpt}
-
+Text: {{excerpt}}
 Return only a JSON object with category scores like:
-{
-  "environmental_benefits": 0.0-1.0,
-  "economic_benefits": 0.0-1.0,
-  "social_benefits": 0.0-1.0,
-  "strategic_benefits": 0.0-1.0
-}
+{{
+"environmental_benefits": 0.0-1.0,
+"economic_benefits": 0.0-1.0,
+"social_benefits": 0.0-1.0,
+"strategic_benefits": 0.0-1.0
+}}
