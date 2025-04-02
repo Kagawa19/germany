@@ -62,7 +62,352 @@ class Analysis:
         except Exception as e:
             logger.error(f"Error loading prompt {prompt_name}: {str(e)}")
             return ""
+        
+    def _extract_with_ai(self, prompt_name: str, content: str, expected_key: str, 
+                  default_value=None, truncate_length: int = 3000) -> Any:
+        """
+        Generic method to extract information using OpenAI with robust error handling.
+        
+        Args:
+            prompt_name: Name of the prompt to use
+            content: Content to analyze
+            expected_key: The expected key in the API response
+            default_value: Default value to return if extraction fails
+            truncate_length: Maximum content length to send
+            
+        Returns:
+            Extracted information or default value if failed
+        """
+        if not content or len(content) < 100:
+            return default_value if default_value is not None else []
+        
+        if not self.openai_client:
+            logger.error(f"OpenAI client not available for {prompt_name} extraction")
+            return default_value if default_value is not None else []
+        
+        try:
+            # Load prompt
+            prompt = self._load_prompt(prompt_name)
+            if not prompt:
+                logger.error(f"{prompt_name} prompt not available")
+                return default_value if default_value is not None else []
+            
+            # Truncate content to save tokens
+            excerpt = content[:truncate_length] + ("..." if len(content) > truncate_length else "")
+            
+            # Format the prompt - handle both with content and excerpt
+            if "{content}" in prompt:
+                formatted_prompt = prompt.format(content=excerpt)
+            elif "{excerpt}" in prompt:
+                formatted_prompt = prompt.format(excerpt=excerpt)
+            else:
+                # Default to using excerpt
+                formatted_prompt = prompt + f"\n\nHere's the content to analyze:\n{excerpt}"
+            
+            # Make API call with explicit JSON format
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that always responds with valid JSON."},
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=1500
+            )
+            
+            # Get the response content
+            result_text = response.choices[0].message.content.strip()
+            
+            # Debug log the raw response
+            logger.debug(f"Raw API response for {prompt_name}: {result_text}")
+            
+            # Try to parse the JSON with multiple fallbacks
+            result = None
+            
+            # First attempt - direct parsing
+            try:
+                result = json.loads(result_text)
+            except json.JSONDecodeError:
+                logger.warning(f"Initial JSON parsing failed for {prompt_name}")
+                
+                try:
+                    # Second attempt - fix common formatting issues
+                    clean_text = result_text.replace('\n', ' ').replace('\r', ' ')
+                    result = json.loads(clean_text)
+                except json.JSONDecodeError:
+                    logger.warning(f"Second JSON parsing attempt failed for {prompt_name}")
+                    
+                    try:
+                        # Third attempt - try to extract JSON part if there's text before/after
+                        if '{' in result_text and '}' in result_text:
+                            json_part = result_text[result_text.find('{'):result_text.rfind('}')+1]
+                            result = json.loads(json_part)
+                    except json.JSONDecodeError:
+                        logger.error(f"All JSON parsing attempts failed for {prompt_name}")
+                        return default_value if default_value is not None else []
+            
+            # If we got a result but it doesn't have the expected key
+            if result and expected_key not in result:
+                logger.warning(f"Response doesn't contain expected key '{expected_key}' for {prompt_name}")
+                
+                # Check if the whole response is the intended value (without the expected key wrapper)
+                if isinstance(result, list) and default_value is None:
+                    logger.info(f"Using direct list response for {prompt_name}")
+                    return result
+                elif isinstance(result, dict) and len(result) > 0:
+                    # If there's only one key, try using that instead
+                    if len(result) == 1:
+                        only_key = list(result.keys())[0]
+                        logger.info(f"Using alternative key '{only_key}' instead of '{expected_key}' for {prompt_name}")
+                        return result[only_key]
+                
+                # Return default as fallback
+                return default_value if default_value is not None else []
+            
+            # If all goes well, return the expected data
+            if result and expected_key in result:
+                return result[expected_key]
+            
+            # Final fallback
+            return default_value if default_value is not None else []
+            
+        except Exception as e:
+            logger.error(f"Error in {prompt_name} extraction: {str(e)}")
+            return default_value if default_value is not None else []
+        
     
+    def extract_geographic_focus(self, content: str) -> List[Dict[str, str]]:
+        """
+        Extract geographic focus information from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with country, region, and scope information
+        """
+        if not content or len(content) < 100:
+            return []
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for geographic focus extraction")
+            return []
+        
+        try:
+            # Load geographic focus prompt
+            prompt = self._load_prompt("geographic_focus")
+            if not prompt:
+                logger.error("Geographic focus prompt not available")
+                return []
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(excerpt=excerpt)
+            
+            # Make API call with explicit JSON response format
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=1000
+            )
+            
+            # Get the response content
+            result_text = response.choices[0].message.content.strip()
+            
+            # Ensure proper JSON format before parsing
+            if not result_text.startswith('{'):
+                result_text = '{' + result_text.split('{', 1)[1]
+            
+            # Parse the result, handling potential JSON errors
+            try:
+                result = json.loads(result_text)
+            except json.JSONDecodeError as json_err:
+                logger.error(f"JSON parsing error: {str(json_err)}")
+                logger.debug(f"Problematic JSON: {result_text}")
+                # Try to fix common JSON issues
+                result_text = result_text.replace('\n', ' ').replace('\r', '')
+                # Try again with cleaned text
+                try:
+                    result = json.loads(result_text)
+                except:
+                    # Last resort fallback
+                    return []
+            
+            # Convert to expected format
+            geographic_data = []
+            if "locations" in result and isinstance(result["locations"], list):
+                for location in result["locations"]:
+                    geo_item = {
+                        "country": location.get("country", ""),
+                        "region": location.get("region", ""),
+                        "scope": location.get("scope", "")
+                    }
+                    geographic_data.append(geo_item)
+            
+            return geographic_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting geographic focus: {str(e)}")
+            return []
+
+    
+    def extract_organizations(self, content: str) -> List[Dict[str, str]]:
+        """
+        Extract organization information from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with organization information
+        """
+        if not content or len(content) < 100:
+            return []
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for organization extraction")
+            return []
+        
+        try:
+            # Load organizations prompt
+            prompt = self._load_prompt("organizations")
+            if not prompt:
+                logger.error("Organizations prompt not available")
+                return []
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(excerpt=excerpt)
+            
+            # Make API call with explicit JSON format
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=1000
+            )
+            
+            # Get the response content
+            result_text = response.choices[0].message.content.strip()
+            
+            # Ensure proper JSON format before parsing
+            if not result_text.startswith('{'):
+                result_text = '{' + result_text.split('{', 1)[1]
+            
+            # Parse the result with error handling
+            try:
+                result = json.loads(result_text)
+            except json.JSONDecodeError as json_err:
+                logger.error(f"JSON parsing error: {str(json_err)}")
+                logger.debug(f"Problematic JSON: {result_text}")
+                # Try to fix common JSON issues
+                result_text = result_text.replace('\n', ' ').replace('\r', '')
+                # Try again with cleaned text
+                try:
+                    result = json.loads(result_text)
+                except:
+                    # Last resort fallback
+                    return []
+            
+            # Convert to expected format
+            organizations = []
+            if "organizations" in result and isinstance(result["organizations"], list):
+                for org in result["organizations"]:
+                    org_item = {
+                        "name": org.get("name", ""),
+                        "organization_type": org.get("type", ""),
+                        "relationship": org.get("relationship", ""),
+                        "website": org.get("website", ""),
+                        "description": org.get("description", "")
+                    }
+                    organizations.append(org_item)
+            
+            return organizations
+            
+        except Exception as e:
+            logger.error(f"Error extracting organizations: {str(e)}")
+            return []
+
+    
+
+    def extract_abs_mentions(self, content: str) -> List[Dict[str, Any]]:
+        """
+        Extract specific mentions of ABS Initiative from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with mention information
+        """
+        mentions_data = self._extract_with_ai("abs_mentions", content, "mentions", [])
+        
+        # Process mentions data if successfully extracted
+        mentions = []
+        if isinstance(mentions_data, list):
+            for idx, mention in enumerate(mentions_data):
+                if not isinstance(mention, dict):
+                    continue
+                    
+                # Handle potential type conversion issues safely
+                try:
+                    relevance = mention.get("relevance", 0.5)
+                    if isinstance(relevance, str):
+                        relevance = float(relevance)
+                except:
+                    relevance = 0.5
+                    
+                mention_item = {
+                    "name_variant": mention.get("variant", ""),
+                    "mention_context": mention.get("context", ""),
+                    "mention_type": mention.get("type", ""),
+                    "relevance_score": relevance,
+                    "mention_position": idx + 1
+                }
+                mentions.append(mention_item)
+        
+        return mentions
+
+    def extract_geographic_focus(self, content: str) -> List[Dict[str, str]]:
+        """
+        Extract geographic focus information from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with country, region, and scope information
+        """
+        locations_data = self._extract_with_ai("geographic_focus", content, "locations", [])
+        
+        # Process geographic data if successfully extracted
+        geographic_data = []
+        if isinstance(locations_data, list):
+            for location in locations_data:
+                if not isinstance(location, dict):
+                    continue
+                    
+                geo_item = {
+                    "country": location.get("country", ""),
+                    "region": location.get("region", ""),
+                    "scope": location.get("scope", "")
+                }
+                geographic_data.append(geo_item)
+        
+        return geographic_data
+
     def analyze_sentiment(self, content: str) -> Dict[str, Any]:
         """
         Analyze sentiment using OpenAI API with prompt from file.
@@ -73,51 +418,160 @@ class Analysis:
         Returns:
             Dictionary with sentiment information
         """
-        if not content or len(content) < 100:
-            return {"overall_sentiment": "Neutral", "sentiment_score": 0.0, "sentiment_confidence": 0.0}
+        default_sentiment = {"overall_sentiment": "Neutral", "sentiment_score": 0.0, "sentiment_confidence": 0.0}
         
-        if not self.openai_client:
-            logger.error("OpenAI client not available for sentiment analysis")
-            return {"overall_sentiment": "Neutral", "sentiment_score": 0.0, "sentiment_confidence": 0.0}
+        # Get sentiment data with a special handler for direct sentiment
+        sentiment_data = self._extract_with_ai("sentiment", content, "sentiment", None)
         
-        try:
-            # Load sentiment prompt
-            prompt = self._load_prompt("sentiment")
-            if not prompt:
-                logger.error("Sentiment prompt not available")
-                return {"overall_sentiment": "Neutral", "sentiment_score": 0.0, "sentiment_confidence": 0.0}
-            
-            # Truncate content to save tokens
-            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(content=excerpt)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=150
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Return sentiment analysis with standard fields
+        # If we got back a string (direct sentiment value), construct a result
+        if isinstance(sentiment_data, str):
             return {
-                "overall_sentiment": result.get("sentiment", "Neutral"),
-                "sentiment_score": result.get("score", 0.0),
-                "sentiment_confidence": result.get("confidence", 0.0)
+                "overall_sentiment": sentiment_data,
+                "sentiment_score": 0.0,
+                "sentiment_confidence": 0.5
             }
+        
+        # If we got a dictionary, it might be the full result or might have nested data
+        if isinstance(sentiment_data, dict):
+            # Check if it already has the expected fields
+            if "overall_sentiment" in sentiment_data:
+                return sentiment_data
+                
+            # Otherwise, try to extract values from whatever keys are present
+            result = {}
             
-        except Exception as e:
-            logger.error(f"Error in sentiment analysis: {str(e)}")
-            return {"overall_sentiment": "Neutral", "sentiment_score": 0.0, "sentiment_confidence": 0.0}
-    
+            if "sentiment" in sentiment_data:
+                result["overall_sentiment"] = sentiment_data["sentiment"]
+            else:
+                result["overall_sentiment"] = "Neutral"
+                
+            try:
+                if "score" in sentiment_data:
+                    score = sentiment_data["score"]
+                    result["sentiment_score"] = float(score) if score is not None else 0.0
+                else:
+                    result["sentiment_score"] = 0.0
+            except:
+                result["sentiment_score"] = 0.0
+                
+            try:
+                if "confidence" in sentiment_data:
+                    confidence = sentiment_data["confidence"]
+                    result["sentiment_confidence"] = float(confidence) if confidence is not None else 0.5
+                else:
+                    result["sentiment_confidence"] = 0.5
+            except:
+                result["sentiment_confidence"] = 0.5
+                
+            return result
+        
+        # If result was None or some other unexpected type
+        return default_sentiment
+
+    def extract_organizations(self, content: str) -> List[Dict[str, str]]:
+        """
+        Extract organization information from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with organization information
+        """
+        orgs_data = self._extract_with_ai("organizations", content, "organizations", [])
+        
+        # Process organization data if successfully extracted
+        organizations = []
+        if isinstance(orgs_data, list):
+            for org in orgs_data:
+                if not isinstance(org, dict):
+                    continue
+                    
+                org_item = {
+                    "name": org.get("name", ""),
+                    "organization_type": org.get("type", ""),
+                    "relationship": org.get("relationship", ""),
+                    "website": org.get("website", ""),
+                    "description": org.get("description", "")
+                }
+                organizations.append(org_item)
+        
+        return organizations
+
+    def extract_resources(self, content: str) -> List[Dict[str, str]]:
+        """
+        Extract resources mentioned in the content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with resource information
+        """
+        resources_data = self._extract_with_ai("resources", content, "resources", [])
+        
+        # Process resource data if successfully extracted
+        resources = []
+        if isinstance(resources_data, list):
+            for resource in resources_data:
+                if not isinstance(resource, dict):
+                    continue
+                    
+                resource_item = {
+                    "resource_type": resource.get("type", ""),
+                    "resource_name": resource.get("name", ""),
+                    "resource_url": resource.get("url", ""),
+                    "description": resource.get("description", "")
+                }
+                resources.append(resource_item)
+        
+        return resources
+
+    def extract_project_details(self, content: str) -> List[Dict[str, Any]]:
+        """
+        Extract project details from content.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            List of dictionaries with project information
+        """
+        projects_data = self._extract_with_ai("project_details", content, "projects", [])
+        
+        # Process project data if successfully extracted
+        projects = []
+        if isinstance(projects_data, list):
+            for project in projects_data:
+                if not isinstance(project, dict):
+                    continue
+                    
+                # Convert dates to proper format if they exist
+                start_date = None
+                if "start_date" in project and project["start_date"]:
+                    try:
+                        start_date = datetime.strptime(project["start_date"], "%Y-%m-%d").date()
+                    except:
+                        pass
+                
+                end_date = None
+                if "end_date" in project and project["end_date"]:
+                    try:
+                        end_date = datetime.strptime(project["end_date"], "%Y-%m-%d").date()
+                    except:
+                        pass
+                
+                project_item = {
+                    "project_name": project.get("name", ""),
+                    "project_type": project.get("type", ""),
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "status": project.get("status", ""),
+                    "description": project.get("description", "")
+                }
+                projects.append(project_item)
+        
+        return projects
     def identify_themes(self, content: str) -> List[str]:
         """
         Identify themes in content using OpenAI with a prompt from file.
@@ -172,270 +626,12 @@ class Analysis:
             logger.error(f"Error identifying themes: {str(e)}")
             return []
     
-    def extract_geographic_focus(self, content: str) -> List[Dict[str, str]]:
-        """
-        Extract geographic focus information from content.
-        
-        Args:
-            content: Content text to analyze
-            
-        Returns:
-            List of dictionaries with country, region, and scope information
-        """
-        if not content or len(content) < 100:
-            return []
-        
-        if not self.openai_client:
-            logger.error("OpenAI client not available for geographic focus extraction")
-            return []
-        
-        try:
-            # Load geographic focus prompt
-            prompt = self._load_prompt("geographic_focus")
-            if not prompt:
-                logger.error("Geographic focus prompt not available")
-                return []
-            
-            # Truncate content to save tokens
-            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(excerpt=excerpt)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=1000
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Convert to expected format
-            geographic_data = []
-            if "locations" in result and isinstance(result["locations"], list):
-                for location in result["locations"]:
-                    geo_item = {
-                        "country": location.get("country", ""),
-                        "region": location.get("region", ""),
-                        "scope": location.get("scope", "")
-                    }
-                    geographic_data.append(geo_item)
-            
-            return geographic_data
-            
-        except Exception as e:
-            logger.error(f"Error extracting geographic focus: {str(e)}")
-            return []
     
-    def extract_project_details(self, content: str) -> List[Dict[str, Any]]:
-        """
-        Extract project details from content.
-        
-        Args:
-            content: Content text to analyze
-            
-        Returns:
-            List of dictionaries with project information
-        """
-        if not content or len(content) < 100:
-            return []
-        
-        if not self.openai_client:
-            logger.error("OpenAI client not available for project details extraction")
-            return []
-        
-        try:
-            # Load project details prompt
-            prompt = self._load_prompt("project_details")
-            if not prompt:
-                logger.error("Project details prompt not available")
-                return []
-            
-            # Truncate content to save tokens
-            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(excerpt=excerpt)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=1000
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Convert to expected format
-            projects = []
-            if "projects" in result and isinstance(result["projects"], list):
-                for project in result["projects"]:
-                    # Convert dates to proper format if they exist
-                    start_date = None
-                    if "start_date" in project and project["start_date"]:
-                        try:
-                            start_date = datetime.strptime(project["start_date"], "%Y-%m-%d").date()
-                        except:
-                            pass
-                    
-                    end_date = None
-                    if "end_date" in project and project["end_date"]:
-                        try:
-                            end_date = datetime.strptime(project["end_date"], "%Y-%m-%d").date()
-                        except:
-                            pass
-                    
-                    project_item = {
-                        "project_name": project.get("name", ""),
-                        "project_type": project.get("type", ""),
-                        "start_date": start_date,
-                        "end_date": end_date,
-                        "status": project.get("status", ""),
-                        "description": project.get("description", "")
-                    }
-                    projects.append(project_item)
-            
-            return projects
-            
-        except Exception as e:
-            logger.error(f"Error extracting project details: {str(e)}")
-            return []
     
-    def extract_organizations(self, content: str) -> List[Dict[str, str]]:
-        """
-        Extract organization information from content.
-        
-        Args:
-            content: Content text to analyze
-            
-        Returns:
-            List of dictionaries with organization information
-        """
-        if not content or len(content) < 100:
-            return []
-        
-        if not self.openai_client:
-            logger.error("OpenAI client not available for organization extraction")
-            return []
-        
-        try:
-            # Load organizations prompt
-            prompt = self._load_prompt("organizations")
-            if not prompt:
-                logger.error("Organizations prompt not available")
-                return []
-            
-            # Truncate content to save tokens
-            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(excerpt=excerpt)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=1000
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Convert to expected format
-            organizations = []
-            if "organizations" in result and isinstance(result["organizations"], list):
-                for org in result["organizations"]:
-                    org_item = {
-                        "name": org.get("name", ""),
-                        "organization_type": org.get("type", ""),
-                        "relationship": org.get("relationship", ""),
-                        "website": org.get("website", ""),
-                        "description": org.get("description", "")
-                    }
-                    organizations.append(org_item)
-            
-            return organizations
-            
-        except Exception as e:
-            logger.error(f"Error extracting organizations: {str(e)}")
-            return []
     
-    def extract_resources(self, content: str) -> List[Dict[str, str]]:
-        """
-        Extract resources mentioned in the content.
-        
-        Args:
-            content: Content text to analyze
-            
-        Returns:
-            List of dictionaries with resource information
-        """
-        if not content or len(content) < 100:
-            return []
-        
-        if not self.openai_client:
-            logger.error("OpenAI client not available for resource extraction")
-            return []
-        
-        try:
-            # Load resources prompt
-            prompt = self._load_prompt("resources")
-            if not prompt:
-                logger.error("Resources prompt not available")
-                return []
-            
-            # Truncate content to save tokens
-            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(excerpt=excerpt)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=1000
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Convert to expected format
-            resources = []
-            if "resources" in result and isinstance(result["resources"], list):
-                for resource in result["resources"]:
-                    resource_item = {
-                        "resource_type": resource.get("type", ""),
-                        "resource_name": resource.get("name", ""),
-                        "resource_url": resource.get("url", ""),
-                        "description": resource.get("description", "")
-                    }
-                    resources.append(resource_item)
-            
-            return resources
-            
-        except Exception as e:
-            logger.error(f"Error extracting resources: {str(e)}")
-            return []
+    
+    
+    
     
     def extract_target_audiences(self, content: str) -> List[str]:
         """
@@ -494,65 +690,7 @@ class Analysis:
             logger.error(f"Error extracting target audiences: {str(e)}")
             return []
     
-    def extract_abs_mentions(self, content: str) -> List[Dict[str, Any]]:
-        """
-        Extract specific mentions of ABS Initiative from content.
-        
-        Args:
-            content: Content text to analyze
-            
-        Returns:
-            List of dictionaries with mention information
-        """
-        if not content or len(content) < 100:
-            return []
-        
-        if not self.openai_client:
-            logger.error("OpenAI client not available for ABS mentions extraction")
-            return []
-        
-        try:
-            # Load abs mentions prompt
-            prompt = self._load_prompt("abs_mentions")
-            if not prompt:
-                logger.error("ABS mentions prompt not available")
-                return []
-            
-            # Format the prompt
-            formatted_prompt = prompt.format(content=content)
-            
-            # Make API call
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": formatted_prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"},
-                max_tokens=1500
-            )
-            
-            # Parse the result
-            result = json.loads(response.choices[0].message.content)
-            
-            # Convert to expected format
-            mentions = []
-            if "mentions" in result and isinstance(result["mentions"], list):
-                for idx, mention in enumerate(result["mentions"]):
-                    mention_item = {
-                        "name_variant": mention.get("variant", ""),
-                        "mention_context": mention.get("context", ""),
-                        "mention_type": mention.get("type", ""),
-                        "relevance_score": float(mention.get("relevance", 0.5)),
-                        "mention_position": idx + 1
-                    }
-                    mentions.append(mention_item)
-            
-            return mentions
-            
-        except Exception as e:
-            logger.error(f"Error extracting ABS mentions: {str(e)}")
-            return []
+    
     
     def generate_summary(self, content: str, title: str = "", url: str = "", language: str = "English") -> str:
         """
@@ -843,7 +981,12 @@ class Analysis:
         # Analyze sentiment
         sentiment_info = self.analyze_sentiment(content)
         if sentiment_info:
-            result.update(sentiment_info)
+            # Structure sentiment information specifically for storage
+            result["sentiment_info"] = sentiment_info
+            # Add direct field access for convenience
+            result["overall_sentiment"] = sentiment_info.get("overall_sentiment", "Neutral")
+            result["sentiment_score"] = sentiment_info.get("sentiment_score", 0.0)
+            result["sentiment_confidence"] = sentiment_info.get("sentiment_confidence", 0.0)
         
         # Identify themes
         themes = self.identify_themes(content)
@@ -883,7 +1026,21 @@ class Analysis:
         # Extract benefits
         benefits_info = self.extract_benefits(content)
         if benefits_info:
-            result.update(benefits_info)
+            # Ensure benefit categories and examples are properly structured
+            if "benefit_categories" in benefits_info:
+                result["benefit_categories"] = benefits_info["benefit_categories"]
+            
+            if "benefit_examples" in benefits_info:
+                result["benefit_examples"] = benefits_info["benefit_examples"]
+            
+            if "benefits_summary" in benefits_info:
+                result["benefits_summary"] = benefits_info["benefits_summary"]
+        
+        # Generate additional benefit examples if not already present
+        if "benefit_examples" not in result:
+            benefit_examples = self.extract_benefit_examples(content)
+            if benefit_examples:
+                result["benefit_examples"] = benefit_examples
         
         return result
     

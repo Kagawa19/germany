@@ -57,32 +57,68 @@ class Processing:
         Returns:
             Dict containing processed content or None if extraction failed
         """
+        # Configure detailed logging
         logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        
+        # Create console handler if not already exists
+        if not logger.handlers:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+        
+        # Print start of processing
+        print(f"🔍 Starting to process search result {result_index+1} from query {query_index+1}")
+        
         url = result.get("link")
         title = result.get("title", "Untitled")
         
-        # Log processing start
+        # Log processing start with more details
         logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
+        logger.debug(f"URL: {url}")
         
         try:
+            # Print before content extraction
+            print(f"📥 Attempting to extract content from: {url}")
+            
             # Extract content from URL using scrape_webpage method
             content, extracted_title, date, clean_summary = self.scrape_webpage(url, title)
             
-            # Skip if no content
-            if not content:
-                logger.info(f"No content extracted from {url}, skipping")
+            # Log content extraction
+            if content:
+                logger.info(f"Successfully extracted content from {url}")
+                print(f"✅ Content extracted successfully. Length: {len(content)} characters")
+            else:
+                logger.warning(f"No content extracted from {url}")
+                print(f"❌ No content extracted from {url}")
                 return None
             
-            # Default initiative values
-            initiative_key = "abs_initiative"
-            initiative_name = "ABS Initiative"
+            # Initialize result_data dictionary to store all extracted information
+            result_data = {
+                "url": url,
+                "title": extracted_title or title,
+                "date": date,
+                "content": content,
+                "summary": clean_summary or ""
+            }
             
             # Extract organization from URL domain
             organization = self.extract_organization_from_url(url)
+            logger.info(f"Extracted organization: {organization}")
+            print(f"🏢 Organization extracted: {organization}")
+            
+            # Add organization to result data
+            result_data["organization"] = organization
             
             # Use the comprehensive analyze_content method from the Analysis class
-            # This will run all analyses in one go
             logger.info(f"Running comprehensive content analysis for {url}")
+            print(f"🔬 Starting comprehensive content analysis")
+            
             analysis_result = self.analyzer.analyze_content(
                 content=content,
                 title=extracted_title or title,
@@ -92,138 +128,52 @@ class Processing:
             
             if not analysis_result:
                 logger.warning(f"Comprehensive analysis failed for {url}")
+                print(f"⚠️ Comprehensive analysis failed for {url}")
                 analysis_result = {}  # Fallback to empty dict
-            
-            # Extract all the analysis results with appropriate fallbacks
-            
-            # Get embedding
-            embedding = analysis_result.get("embedding", [])
-            if embedding:
-                logger.info(f"Successfully got embedding vector for {url}")
-            
-            # Get themes
-            themes = analysis_result.get("themes", ["ABS Initiative"])
-            if not themes:
-                themes = ["ABS Initiative"]  # Default fallback
-            logger.info(f"Identified themes for {url}: {themes}")
-            
-            # Get sentiment
-            sentiment_info = {}
-            if "overall_sentiment" in analysis_result:
-                sentiment = analysis_result.get("overall_sentiment", "Neutral")
-                sentiment_score = analysis_result.get("sentiment_score", 0.0)
-                sentiment_confidence = analysis_result.get("sentiment_confidence", 0.0)
+            else:
+                logger.info(f"Comprehensive analysis completed successfully for {url}")
+                print(f"✅ Comprehensive analysis completed")
                 
-                sentiment_info = {
-                    "overall_sentiment": sentiment,
-                    "sentiment_score": sentiment_score,
-                    "sentiment_confidence": sentiment_confidence
-                }
-            else:
-                sentiment = "Neutral"  # Default fallback
-                sentiment_info = {
-                    "overall_sentiment": "Neutral",
-                    "sentiment_score": 0.0,
-                    "sentiment_confidence": 0.0
-                }
-            logger.info(f"Sentiment analysis for {url}: {sentiment}")
+                # Merge analysis results into result_data
+                result_data.update(analysis_result)
             
-            # Get or generate summary
-            if "summary" in analysis_result and analysis_result["summary"]:
-                clean_summary = analysis_result["summary"]
-                logger.info(f"Got summary from analysis for {url}")
-            elif not clean_summary or len(clean_summary) < 50:
-                # Try to generate one more time
-                try:
-                    clean_summary = self.analyzer.generate_summary(content, extracted_title or title, url, self.language)
-                    logger.info(f"Generated new summary for {url}")
-                except Exception as e:
-                    logger.warning(f"Summary generation failed: {str(e)}")
-                    clean_summary = content[:300] + "..." if len(content) > 300 else content
+            # Add source type and language 
+            result_data["source_type"] = "web"
+            result_data["language"] = self.language
             
-            # Get ABS mentions
-            abs_mentions = analysis_result.get("abs_mentions", [])
-            logger.info(f"Found {len(abs_mentions)} ABS Initiative mentions in {url}")
+            # Modified: Remove initiative information that doesn't exist in the database
+            # result_data["initiative_key"] = initiative_key
+            # result_data["initiative"] = initiative_name
             
-            # Get geographic focus
-            geographic_focus = analysis_result.get("geographic_focus", [])
-            logger.info(f"Found geographic focus data for {url}: {len(geographic_focus)} locations")
+            # Ensure sentiment information is properly structured for storage
+            if "overall_sentiment" in result_data:
+                # Create sentiment_info structure if it doesn't exist
+                if "sentiment_info" not in result_data:
+                    result_data["sentiment_info"] = {
+                        "overall_sentiment": result_data.get("overall_sentiment", "Neutral"),
+                        "sentiment_score": result_data.get("sentiment_score", 0.0),
+                        "sentiment_confidence": result_data.get("sentiment_confidence", 0.0)
+                    }
             
-            # Get organizational information
-            organizations = analysis_result.get("organizations", [])
-            if organizations:
-                # Add the domain-extracted organization if not present
-                org_names = [org.get("name", "").lower() for org in organizations]
-                if organization.lower() not in org_names and organization != "Unknown":
-                    organizations.append({
-                        "name": organization,
-                        "organization_type": "website owner",
-                        "relationship": "source",
-                        "website": url,
-                        "description": f"Source of the content at {url}"
-                    })
-                logger.info(f"Found organizational data for {url}: {len(organizations)} organizations")
-            else:
-                # Create minimal organization entry
-                organizations = [{
-                    "name": organization,
-                    "organization_type": "website owner",
-                    "relationship": "source",
-                    "website": url,
-                    "description": f"Source of the content at {url}"
-                }]
+            # Add a relevance score based on the content analysis if the method exists
+            if hasattr(self.analyzer, '_calculate_relevance_score'):
+                result_data["initiative_score"] = self.analyzer._calculate_relevance_score(result_data)
             
-            # Get project details
-            projects = analysis_result.get("projects", [])
-            logger.info(f"Found project data for {url}: {len(projects)} projects")
+            # Add a final print statement for successful processing
+            print(f"🎉 Successfully processed {url}")
             
-            # Get resources
-            resources = analysis_result.get("resources", [])
-            logger.info(f"Found resource data for {url}: {len(resources)} resources")
-            
-            # Get target audiences
-            target_audiences = analysis_result.get("target_audiences", [])
-            logger.info(f"Found target audience data for {url}: {len(target_audiences)} audiences")
-            
-            # Get benefits information
-            benefits_summary = analysis_result.get("benefits_summary", "")
-            benefit_categories = analysis_result.get("benefit_categories", {})
-            benefit_examples = analysis_result.get("benefit_examples", [])
-            logger.info(f"Found benefits data for {url}: {len(benefit_examples)} examples")
-            
-            # Format the result with all processed data
-            result_data = {
-                "title": extracted_title or title,
-                "link": url,
-                "date": date,
-                "content": content,
-                "summary": clean_summary,
-                "themes": themes,
-                "organization": organization,
-                "sentiment": sentiment,
-                "sentiment_info": sentiment_info,
-                "language": self.language,
-                "initiative": initiative_name,
-                "initiative_key": initiative_key,
-                "abs_mentions": abs_mentions,
-                "geographic_focus": geographic_focus,
-                "organizations": organizations,
-                "projects": projects,
-                "resources": resources,
-                "target_audiences": target_audiences,
-                "benefits_summary": benefits_summary,
-                "benefit_categories": benefit_categories,
-                "benefit_examples": benefit_examples,
-                "embedding": embedding,
-                "extraction_timestamp": datetime.now().isoformat()
-            }
-            
-            logger.info(f"Successfully processed {url} with comprehensive metadata")
             return result_data
                 
         except Exception as e:
+            # Comprehensive error logging
             logger.error(f"Error processing {url}: {str(e)}")
             logger.debug(f"Traceback: {traceback.format_exc()}")
+            
+            # Print error details
+            print(f"❌ Error processing {url}")
+            print(f"Error details: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            
             return None
 
     def scrape_webpage(self, url: str, search_result_title: str = "") -> Tuple[str, str, str, str]:

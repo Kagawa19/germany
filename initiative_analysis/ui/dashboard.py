@@ -10,14 +10,33 @@ from database.connection import get_sqlalchemy_engine
 from database.operations import fetch_data, get_geographic_statistics, search_abs_mentions, get_abs_name_variants
 from sqlalchemy import text
 
+
+
 logger = logging.getLogger("Dashboard")
+
+def safe_join(items):
+    """
+    Safely join a list of items, handling None and non-string values
+    """
+    if not items:
+        return ""
+    
+    # Convert all items to strings, filter out None
+    safe_items = [str(item) for item in items if item is not None]
+    
+    return ', '.join(safe_items) if safe_items else ""
+
 
 def dashboard_page():
     """Display the main dashboard with key metrics and visualizations."""
     logger.info("Rendering Dashboard page")
     
     # Fetch data for the dashboard
-    df = fetch_data(limit=1000)
+    try:
+        df = fetch_data(limit=1000)
+    except Exception as e:
+        st.error(f"Error fetching data: {str(e)}")
+        return
     
     # Display key metrics
     st.markdown("<h2 class='sub-header'>Key Metrics</h2>", unsafe_allow_html=True)
@@ -34,8 +53,11 @@ def dashboard_page():
         if 'organizations' in df.columns:
             all_orgs = set()
             for org_list in df['organizations'].dropna():
-                if org_list:
-                    all_orgs.update(org_list)
+                try:
+                    if org_list and isinstance(org_list, list):
+                        all_orgs.update(org_list)
+                except Exception as e:
+                    logger.warning(f"Error processing organizations: {str(e)}")
             org_count = len(all_orgs)
         st.metric("Organizations", org_count)
     
@@ -45,8 +67,11 @@ def dashboard_page():
         if 'themes' in df.columns:
             all_themes = set()
             for themes_list in df['themes'].dropna():
-                if themes_list:
-                    all_themes.update(themes_list)
+                try:
+                    if themes_list and isinstance(themes_list, list):
+                        all_themes.update(themes_list)
+                except Exception as e:
+                    logger.warning(f"Error processing themes: {str(e)}")
             theme_count = len(all_themes)
         st.metric("Themes", theme_count)
     
@@ -56,8 +81,11 @@ def dashboard_page():
         if 'countries' in df.columns:
             all_countries = set()
             for countries_list in df['countries'].dropna():
-                if countries_list:
-                    all_countries.update(countries_list)
+                try:
+                    if countries_list and isinstance(countries_list, list):
+                        all_countries.update(countries_list)
+                except Exception as e:
+                    logger.warning(f"Error processing countries: {str(e)}")
             country_count = len(all_countries)
         st.metric("Countries", country_count)
 
@@ -255,24 +283,27 @@ def dashboard_page():
     recent_df = df.head(5)
     if not recent_df.empty:
         for i, row in recent_df.iterrows():
-            with st.expander(f"{row['title']}"):
-                st.write(f"**Date:** {row['publication_date']}")
-                st.write(f"**Sentiment:** {row['overall_sentiment']}")
+            with st.expander(f"{row.get('title', 'Untitled')}"):
+                st.write(f"**Date:** {row.get('publication_date', 'N/A')}")
+                st.write(f"**Sentiment:** {row.get('overall_sentiment', 'N/A')}")
                 
                 # Show themes if available
-                if 'themes' in row and row['themes']:
-                    st.write(f"**Themes:** {', '.join(row['themes'])}")
+                themes = row.get('themes', [])
+                if themes and isinstance(themes, list):
+                    st.write(f"**Themes:** {safe_join(themes)}")
                 
                 # Show organizations if available
-                if 'organizations' in row and row['organizations']:
-                    st.write(f"**Organizations:** {', '.join(row['organizations'])}")
+                orgs = row.get('organizations', [])
+                if orgs and isinstance(orgs, list):
+                    st.write(f"**Organizations:** {safe_join(orgs)}")
                 
                 # Show countries if available
-                if 'countries' in row and row['countries']:
-                    st.write(f"**Countries:** {', '.join(row['countries'])}")
+                countries = row.get('countries', [])
+                if countries and isinstance(countries, list):
+                    st.write(f"**Countries:** {safe_join(countries)}")
                 
-                st.write(f"**Summary:** {row['content_summary']}")
-                st.write(f"**URL:** {row['url']}")
+                st.write(f"**Summary:** {row.get('content_summary', 'No summary')}")
+                st.write(f"**URL:** {row.get('url', 'No URL')}")
     else:
         st.info("No content available. Extract content first.")
 

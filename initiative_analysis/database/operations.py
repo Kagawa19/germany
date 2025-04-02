@@ -66,14 +66,19 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             embedding_vector = item.get("embedding", [])
             embedding_model = "text-embedding-ada-002" if embedding_vector else None
             
+            # Capture metadata that should be stored
+            language = item.get("language", "English")
+            source_type = item.get("source_type", "web")
+            
             # Get database connection
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Insert into content_sources with more robust handling
+            # Modified: Remove initiative and initiative_key from SQL
             source_query = """
             INSERT INTO content_sources 
-            (url, domain_name, title, publication_date, source_type, language, full_content, content_summary)
+            (url, domain_name, title, publication_date, source_type, language, full_content, 
+            content_summary)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """
@@ -84,7 +89,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             # Format date safely
             date_value = format_date(date_str) if date_str else None
             
-            # Execute source insertion
+            # Modified: Remove initiative and initiative_key from parameters
             cursor.execute(
                 source_query, 
                 (
@@ -92,8 +97,8 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                     domain_name, 
                     title, 
                     date_value, 
-                    item.get("source_type", "web"), 
-                    item.get("language", "English"), 
+                    source_type, 
+                    language, 
                     content, 
                     summary
                 )
@@ -124,6 +129,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                         sentiment_confidence
                     )
                 )
+                print(f"Added sentiment analysis for {title}")
             except Exception as sentiment_error:
                 logger.warning(f"Failed to insert sentiment: {sentiment_error}")
                 print(f"Warning: Sentiment insertion failed for {title}")
@@ -174,6 +180,238 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 except Exception as json_error:
                     logger.warning(f"Failed to store embedding: {json_error}")
                     print(f"Could not store embedding for {title}")
+            
+            # Store Themes
+            try:
+                if "themes" in item and item["themes"]:
+                    themes = item["themes"]
+                    if isinstance(themes, list):
+                        theme_insert_query = """
+                        INSERT INTO thematic_areas (source_id, theme)
+                        VALUES (%s, %s)
+                        ON CONFLICT (source_id, theme) DO NOTHING;
+                        """
+                        
+                        for theme in themes:
+                            cursor.execute(theme_insert_query, (source_id, theme))
+                        
+                        print(f"Added {len(themes)} themes for {title}")
+            except Exception as theme_error:
+                logger.warning(f"Failed to insert themes: {theme_error}")
+                print(f"Warning: Theme insertion failed for {title}")
+            
+            # Store ABS Mentions
+            try:
+                if "abs_mentions" in item and item["abs_mentions"]:
+                    mentions = item["abs_mentions"]
+                    if isinstance(mentions, list):
+                        mention_insert_query = """
+                        INSERT INTO abs_mentions 
+                        (source_id, name_variant, mention_context, mention_type, relevance_score, mention_position)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (source_id, mention_position) DO UPDATE
+                        SET name_variant = EXCLUDED.name_variant,
+                            mention_context = EXCLUDED.mention_context,
+                            mention_type = EXCLUDED.mention_type,
+                            relevance_score = EXCLUDED.relevance_score;
+                        """
+                        
+                        for idx, mention in enumerate(mentions):
+                            cursor.execute(
+                                mention_insert_query, 
+                                (
+                                    source_id,
+                                    mention.get("name_variant", "ABS Initiative"),
+                                    mention.get("mention_context", ""),
+                                    mention.get("mention_type", ""),
+                                    mention.get("relevance_score", 0.5),
+                                    mention.get("mention_position", idx + 1)
+                                )
+                            )
+                        
+                        print(f"Added {len(mentions)} ABS mentions for {title}")
+            except Exception as mention_error:
+                logger.warning(f"Failed to insert ABS mentions: {mention_error}")
+                print(f"Warning: ABS mention insertion failed for {title}")
+            
+            # Store Geographic Focus
+            try:
+                if "geographic_focus" in item and item["geographic_focus"]:
+                    geo_focus = item["geographic_focus"]
+                    if isinstance(geo_focus, list):
+                        geo_insert_query = """
+                        INSERT INTO geographic_focus 
+                        (source_id, country, region, scope)
+                        VALUES (%s, %s, %s, %s);
+                        """
+                        
+                        for location in geo_focus:
+                            cursor.execute(
+                                geo_insert_query, 
+                                (
+                                    source_id,
+                                    location.get("country", ""),
+                                    location.get("region", ""),
+                                    location.get("scope", "")
+                                )
+                            )
+                        
+                        print(f"Added {len(geo_focus)} geographic locations for {title}")
+            except Exception as geo_error:
+                logger.warning(f"Failed to insert geographic focus: {geo_error}")
+                print(f"Warning: Geographic focus insertion failed for {title}")
+            
+            # Store Project Details
+            try:
+                if "projects" in item and item["projects"]:
+                    projects = item["projects"]
+                    if isinstance(projects, list):
+                        project_insert_query = """
+                        INSERT INTO project_details 
+                        (source_id, project_name, project_type, start_date, end_date, status, description)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s);
+                        """
+                        
+                        for project in projects:
+                            # Format dates safely
+                            start_date = project.get("start_date")
+                            end_date = project.get("end_date")
+                            
+                            if isinstance(start_date, str):
+                                try:
+                                    start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+                                except:
+                                    start_date = None
+                                    
+                            if isinstance(end_date, str):
+                                try:
+                                    end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+                                except:
+                                    end_date = None
+                            
+                            cursor.execute(
+                                project_insert_query, 
+                                (
+                                    source_id,
+                                    project.get("project_name", ""),
+                                    project.get("project_type", ""),
+                                    start_date,
+                                    end_date,
+                                    project.get("status", ""),
+                                    project.get("description", "")
+                                )
+                            )
+                        
+                        print(f"Added {len(projects)} projects for {title}")
+            except Exception as project_error:
+                logger.warning(f"Failed to insert project details: {project_error}")
+                print(f"Warning: Project detail insertion failed for {title}")
+            
+            # Store Organizations
+            try:
+                if "organizations" in item and item["organizations"]:
+                    organizations = item["organizations"]
+                    if isinstance(organizations, list):
+                        for org in organizations:
+                            org_name = org.get("name", "")
+                            if not org_name:
+                                continue
+                                
+                            # First, insert or retrieve the organization
+                            org_insert_query = """
+                            INSERT INTO organizations (name, organization_type, website)
+                            VALUES (%s, %s, %s)
+                            ON CONFLICT (name) DO UPDATE
+                            SET organization_type = EXCLUDED.organization_type,
+                                website = EXCLUDED.website
+                            RETURNING id;
+                            """
+                            
+                            cursor.execute(
+                                org_insert_query, 
+                                (
+                                    org_name,
+                                    org.get("organization_type", ""),
+                                    org.get("website", "")
+                                )
+                            )
+                            
+                            org_id = cursor.fetchone()[0]
+                            
+                            # Then, create the relationship to this source
+                            relation_insert_query = """
+                            INSERT INTO organization_mentions 
+                            (source_id, organization_id, relationship_type, description)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (source_id, organization_id) DO UPDATE
+                            SET relationship_type = EXCLUDED.relationship_type,
+                                description = EXCLUDED.description;
+                            """
+                            
+                            cursor.execute(
+                                relation_insert_query, 
+                                (
+                                    source_id,
+                                    org_id,
+                                    org.get("relationship", "mentioned"),
+                                    org.get("description", "")
+                                )
+                            )
+                        
+                        print(f"Added {len(organizations)} organizations for {title}")
+            except Exception as org_error:
+                logger.warning(f"Failed to insert organizations: {org_error}")
+                print(f"Warning: Organization insertion failed for {title}")
+            
+            # Store Resources
+            try:
+                if "resources" in item and item["resources"]:
+                    resources = item["resources"]
+                    if isinstance(resources, list):
+                        resource_insert_query = """
+                        INSERT INTO resources 
+                        (source_id, resource_type, resource_name, resource_url, description)
+                        VALUES (%s, %s, %s, %s, %s);
+                        """
+                        
+                        for resource in resources:
+                            cursor.execute(
+                                resource_insert_query, 
+                                (
+                                    source_id,
+                                    resource.get("resource_type", ""),
+                                    resource.get("resource_name", ""),
+                                    resource.get("resource_url", ""),
+                                    resource.get("description", "")
+                                )
+                            )
+                        
+                        print(f"Added {len(resources)} resources for {title}")
+            except Exception as resource_error:
+                logger.warning(f"Failed to insert resources: {resource_error}")
+                print(f"Warning: Resource insertion failed for {title}")
+            
+            # Store Target Audiences
+            try:
+                if "target_audiences" in item and item["target_audiences"]:
+                    audiences = item["target_audiences"]
+                    if isinstance(audiences, list):
+                        audience_insert_query = """
+                        INSERT INTO target_audiences (source_id, audience_type)
+                        VALUES (%s, %s)
+                        ON CONFLICT (source_id, audience_type) DO NOTHING;
+                        """
+                        
+                        for audience in audiences:
+                            if isinstance(audience, str):
+                                cursor.execute(audience_insert_query, (source_id, audience))
+                        
+                        print(f"Added {len(audiences)} target audiences for {title}")
+            except Exception as audience_error:
+                logger.warning(f"Failed to insert target audiences: {audience_error}")
+                print(f"Warning: Target audience insertion failed for {title}")
+            
+            # Modified: Remove benefit categories and examples code since columns don't exist
             
             # Commit transaction
             conn.commit()
