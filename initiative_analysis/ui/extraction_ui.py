@@ -17,7 +17,7 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy.sql import text
 
-def run_web_extraction(max_queries=None, max_results_per_query=None, language="English"):
+def run_web_extraction(max_queries=None, max_results_per_query=None, language="English", trace_id=None):
     """
     Run web extraction process with configurable parameters.
     
@@ -25,7 +25,30 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         max_queries: Maximum number of queries to run
         max_results_per_query: Maximum results per query
         language: Language for search queries (English, German, French)
+        trace_id: Optional Langfuse trace ID for monitoring
     """
+    # Import Langfuse client if trace_id is provided
+    langfuse = None
+    if trace_id:
+        try:
+            from monitoring.langfuse_client import get_langfuse_client
+            langfuse = get_langfuse_client()
+        except ImportError:
+            logging.warning("Could not import Langfuse client - monitoring will be disabled")
+    
+    # Create extraction span
+    extraction_span = None
+    if langfuse and trace_id:
+        extraction_span = langfuse.create_span(
+            trace_id=trace_id,
+            name="web_extraction_process",
+            metadata={
+                "language": language,
+                "max_queries": max_queries,
+                "max_results_per_query": max_results_per_query
+            }
+        )
+    
     # Log the start of the extraction process with detailed parameters
     logging.info(
         f"Starting web extraction process | "
@@ -50,7 +73,7 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         logging.info(f"Initializing WebExtractor with language: {language}")
         print(f"🔍 Initializing web content extractor for {language} content...")
 
-        # Initialize WebExtractor with language parameter
+        # Initialize WebExtractor with language parameter and trace_id
         extractor = WebExtractor(
             search_api_key=SERPER_API_KEY,
             max_workers=10,
@@ -66,10 +89,11 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
         progress_bar.progress(25)
 
         try:
-            # Run web extraction
+            # Run web extraction with trace_id
             results = extractor.run(
                 max_queries=max_queries, 
-                max_results_per_query=max_results_per_query
+                max_results_per_query=max_results_per_query,
+                trace_id=trace_id  # Pass trace_id to the extractor
             )
             progress_bar.progress(40)
 
@@ -79,6 +103,15 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     # Case 1: Success with results
                     result_count = len(results["results"])
                     
+                    # Update extraction span with initial results
+                    if extraction_span:
+                        extraction_span.update(
+                            output={
+                                "status": "processing",
+                                "result_count": result_count
+                            }
+                        )
+                    
                     # Detailed logging of extraction results
                     logging.info(f"Web extraction successful. Found {result_count} results in {language}")
                     print(f"✅ Web extraction complete. {result_count} {language} items retrieved.")
@@ -87,6 +120,16 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     progress_bar.progress(50)
 
                     try:
+                        # Create database span
+                        db_span = None
+                        if langfuse and trace_id:
+                            db_span = langfuse.create_span(
+                                trace_id=trace_id,
+                                name="database_operations",
+                                parent_span_id=extraction_span.id if extraction_span else None,
+                                metadata={"operation": "store_extraction_data"}
+                            )
+                        
                         # Database operations
                         engine = get_sqlalchemy_engine()
                         existing_urls_query = text("SELECT url FROM content_sources")
@@ -108,6 +151,17 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                         # Store extracted data
                         stored_ids = store_extract_data(results["results"])
                         stored_count = len(stored_ids)
+                        
+                        # Update database span
+                        if db_span:
+                            db_span.update(
+                                output={
+                                    "original_count": original_count,
+                                    "filtered_count": filtered_count,
+                                    "stored_count": stored_count
+                                }
+                            )
+                            db_span.end()
 
                         # Final progress and logging
                         progress_bar.progress(100)
@@ -115,6 +169,15 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                         print(f"💾 Saved {stored_count} new {language} items to database.")
                         
                         status_placeholder.success(f"Saved {stored_count} new {language} items to database.")
+
+                        # Track success metrics in Langfuse
+                        if langfuse and trace_id:
+                            langfuse.score(
+                                trace_id=trace_id,
+                                name="extraction_success_rate",
+                                value=min((stored_count / max(1, original_count)) * 10, 10),
+                                comment=f"Extraction stored {stored_count} out of {original_count} potential results"
+                            )
 
                         # Display saved items if any
                         if stored_ids:
@@ -135,6 +198,17 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                         logging.error(f"Error handling extraction results: {str(e)}")
                         status_placeholder.error(f"Error handling extraction results: {str(e)}")
                         print(f"❌ Error processing extraction results: {str(e)}")
+                        
+                        # Update extraction span with error
+                        if extraction_span:
+                            extraction_span.update(
+                                output={
+                                    "status": "error",
+                                    "error": str(e),
+                                    "error_phase": "database_processing"
+                                },
+                                status="error"
+                            )
 
                     # Display latest content data
                     st.subheader("Latest Content Data")
@@ -154,6 +228,16 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                     progress_bar.progress(100)
                     status_placeholder.success(f"Web extraction complete: {message} in {language}")
                     
+                    # Update extraction span with success but no results
+                    if extraction_span:
+                        extraction_span.update(
+                            output={
+                                "status": "success",
+                                "message": message,
+                                "skipped_urls": skipped
+                            }
+                        )
+                    
                     # Still display latest content data
                     st.subheader("Latest Content Data")
                     st.dataframe(fetch_data())
@@ -168,6 +252,15 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                 progress_bar.progress(100)
                 status_placeholder.warning(f"Web extraction warning: {message} in {language}")
                 
+                # Update extraction span with warning
+                if extraction_span:
+                    extraction_span.update(
+                        output={
+                            "status": "warning",
+                            "message": message
+                        }
+                    )
+                
                 # Still display latest content data
                 st.subheader("Latest Content Data")
                 st.dataframe(fetch_data())
@@ -179,6 +272,16 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
                 progress_bar.progress(100)
                 status_placeholder.error(f"Web extraction failed: {error_msg} in {language}")
                 print(f"❌ Web extraction failed: {error_msg} in {language}")
+                
+                # Update extraction span with error
+                if extraction_span:
+                    extraction_span.update(
+                        output={
+                            "status": "error",
+                            "error": error_msg
+                        },
+                        status="error"
+                    )
 
         except Exception as e:
             # Catch and log any unexpected errors
@@ -186,6 +289,22 @@ def run_web_extraction(max_queries=None, max_results_per_query=None, language="E
             progress_bar.progress(100)
             status_placeholder.error(f"Web extraction failed: {str(e)}")
             print(f"❌ Critical error during web extraction in {language}: {str(e)}")
+            
+            # Update extraction span with error
+            if extraction_span:
+                extraction_span.update(
+                    output={
+                        "status": "error",
+                        "error": str(e),
+                        "error_phase": "extraction_process"
+                    },
+                    status="error"
+                )
+        
+        finally:
+            # Make sure to end the extraction span
+            if extraction_span:
+                extraction_span.end()
 
 
 def initialization_page():

@@ -43,7 +43,7 @@ class Processing:
         else:
             logger.warning("OpenAI API key not found in environment variables")
     
-    def process_search_result(self, result, query_index, result_index, processed_urls):
+    def process_search_result(self, result, query_index, result_index, processed_urls, trace_id=None, parent_span_id=None):
         """
         Process a single search result to extract and analyze content.
         Enhanced with comprehensive metadata extraction using the updated Analysis class.
@@ -53,36 +53,50 @@ class Processing:
             query_index: Index of the query that produced this result
             result_index: Index of this result within the query results
             processed_urls: Set of already processed URLs (passed by reference)
+            trace_id: Optional trace ID for monitoring
+            parent_span_id: Optional parent span ID for nested tracing
                 
         Returns:
             Dict containing processed content or None if extraction failed
         """
-        # Configure detailed logging
+        # Configure logging
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
         
-        # Create console handler if not already exists
-        if not logger.handlers:
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+        # Initialize Langfuse client if tracing is enabled
+        langfuse = None
+        if trace_id:
+            try:
+                from monitoring.langfuse_client import get_langfuse_client
+                langfuse = get_langfuse_client()
+            except (ImportError, Exception) as e:
+                logger.warning(f"Could not import Langfuse client: {str(e)}")
+        
+        # Create a span for this result processing
+        result_span = None
+        if langfuse and trace_id:
+            result_span = langfuse.create_span(
+                trace_id=trace_id,
+                name=f"process_result_{query_index}_{result_index}",
+                parent_span_id=parent_span_id,
+                metadata={
+                    "url": result.get("link"),
+                    "query_index": query_index,
+                    "result_index": result_index
+                }
             )
-            console_handler.setFormatter(formatter)
-            logger.addHandler(console_handler)
-        
-        # Print start of processing
-        print(f"🔍 Starting to process search result {result_index+1} from query {query_index+1}")
-        
-        url = result.get("link")
-        title = result.get("title", "Untitled")
-        
-        # Log processing start with more details
-        logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
-        logger.debug(f"URL: {url}")
         
         try:
+            # Print start of processing
+            print(f"🔍 Starting to process search result {result_index+1} from query {query_index+1}")
+            
+            url = result.get("link")
+            title = result.get("title", "Untitled")
+            
+            # Log processing start with more details
+            logger.info(f"Processing result {result_index+1} from query {query_index+1}: {title}")
+            logger.debug(f"URL: {url}")
+            
             # Print before content extraction
             print(f"📥 Attempting to extract content from: {url}")
             
@@ -96,6 +110,14 @@ class Processing:
             else:
                 logger.warning(f"No content extracted from {url}")
                 print(f"❌ No content extracted from {url}")
+                
+                # Update result span with failure
+                if result_span:
+                    result_span.update(
+                        output={"status": "no_content"},
+                        status="warning"
+                    )
+                
                 return None
             
             # Initialize result_data dictionary to store all extracted information
@@ -141,10 +163,6 @@ class Processing:
             result_data["source_type"] = "web"
             result_data["language"] = self.language
             
-            # Modified: Remove initiative information that doesn't exist in the database
-            # result_data["initiative_key"] = initiative_key
-            # result_data["initiative"] = initiative_name
-            
             # Ensure sentiment information is properly structured for storage
             if "overall_sentiment" in result_data:
                 # Create sentiment_info structure if it doesn't exist
@@ -162,6 +180,18 @@ class Processing:
             # Add a final print statement for successful processing
             print(f"🎉 Successfully processed {url}")
             
+            # Update result span with success
+            if result_span:
+                result_span.update(
+                    output={
+                        "status": "success",
+                        "url": url,
+                        "content_length": len(content),
+                        "organization": organization
+                    },
+                    status="success"
+                )
+            
             return result_data
                 
         except Exception as e:
@@ -173,6 +203,17 @@ class Processing:
             print(f"❌ Error processing {url}")
             print(f"Error details: {str(e)}")
             print(f"Traceback: {traceback.format_exc()}")
+            
+            # Update result span with error
+            if result_span:
+                result_span.update(
+                    output={
+                        "status": "error",
+                        "error": str(e),
+                        "url": url
+                    },
+                    status="error"
+                )
             
             return None
 

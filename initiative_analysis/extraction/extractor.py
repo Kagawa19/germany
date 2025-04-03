@@ -15,7 +15,14 @@ from database.operations import store_extract_data
 from config.settings import SERPER_API_KEY, MAX_WORKERS
 from extraction.search import Search  # Import the Search class
 from extraction.content import Processing  # Import the Processing class
-from monitoring.langfuse_client import get_langfuse_client  # Import Langfuse client
+
+# Import Langfuse for monitoring (wrapped in try/except since it might not be available)
+try:
+    from monitoring.langfuse_client import get_langfuse_client
+except ImportError:
+    pass
+
+logger = logging.getLogger("WebExtractor")
 
 logger = logging.getLogger("WebExtractor")
 
@@ -36,7 +43,13 @@ class WebExtractor:
         self.processor = Processing()  # Instance of Processing class
         
         # Initialize Langfuse client
-        self.langfuse = get_langfuse_client()
+        try:
+            from monitoring.langfuse_client import get_langfuse_client
+            self.langfuse = get_langfuse_client()
+            logger.info("Langfuse client initialized for WebExtractor")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Failed to initialize Langfuse client: {str(e)}")
+            self.langfuse = None
         
         # Configure initiative names and search parameters
         self.configure_initiatives()
@@ -47,27 +60,30 @@ class WebExtractor:
         """Configure the specific ABS initiative names to search for in different languages."""
         # [Keep existing configure_initiatives() implementation exactly as is]
         
-    def extract_web_content(self, max_queries=None, max_results_per_query=None) -> Dict:
+    def extract_web_content(self, max_queries=None, max_results_per_query=None, trace_id=None, parent_span_id=None) -> Dict:
         """
         Main method to extract web content based on search queries.
         Now uses methods from Search and Processing classes.
+        
+        Args:
+            max_queries: Maximum number of queries to run
+            max_results_per_query: Maximum results per query  
+            trace_id: Optional Langfuse trace ID for monitoring
+            parent_span_id: Optional parent span ID for nested tracing
+            
+        Returns:
+            Dictionary with extraction results
         """
         logger = logging.getLogger(__name__)
         
-        # Create a trace for the entire extraction process
-        trace = self.langfuse.create_trace(
-            name="web_content_extraction",
-            metadata={
-                "language": self.language,
-                "max_queries": max_queries,
-                "max_results_per_query": max_results_per_query,
-                "workers": self.max_workers
-            },
-            tags=["extraction", self.language.lower()]
-        )
-        
-        # Store trace ID for child spans
-        trace_id = trace.id if trace else None
+        # Get Langfuse client if trace_id is provided
+        langfuse = getattr(self, 'langfuse', None)
+        if not langfuse and trace_id:
+            try:
+                from monitoring.langfuse_client import get_langfuse_client
+                langfuse = get_langfuse_client()
+            except ImportError:
+                logging.warning("Could not import Langfuse client - monitoring will be disabled")
         
         # Create formatted header for console output
         header = f"\n{'='*60}\n{' '*20}WEB CONTENT EXTRACTION\n{'='*60}"
@@ -77,13 +93,30 @@ class WebExtractor:
         # Track timing for performance analysis
         start_time = time.time()
         
-        try:
-            # Create a span for database operations
-            db_span = self.langfuse.create_span(
+        # Create a span for the extraction process
+        content_extraction_span = None
+        if langfuse and trace_id:
+            content_extraction_span = langfuse.create_span(
                 trace_id=trace_id,
-                name="fetch_existing_urls",
-                metadata={"operation": "database_query"}
+                name="content_extraction",
+                parent_span_id=parent_span_id,
+                metadata={
+                    "max_queries": max_queries,
+                    "max_results_per_query": max_results_per_query,
+                    "language": self.language
+                }
             )
+        
+        try:
+            # Database span for getting existing URLs
+            db_span = None
+            if langfuse and trace_id:
+                db_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="fetch_existing_urls",
+                    parent_span_id=content_extraction_span.id if content_extraction_span else parent_span_id,
+                    metadata={"operation": "database_query"}
+                )
             
             # First, get all existing URLs from the database to avoid re-processing
             existing_urls = set()
@@ -101,7 +134,7 @@ class WebExtractor:
                     logger.warning("Database query succeeded but returned no URLs - treating all content as new")
                     print(f"\n⚠️ Warning: No existing URLs found in database - treating all content as new")
                     
-                    # Update span with result
+                    # Update database span
                     if db_span:
                         db_span.update(
                             output={"status": "warning", "message": "No existing URLs found"}
@@ -110,7 +143,7 @@ class WebExtractor:
                     logger.info(f"Database: Loaded {len(existing_urls)} existing URLs")
                     print(f"\n📊 Database: Loaded {len(existing_urls)} existing URLs")
                     
-                    # Update span with result
+                    # Update database span
                     if db_span:
                         db_span.update(
                             output={"status": "success", "url_count": len(existing_urls)}
@@ -121,32 +154,46 @@ class WebExtractor:
                 print(f"\n⚠️ Warning: Could not fetch existing URLs from database")
                 print(f"   Error details: {str(e)}")
                 
-                # Update span with error
+                # Update database span with error
                 if db_span:
                     db_span.update(
-                        output={"status": "error", "error": str(e)}
+                        output={"status": "error", "error": str(e)},
+                        status="error"
                     )
             
-            # End the database span
+            # End database span
             if db_span:
                 db_span.end()
             
-            # Create a span for query generation
-            query_gen_span = self.langfuse.create_span(
-                trace_id=trace_id,
-                name="generate_search_queries",
-                metadata={"max_queries": max_queries}
-            )
+            # Search queries span
+            queries_span = None
+            if langfuse and trace_id:
+                queries_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="generate_search_queries",
+                    parent_span_id=content_extraction_span.id if content_extraction_span else parent_span_id,
+                    metadata={"max_queries": max_queries}
+                )
             
             # Generate search queries using Search class method
             queries = self.searcher.generate_search_queries(max_queries)
             
-            # Update query generation span with result
-            if query_gen_span:
-                query_gen_span.update(
-                    output={"query_count": len(queries)}
+            # Update queries span
+            if queries_span:
+                queries_span.update(
+                    output={"query_count": len(queries), "queries": queries[:5]}  # Only log first 5 queries
                 )
-                query_gen_span.end()
+                queries_span.end()
+            
+            # Search and processing span
+            search_span = None
+            if langfuse and trace_id:
+                search_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="search_and_process",
+                    parent_span_id=content_extraction_span.id if content_extraction_span else parent_span_id,
+                    metadata={"query_count": len(queries), "max_workers": self.max_workers}
+                )
             
             # Search the web and collect results
             all_results = []
@@ -155,16 +202,6 @@ class WebExtractor:
             logger.info("Starting with empty processed_urls set - no in-memory URL history")
             print("🔄 Starting with fresh URL tracking - no previous history carried over")
             
-            # Create a span for the search and processing phase
-            search_span = self.langfuse.create_span(
-                trace_id=trace_id,
-                name="search_and_process_web",
-                metadata={
-                    "query_count": len(queries),
-                    "max_workers": self.max_workers
-                }
-            )
-            
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 for i, query in enumerate(queries):
                     query_preview = query[:50] + "..." if len(query) > 50 else query
@@ -172,20 +209,22 @@ class WebExtractor:
                     print(f"\n📝 QUERY {i+1}/{len(queries)}:")
                     print(f"   '{query_preview}'")
                     
-                    # Create a span for each query execution
-                    query_span = self.langfuse.create_span(
-                        trace_id=trace_id,
-                        name=f"query_{i+1}",
-                        parent_span_id=search_span.id if search_span else None,
-                        metadata={"query": query, "query_index": i+1, "total_queries": len(queries)}
-                    )
+                    # Create span for individual query
+                    query_span = None
+                    if langfuse and trace_id:
+                        query_span = langfuse.create_span(
+                            trace_id=trace_id,
+                            name=f"query_{i+1}",
+                            parent_span_id=search_span.id if search_span else (content_extraction_span.id if content_extraction_span else parent_span_id),
+                            metadata={"query": query, "query_index": i+1, "total_queries": len(queries)}
+                        )
                     
                     # Use Search class method for web search
                     results = self.searcher.search_web(query, num_results=max_results_per_query or 20)
                     logger.info(f"Query {i+1} returned {len(results)} results")
                     print(f"   Found {len(results)} search results")
                     
-                    # Update query span with search results
+                    # Update query span with results
                     if query_span:
                         query_span.update(
                             output={"result_count": len(results)}
@@ -220,10 +259,12 @@ class WebExtractor:
                         new_urls += 1
                         
                         # Use Processing class method for result processing
-                        # Pass trace_id and parent span_id for tracing
+                        # Pass trace information for monitoring
                         future = executor.submit(
                             self.processor.process_search_result, 
-                            result, i, j, processed_urls, trace_id, query_span.id if query_span else None
+                            result, i, j, processed_urls,
+                            trace_id=trace_id,
+                            parent_span_id=query_span.id if query_span else None
                         )
                         future_to_result[future] = result
                     
@@ -241,13 +282,15 @@ class WebExtractor:
                             }
                         )
                     
-                    # Process completed futures
-                    process_results_span = self.langfuse.create_span(
-                        trace_id=trace_id,
-                        name=f"process_results_query_{i+1}",
-                        parent_span_id=query_span.id if query_span else None,
-                        metadata={"future_count": len(future_to_result)}
-                    )
+                    # Results processing span
+                    results_span = None
+                    if langfuse and trace_id:
+                        results_span = langfuse.create_span(
+                            trace_id=trace_id,
+                            name=f"process_results_query_{i+1}",
+                            parent_span_id=query_span.id if query_span else (search_span.id if search_span else None),
+                            metadata={"future_count": len(future_to_result)}
+                        )
                     
                     processed_count = 0
                     for future in as_completed(future_to_result):
@@ -256,32 +299,17 @@ class WebExtractor:
                         if result_data:
                             # Use Processing class method for relevance check
                             if self.processor._contains_relevant_content(result_data):
-                                # Log storing to database
-                                store_span = self.langfuse.create_span(
-                                    trace_id=trace_id,
-                                    name="store_result_data",
-                                    parent_span_id=process_results_span.id if process_results_span else None,
-                                    metadata={"url": result_data.get("url"), "title": result_data.get("title")}
-                                )
-                                
-                                store_extract_data([result_data])
-                                all_results.append(result_data)
                                 processed_count += 1
-                                
-                                if store_span:
-                                    store_span.update(
-                                        output={"status": "success"}
-                                    )
-                                    store_span.end()
+                                all_results.append(result_data)
                             else:
                                 logger.info(f"Skipping irrelevant content from {result_data.get('link')}")
                     
-                    # Update process results span
-                    if process_results_span:
-                        process_results_span.update(
+                    # Update results span
+                    if results_span:
+                        results_span.update(
                             output={"processed_count": processed_count}
                         )
-                        process_results_span.end()
+                        results_span.end()
                     
                     # End query span
                     if query_span:
@@ -321,18 +349,19 @@ class WebExtractor:
                 
                 logger.info(f"Web content extraction completed in {duration:.2f} seconds. Status: {status}. {status_message}")
                 
-                # Update the trace with final results
-                if trace:
-                    trace.update(
+                # Update content extraction span
+                if content_extraction_span:
+                    content_extraction_span.update(
                         output={
                             "status": status,
                             "message": status_message,
-                            "execution_time_seconds": duration,
+                            "duration_seconds": duration,
                             "result_count": len(all_results),
                             "skipped_urls": skipped_total
                         },
                         status="success" if status != "error" else "error"
                     )
+                    content_extraction_span.end()
                 
                 return {
                     "status": status,
@@ -349,17 +378,17 @@ class WebExtractor:
             logger.error(f"Critical error in extraction process: {error_type}: {str(e)}")
             logger.error(f"Traceback: {error_traceback}")
             
-            # Update trace with error information
-            if trace:
-                trace.update(
+            # Update content extraction span with error
+            if content_extraction_span:
+                content_extraction_span.update(
                     output={
                         "status": "error",
                         "error": str(e),
-                        "error_type": error_type,
-                        "execution_time_seconds": time.time() - start_time
+                        "error_type": error_type
                     },
                     status="error"
                 )
+                content_extraction_span.end()
             
             return {
                 "status": "error",
@@ -369,24 +398,37 @@ class WebExtractor:
                 "error": str(e),
                 "error_type": error_type
             }
+        
+        finally:
+            # Make sure to end the content extraction span if it's still open
+            if content_extraction_span and not getattr(content_extraction_span, 'ended', False):
+                try:
+                    content_extraction_span.end()
+                except Exception:
+                    # Ignore any errors in closing the span
+                    pass
 
-    def run(self, max_queries=None, max_results_per_query=None) -> Dict:
+    def run(self, max_queries=None, max_results_per_query=None, trace_id=None) -> Dict:
         """
         Run the web extraction process and return results in a structured format.
-        """
-        # Create a trace for the entire run operation
-        trace = self.langfuse.create_trace(
-            name="web_extractor_run",
-            metadata={
-                "language": self.language,
-                "max_queries": max_queries,
-                "max_results_per_query": max_results_per_query
-            },
-            tags=["extraction_run", self.language.lower()]
-        )
         
-        # Store trace ID for child spans
-        trace_id = trace.id if trace else None
+        Args:
+            max_queries: Maximum number of queries to run
+            max_results_per_query: Maximum results per query
+            trace_id: Optional Langfuse trace ID for monitoring
+        
+        Returns:
+            Dictionary with extraction results
+        """
+        # Get Langfuse client if trace_id is provided
+        langfuse = None
+        if trace_id:
+            try:
+                from monitoring.langfuse_client import get_langfuse_client
+                langfuse = get_langfuse_client()
+                self.langfuse = langfuse  # Store for use in other methods
+            except ImportError:
+                logging.warning("Could not import Langfuse client - monitoring will be disabled")
         
         logger.info("Running web extractor")
         
@@ -394,16 +436,25 @@ class WebExtractor:
             start_time = time.time()
             
             # Create a span for the extract_web_content method
-            extract_span = self.langfuse.create_span(
-                trace_id=trace_id,
-                name="extract_web_content",
-                metadata={
-                    "max_queries": max_queries,
-                    "max_results_per_query": max_results_per_query
-                }
-            )
+            extract_span = None
+            if langfuse and trace_id:
+                extract_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="extract_web_content",
+                    metadata={
+                        "max_queries": max_queries,
+                        "max_results_per_query": max_results_per_query,
+                        "language": self.language
+                    }
+                )
             
-            extraction_result = self.extract_web_content(max_queries, max_results_per_query)
+            # Pass trace_id to extract_web_content
+            extraction_result = self.extract_web_content(
+                max_queries=max_queries, 
+                max_results_per_query=max_results_per_query,
+                trace_id=trace_id,
+                parent_span_id=extract_span.id if extract_span else None
+            )
             
             # End the extract span
             if extract_span:
@@ -430,22 +481,25 @@ class WebExtractor:
             }
             
             # Create a metrics span for performance statistics
-            metrics_span = self.langfuse.create_span(
-                trace_id=trace_id,
-                name="performance_metrics",
-                metadata={
-                    "execution_time_seconds": execution_time,
-                    "result_count": output["result_count"],
-                    "skipped_urls": output["skipped_urls"]
-                }
-            )
-            
-            if metrics_span:
-                metrics_span.end()
+            metrics_span = None
+            if langfuse and trace_id:
+                metrics_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="performance_metrics",
+                    metadata={
+                        "execution_time_seconds": execution_time,
+                        "result_count": output["result_count"],
+                        "skipped_urls": output["skipped_urls"]
+                    }
+                )
+                
+                # End metrics span
+                if metrics_span:
+                    metrics_span.end()
             
             # Log quality score if results were found
-            if output["result_count"] > 0 and trace:
-                self.langfuse.score(
+            if output["result_count"] > 0 and langfuse and trace_id:
+                langfuse.score(
                     trace_id=trace_id,
                     name="extraction_success_rate",
                     value=min(output["result_count"] / max(1, (output["result_count"] + output["skipped_urls"])) * 10, 10),
@@ -463,19 +517,6 @@ class WebExtractor:
                 logger.warning(f"Web extractor completed with status '{output['status']}' in {execution_time:.2f} seconds: {output['message']}")
                 print(f"Web extraction completed with status: {output['status']}. {output['message']}")
             
-            # Update trace with final results
-            if trace:
-                trace.update(
-                    output={
-                        "status": output["status"],
-                        "message": output["message"],
-                        "execution_time_seconds": execution_time,
-                        "result_count": output["result_count"],
-                        "skipped_urls": output["skipped_urls"]
-                    },
-                    status="success" if output["status"] != "error" else "error"
-                )
-            
             return output
             
         except Exception as e:
@@ -488,16 +529,18 @@ class WebExtractor:
             print(error_traceback)
             print("!"*50 + "\n")
             
-            # Update trace with error information
-            if trace:
-                trace.update(
-                    output={
-                        "status": "error",
+            # Log error in Langfuse
+            if langfuse and trace_id:
+                error_span = langfuse.create_span(
+                    trace_id=trace_id,
+                    name="extraction_error",
+                    metadata={
                         "error": str(e),
-                        "execution_time_seconds": time.time() - start_time
-                    },
-                    status="error"
+                        "traceback": error_traceback[:1000]  # Truncate if too long
+                    }
                 )
+                error_span.update(status="error")
+                error_span.end()
             
             return {
                 "status": "error",

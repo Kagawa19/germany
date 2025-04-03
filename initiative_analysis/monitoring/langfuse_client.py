@@ -9,9 +9,8 @@ from dotenv import load_dotenv
 from typing import Optional, Dict, Any
 from functools import lru_cache
 
-# Import langfuse
+# Import langfuse - updated imports to match current SDK structure
 from langfuse import Langfuse
-from langfuse.client import Trace, Span, Generation
 
 # Configure logging
 logger = logging.getLogger("langfuse_monitoring")
@@ -64,7 +63,7 @@ class LangfuseClient:
         self._initialized = True
 
     def create_trace(self, name: str, metadata: Optional[Dict[str, Any]] = None, 
-                    tags: Optional[list] = None, user_id: Optional[str] = None) -> Optional[Trace]:
+                    tags: Optional[list] = None, user_id: Optional[str] = None) -> Optional[Any]:
         """
         Create a new trace for a complete process flow.
         
@@ -93,7 +92,7 @@ class LangfuseClient:
 
     def create_span(self, trace_id: Optional[str] = None, name: str = "unnamed_span",
                    metadata: Optional[Dict[str, Any]] = None, 
-                   parent_span_id: Optional[str] = None) -> Optional[Span]:
+                   parent_span_id: Optional[str] = None) -> Optional[Any]:
         """
         Create a span within a trace for tracking sub-operations.
         
@@ -124,7 +123,7 @@ class LangfuseClient:
                      model: str = "gpt-3.5-turbo", prompt: Optional[str] = None,
                      completion: Optional[str] = None, 
                      metadata: Optional[Dict[str, Any]] = None,
-                     parent_span_id: Optional[str] = None) -> Optional[Generation]:
+                     parent_span_id: Optional[str] = None) -> Optional[Any]:
         """
         Log an LLM generation event within a trace.
         
@@ -148,8 +147,8 @@ class LangfuseClient:
                 trace_id=trace_id,
                 name=name,
                 model=model,
-                prompt=prompt,
-                completion=completion,
+                input=prompt,  # Updated from prompt to input
+                output=completion,  # Updated from completion to output
                 metadata=metadata or {},
                 parent_span_id=parent_span_id
             )
