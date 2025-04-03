@@ -1,0 +1,29 @@
+Extract specific mentions of the ABS Initiative from the given content.
+
+Content:
+{content}
+
+Identify all occurrences where the ABS Initiative is mentioned, including variant names like:
+- "ABS Initiative" 
+- "Access and Benefit Sharing Initiative"
+- "ABS Capacity Development Initiative"
+- "ABX CDI"
+- Any other similar variations
+
+For each mention, provide:
+1. The exact variant used
+2. The context (sentence or paragraph)
+3. The type of mention (e.g., reference, description, implementation)
+4. A relevance score (0.0-1.0) indicating how central the ABS Initiative is to this mention
+
+Please provide a JSON response with the following structure:
+{
+  "mentions": [
+    {
+      "variant": "exact variant text",
+      "context": "surrounding text",
+      "type": "reference/description/implementation/etc.",
+      "relevance": 0.0-1.0
+    }
+  ]
+}

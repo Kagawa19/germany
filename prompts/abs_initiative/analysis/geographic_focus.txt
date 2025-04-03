@@ -1,0 +1,15 @@
+Extract geographic focus information from the following excerpt related to the ABS Initiative.
+
+Excerpt:
+{excerpt}
+
+Please provide a JSON response with the following structure:
+{
+  "locations": [
+    {
+      "country": "Country name",
+      "region": "Region name (e.g., Africa, Asia, etc.)",
+      "scope": "Implementation/Research/Reference"
+    }
+  ]
+}

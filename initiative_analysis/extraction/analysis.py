@@ -3,6 +3,7 @@ import logging
 import json
 import re
 from datetime import datetime
+import time
 from urllib.parse import urlparse
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -687,23 +688,64 @@ class Analysis:
     
 
 
-    def analyze_content(self, content: str, title: str = "", url: str = "", language: str = "English") -> Dict[str, Any]:
+    # Add these imports at the top of extraction/analysis.py
+# from monitoring.langfuse_client import get_langfuse_client
+
+# Then update the analyze_content method in the Analysis class:
+
+    def analyze_content(self, content: str, title: str = "", url: str = "", language: str = "English", 
+                    trace_id: str = None, parent_span_id: str = None) -> Dict[str, Any]:
         """
         Comprehensive content analysis method that calls all other methods.
+        Enhanced with Langfuse tracing.
             
         Args:
             content: Content text to analyze
             title: Content title for context
             url: Source URL for context 
             language: Content language
+            trace_id: Optional Langfuse trace ID for monitoring
+            parent_span_id: Optional parent span ID for nested tracing
             
         Returns:
             Dictionary with all extracted information
         """
+        # Get Langfuse client for tracing
+        langfuse = None
+        try:
+            from monitoring.langfuse_client import get_langfuse_client
+            langfuse = get_langfuse_client()
+        except ImportError:
+            logger.warning("Langfuse client not available for tracing analysis")
+        
+        # Create a span for the overall analysis process
+        analysis_span = None
+        if langfuse and trace_id:
+            analysis_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="comprehensive_analysis",
+                parent_span_id=parent_span_id,
+                metadata={
+                    "content_length": len(content) if content else 0,
+                    "title": title,
+                    "url": url,
+                    "language": language
+                }
+            )
+        
         # Skip if content is too short
         if not content or len(content) < 100:
             logger.warning("Content too short for comprehensive analysis")
             print("Warning: Content too short for analysis")
+            
+            # Update span with error
+            if analysis_span:
+                analysis_span.update(
+                    output={"error": "Content too short for analysis"},
+                    status="error"
+                )
+                analysis_span.end()
+                
             return {"error": "Content too short for analysis"}
             
         # Initialize result dictionary
@@ -714,9 +756,32 @@ class Analysis:
             "analysis_timestamp": datetime.now().isoformat()
         }
         
+        # Track start time for performance monitoring
+        start_time = time.time()
+        
         # Generate embedding
+        embedding_span = None
+        if langfuse and trace_id:
+            embedding_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="generate_embedding",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id,
+                metadata={"language": language}
+            )
+        
         logger.info("Generating embedding...")
         embedding = self.generate_embedding(content, language)
+        
+        # Update embedding span
+        if embedding_span:
+            embedding_span.update(
+                output={
+                    "success": bool(embedding),
+                    "vector_size": len(embedding) if embedding else 0
+                }
+            )
+            embedding_span.end()
+        
         if embedding:
             result["embedding"] = embedding
             print("Embedding generated successfully")
@@ -725,8 +790,49 @@ class Analysis:
             print("Warning: Embedding generation failed")
             
         # Generate summary 
+        summary_span = None
+        if langfuse and trace_id:
+            summary_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="generate_summary",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id,
+                metadata={"title": title, "url": url}
+            )
+        
         logger.info("Generating summary...")
+        summary_start = time.time()
         summary = self.generate_summary(content, title, url, language)
+        summary_duration = time.time() - summary_start
+        
+        # Log the LLM generation for the summary
+        if langfuse and trace_id and self.openai_client:
+            # If we have the original prompt and response, log them
+            prompt_text = f"Summarize content: {title}"
+            langfuse.log_generation(
+                trace_id=trace_id,
+                name="summary_generation",
+                model="gpt-3.5-turbo",
+                prompt=prompt_text,
+                completion=summary if summary else "Failed to generate summary",
+                metadata={
+                    "duration": summary_duration,
+                    "content_length": len(content),
+                    "summary_length": len(summary) if summary else 0
+                },
+                parent_span_id=summary_span.id if summary_span else (analysis_span.id if analysis_span else parent_span_id)
+            )
+        
+        # Update summary span
+        if summary_span:
+            summary_span.update(
+                output={
+                    "success": bool(summary),
+                    "summary_length": len(summary) if summary else 0,
+                    "duration_seconds": summary_duration
+                }
+            )
+            summary_span.end()
+        
         if summary:
             result["summary"] = summary
             print("Summary generated successfully")
@@ -735,8 +841,45 @@ class Analysis:
             print("Warning: Summary generation failed")
             
         # Analyze sentiment
+        sentiment_span = None
+        if langfuse and trace_id:
+            sentiment_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="analyze_sentiment",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Analyzing sentiment...")
+        sentiment_start = time.time()
         sentiment_info = self.analyze_sentiment(content)
+        sentiment_duration = time.time() - sentiment_start
+        
+        # Log sentiment analysis score
+        if langfuse and trace_id and sentiment_info:
+            sentiment_value = {
+                "Positive": 1.0,
+                "Neutral": 0.5,
+                "Negative": 0.0
+            }.get(sentiment_info.get("overall_sentiment", "Neutral"), 0.5)
+            
+            langfuse.score(
+                trace_id=trace_id,
+                name="content_sentiment",
+                value=sentiment_value * 10, # Scale to 0-10
+                comment=f"Content sentiment: {sentiment_info.get('overall_sentiment', 'Neutral')}"
+            )
+        
+        # Update sentiment span
+        if sentiment_span:
+            sentiment_span.update(
+                output={
+                    "sentiment": sentiment_info.get("overall_sentiment", "Neutral"),
+                    "score": sentiment_info.get("sentiment_score", 0),
+                    "duration_seconds": sentiment_duration
+                }
+            )
+            sentiment_span.end()
+        
         if sentiment_info:
             result.update(sentiment_info)
             print("Sentiment analysis completed")
@@ -745,8 +888,30 @@ class Analysis:
             print("Warning: Sentiment analysis failed")
 
         # Identify themes
+        themes_span = None
+        if langfuse and trace_id:
+            themes_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="identify_themes",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Identifying themes...")
+        themes_start = time.time()
         themes = self.identify_themes(content)
+        themes_duration = time.time() - themes_start
+        
+        # Update themes span
+        if themes_span:
+            themes_span.update(
+                output={
+                    "theme_count": len(themes),
+                    "themes": themes,
+                    "duration_seconds": themes_duration
+                }
+            )
+            themes_span.end()
+        
         if themes:
             result["themes"] = themes 
             print(f"Identified {len(themes)} themes")
@@ -755,8 +920,29 @@ class Analysis:
             print("Warning: Theme identification failed")
 
         # Extract ABS mentions
+        mentions_span = None
+        if langfuse and trace_id:
+            mentions_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_abs_mentions",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting ABS mentions...")
+        mentions_start = time.time()
         mentions = self.extract_abs_mentions(content)
+        mentions_duration = time.time() - mentions_start
+        
+        # Update mentions span
+        if mentions_span:
+            mentions_span.update(
+                output={
+                    "mention_count": len(mentions),
+                    "duration_seconds": mentions_duration
+                }
+            )
+            mentions_span.end()
+        
         if mentions: 
             result["abs_mentions"] = mentions
             print(f"Extracted {len(mentions)} ABS mentions")
@@ -764,8 +950,29 @@ class Analysis:
             logger.info("No ABS mentions found")
             
         # Extract geographic focus
+        geo_span = None
+        if langfuse and trace_id:
+            geo_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_geographic_focus",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting geographic focus...")
+        geo_start = time.time()
         geo_focus = self.extract_geographic_focus(content)
+        geo_duration = time.time() - geo_start
+        
+        # Update geographic span
+        if geo_span:
+            geo_span.update(
+                output={
+                    "location_count": len(geo_focus),
+                    "duration_seconds": geo_duration
+                }
+            )
+            geo_span.end()
+        
         if geo_focus:
             result["geographic_focus"] = geo_focus
             print(f"Identified geographic focus: {geo_focus}")
@@ -773,8 +980,29 @@ class Analysis:
             logger.info("No clear geographic focus identified")
 
         # Extract project details
+        projects_span = None
+        if langfuse and trace_id:
+            projects_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_project_details",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting project details...") 
+        projects_start = time.time()
         projects = self.extract_project_details(content)
+        projects_duration = time.time() - projects_start
+        
+        # Update projects span
+        if projects_span:
+            projects_span.update(
+                output={
+                    "project_count": len(projects),
+                    "duration_seconds": projects_duration
+                }
+            )
+            projects_span.end()
+        
         if projects:
             result["projects"] = projects
             print(f"Extracted {len(projects)} projects")
@@ -782,8 +1010,29 @@ class Analysis:
             logger.info("No project details found")
 
         # Extract organizations
+        orgs_span = None
+        if langfuse and trace_id:
+            orgs_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_organizations",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting organizations...")
+        orgs_start = time.time()
         organizations = self.extract_organizations(content)
+        orgs_duration = time.time() - orgs_start
+        
+        # Update organizations span
+        if orgs_span:
+            orgs_span.update(
+                output={
+                    "organization_count": len(organizations),
+                    "duration_seconds": orgs_duration
+                }
+            )
+            orgs_span.end()
+        
         if organizations:
             result["organizations"] = organizations
             print(f"Extracted {len(organizations)} organizations") 
@@ -791,8 +1040,29 @@ class Analysis:
             logger.info("No organizations found")
 
         # Extract resources  
+        resources_span = None
+        if langfuse and trace_id:
+            resources_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_resources",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting resources...")
+        resources_start = time.time()
         resources = self.extract_resources(content)
+        resources_duration = time.time() - resources_start
+        
+        # Update resources span
+        if resources_span:
+            resources_span.update(
+                output={
+                    "resource_count": len(resources),
+                    "duration_seconds": resources_duration
+                }
+            )
+            resources_span.end()
+        
         if resources:
             result["resources"] = resources
             print(f"Extracted {len(resources)} resources")
@@ -800,16 +1070,67 @@ class Analysis:
             logger.info("No resources found")
             
         # Extract target audiences
+        audiences_span = None
+        if langfuse and trace_id:
+            audiences_span = langfuse.create_span(
+                trace_id=trace_id,
+                name="extract_target_audiences",
+                parent_span_id=analysis_span.id if analysis_span else parent_span_id
+            )
+        
         logger.info("Extracting target audiences...")
+        audiences_start = time.time()
         audiences = self.extract_target_audiences(content)
+        audiences_duration = time.time() - audiences_start
+        
+        # Update audiences span
+        if audiences_span:
+            audiences_span.update(
+                output={
+                    "audience_count": len(audiences),
+                    "duration_seconds": audiences_duration
+                }
+            )
+            audiences_span.end()
+        
         if audiences:
             result["target_audiences"] = audiences
             print(f"Extracted {len(audiences)} target audiences")
         else:
             logger.info("No target audiences found")
 
+        # Calculate total analysis time
+        total_duration = time.time() - start_time
+        
+        # Add completion metrics
+        completion_percentage = 0
+        critical_fields = ["summary", "sentiment_info", "themes", "abs_mentions"]
+        completed_fields = sum(1 for field in critical_fields if field in result or f"{field}" in result)
+        completion_percentage = (completed_fields / len(critical_fields)) * 100
+        
+        # Log analysis quality score in Langfuse
+        if langfuse and trace_id:
+            langfuse.score(
+                trace_id=trace_id,
+                name="analysis_completeness",
+                value=min(completion_percentage / 10, 10),  # Scale to 0-10
+                comment=f"Analysis completeness: {completion_percentage:.1f}% of critical fields extracted"
+            )
+        
         print("Comprehensive content analysis completed")
-        logger.info("Content analysis result: %s", result)
+        logger.info(f"Content analysis completed in {total_duration:.2f} seconds with {len(result)} extracted components")
+        
+        # Update the main analysis span with final results
+        if analysis_span:
+            analysis_span.update(
+                output={
+                    "status": "success",
+                    "duration_seconds": total_duration,
+                    "extracted_fields": list(result.keys()),
+                    "completion_percentage": completion_percentage
+                }
+            )
+            analysis_span.end()
 
         return result
     

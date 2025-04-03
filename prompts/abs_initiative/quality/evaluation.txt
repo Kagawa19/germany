@@ -1,0 +1,30 @@
+# Task: Evaluate the quality of extracted web content related to the ABS Initiative
+
+## Content to Evaluate:
+{content}
+
+## Evaluation Criteria:
+- Relevance: How relevant is the content to the ABS Initiative (1-10)
+- Completeness: How comprehensive is the extracted information (1-10)
+- Accuracy: How accurate is the information based on the source (1-10)
+- Usefulness: How useful is this information for understanding the ABS Initiative (1-10)
+
+## Instructions:
+Carefully evaluate the extracted content against each criterion.
+Provide a score from 1-10 for each criterion (10 being perfect).
+Calculate an overall score from 1-10.
+Provide specific, constructive feedback highlighting strengths and improvement areas.
+
+Respond with a JSON object using this structure:
+{
+  "criteria_scores": {
+    "relevance": number,
+    "completeness": number,
+    "accuracy": number,
+    "usefulness": number
+  },
+  "overall_score": number,
+  "feedback": "string",
+  "strengths": ["string"],
+  "improvements": ["string"]
+}

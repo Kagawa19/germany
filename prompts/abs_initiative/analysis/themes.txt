@@ -1,0 +1,15 @@
+Identify the key thematic areas in the following excerpt related to the ABS Initiative.
+
+Excerpt:
+{excerpt}
+
+Focus on identifying themes related to:
+- Capacity development
+- Policy frameworks
+- Regional cooperation
+- Access and benefit sharing mechanisms
+- Traditional knowledge
+- Genetic resources
+- Stakeholder engagement
+
+List the themes as comma-separated values, with the most prominent themes first.
