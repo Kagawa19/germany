@@ -1,38 +1,19 @@
-Evaluate the helpfulness of the following text excerpt for stakeholders in Access and Benefit Sharing (ABS).
+Evaluate the helpfulness of the following text:
 
-Content: {content}
+{{content}}
 
 Helpfulness Assessment Criteria:
 - Practical value of information
 - Clarity of explanations
 - Actionable insights
-- Relevance to ABS stakeholders
-
-Specific Evaluation Points:
-- Does the content provide clear guidance?
-- Are there actionable recommendations?
-- Does it address key challenges in ABS?
-- Is the information accessible to target audiences?
-
-Dimensions of Helpfulness:
-- Educational value
-- Problem-solving potential
-- Practical applicability
-- Depth of insights
-- Clarity of communication
+- Potential usefulness to stakeholders
 
 Respond in JSON format:
-{
-  "helpfulness_score": 0.0-1.0,
-  "helpfulness_confidence": 0.0-1.0,
-  "notes": [
+{{
+"helpfulness_score": 0.0-1.0,
+"helpfulness_confidence": 0.0-1.0,
+"helpfulness_notes": [
     "Specific helpful aspect",
     "Potential improvement area"
-  ]
-}
-
-Scoring Guidelines:
-- 0.0-0.2: Minimal practical value
-- 0.3-0.5: Some useful information
-- 0.6-0.8: Substantially helpful
-- 0.9-1.0: Extremely valuable and actionable
+]
+}}

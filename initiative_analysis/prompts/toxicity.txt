@@ -1,38 +1,19 @@
-Analyze the content for potentially harmful, offensive, or toxic language and perspectives.
+Analyze the following text for potentially harmful language:
 
-Content: {content}
+{{content}}
 
 Toxicity Assessment Criteria:
 - Presence of discriminatory language
 - Harmful stereotypes or prejudices
 - Inflammatory or aggressive tone
-- Potential for causing harm or offense
-
-Specific Evaluation Dimensions:
-- Representation of diverse stakeholders
-- Language used for different groups
-- Potential for marginalizing perspectives
-- Tone and implicit biases
-
-Toxicity Indicators:
-- Discriminatory statements
-- Derogatory terminology
-- Harmful stereotyping
-- Dismissive or belittling language
-- Inflammatory rhetoric
+- Potential for causing offense
 
 Respond in JSON format:
-{
-  "toxicity_score": 0.0-1.0,
-  "toxicity_confidence": 0.0-1.0,
-  "concerns": [
+{{
+"toxicity_score": 0.0-1.0,
+"toxicity_confidence": 0.0-1.0,
+"toxicity_concerns": [
     "Specific toxic language or perspective",
     "Potential harmful implication"
-  ]
-}
-
-Scoring Guidelines:
-- 0.0-0.2: No toxic elements detected
-- 0.3-0.5: Minor toxic undertones
-- 0.6-0.8: Significant toxic language or perspectives
-- 0.9-1.0: Highly offensive or harmful content
+]
+}}

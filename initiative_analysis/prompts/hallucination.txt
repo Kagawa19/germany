@@ -1,37 +1,19 @@
-Analyze the following text excerpt for potential hallucinations or fabricated information.
+Analyze the following text for potential fabricated or unsupported information:
 
-Content: {content}
+{{content}}
 
 Hallucination Detection Criteria:
-- Identification of potentially non-existent organizations
-- Detection of fabricated events or initiatives
-- Verification of statistical claims
-- Recognition of unsupported assertions
-
-Specific Focus Areas:
-- ABS-related organizations and initiatives
-- Claims about biodiversity and genetic resources
-- References to international protocols
-- Purported research findings or project details
-
-Evaluation Guidelines:
-- Look for statements without verifiable sources
-- Identify claims that contradict known scientific or policy information
-- Detect overly specific or improbable assertions
-- Check for coherence and plausibility of described scenarios
+- Identification of potentially non-existent claims
+- Detection of fabricated events or statistics
+- Verification of unsupported assertions
+- Recognition of implausible statements
 
 Respond in JSON format:
-{
-  "hallucination_score": 0.0-1.0,
-  "hallucination_confidence": 0.0-1.0,
-  "issues": [
+{{
+"hallucination_score": 0.0-1.0,
+"hallucination_confidence": 0.0-1.0,
+"hallucination_issues": [
     "Specific hallucination or fabricated claim",
     "Unverifiable assertion"
-  ]
-}
-
-Scoring Guidelines:
-- 0.0-0.2: No significant hallucinations detected
-- 0.3-0.5: Some unverifiable or suspicious claims
-- 0.6-0.8: Multiple potentially fabricated statements
-- 0.9-1.0: Extensive fabrication or hallucinations
+]
+}}

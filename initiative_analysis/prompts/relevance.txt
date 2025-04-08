@@ -1,38 +1,19 @@
-Comprehensively evaluate the overall relevance of the following content to the ABS Initiative and broader Access and Benefit Sharing ecosystem.
+Evaluate the overall relevance of the following text:
 
-Content: {content}
+{{content}}
 
 Relevance Assessment Criteria:
-- Alignment with ABS principles
-- Significance to current global biodiversity efforts
-- Potential impact on policy or practice
-- Depth of engagement with key ABS concepts
-
-Specific Evaluation Dimensions:
-- Current policy implications
-- Innovative approaches to ABS
-- Representation of stakeholder perspectives
-- Contribution to scientific or policy discourse
-
-Relevance Indicators:
-- Explicit ABS discussions
-- Genetic resources context
-- Traditional knowledge references
-- Biodiversity conservation connections
-- Implementation challenges and solutions
+- Significance to current discussions
+- Potential impact or importance
+- Depth of insight
+- Breadth of applicability
 
 Respond in JSON format:
-{
-  "relevance_score": 0.0-1.0,
-  "relevance_confidence": 0.0-1.0,
-  "key_points": [
+{{
+"relevance_score": 0.0-1.0,
+"relevance_confidence": 0.0-1.0,
+"relevance_key_points": [
     "Specific relevance indicator",
     "Another key relevance factor"
-  ]
-}
-
-Scoring Guidelines:
-- 0.0-0.2: Minimal relevance to ABS
-- 0.3-0.5: Tangential or peripheral connection
-- 0.6-0.8: Substantive and meaningful relevance
-- 0.9-1.0: Highly focused and directly critical to ABS
+]
+}}
