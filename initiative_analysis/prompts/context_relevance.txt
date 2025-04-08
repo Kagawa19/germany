@@ -1,8 +1,8 @@
 Evaluate the relevance of the following content to Access and Benefit Sharing (ABS), the Nagoya Protocol, and related initiatives.
 
-Title: {title}
-URL: {url}
-Content: {content}
+Title: {{title}}
+URL: {{url}}
+Content: {{content}}
 
 Evaluation Criteria:
 - Directness of ABS-related discussions
@@ -18,14 +18,14 @@ Assess based on:
 - Policy or implementation discussions
 
 Respond in JSON format:
-{
+{{
   "context_relevance_score": 0.0-1.0,
   "context_relevance_confidence": 0.0-1.0,
   "key_relevance_points": [
     "Specific reason for relevance",
     "Another key relevance indicator"
   ]
-}
+}}
 
 Scoring Guidelines:
 - 0.0-0.2: Minimal or no relevance
