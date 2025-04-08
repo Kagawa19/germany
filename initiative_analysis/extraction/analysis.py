@@ -640,6 +640,497 @@ class Analysis:
         except Exception as e:
             logger.error(f"Summary generation error: {str(e)}")
             return f"Unable to generate summary due to technical issues."
+
+    def analyze_context_relevance(self, content: str, title: str = "", url: str = "") -> Dict[str, Any]:
+        """
+        Analyze context relevance using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            title: Content title for context
+            url: Source URL for context
+            
+        Returns:
+            Dictionary with context relevance information
+        """
+        if not content or len(content) < 100:
+            return {"context_relevance_score": 0.0, "context_relevance_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for context relevance analysis")
+            return {"context_relevance_score": 0.0, "context_relevance_confidence": 0.0}
+        
+        try:
+            # Load context relevance prompt
+            prompt = self._load_prompt("context_relevance")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate how relevant the following content is to ABS (Access and Benefit Sharing) 
+                and the Nagoya Protocol. Consider:
+                - Whether it directly discusses ABS topics
+                - How central ABS issues are to the content
+                - Whether it relates to genetic resources, traditional knowledge, or biodiversity
+                
+                Title: {title}
+                URL: {url}
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - context_relevance_score: A float from 0.0 (not relevant) to 1.0 (highly relevant)
+                - context_relevance_confidence: Your confidence in this assessment (0.0-1.0)
+                - issues: Array of notes about relevance (optional)
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt, title=title, url=url)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return context relevance analysis with standard fields
+            return {
+                "context_relevance_score": result.get("context_relevance_score", 0.0),
+                "context_relevance_confidence": result.get("context_relevance_confidence", 0.0),
+                "context_relevance_issues": result.get("issues", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in context relevance analysis: {str(e)}")
+            return {"context_relevance_score": 0.0, "context_relevance_confidence": 0.0}
+
+    def analyze_conciseness(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze conciseness using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with conciseness information
+        """
+        if not content or len(content) < 100:
+            return {"conciseness_score": 0.0, "conciseness_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for conciseness analysis")
+            return {"conciseness_score": 0.0, "conciseness_confidence": 0.0}
+        
+        try:
+            # Load conciseness prompt
+            prompt = self._load_prompt("conciseness")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate the conciseness of the following content.
+                Consider:
+                - Whether the content is direct and to the point
+                - Whether it avoids unnecessary repetition or verbosity
+                - Whether key information is expressed efficiently
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - conciseness_score: A float from 0.0 (extremely verbose) to 1.0 (perfectly concise)
+                - conciseness_confidence: Your confidence in this assessment (0.0-1.0)
+                - issues: Array of specific areas that could be more concise (optional)
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return conciseness analysis with standard fields
+            return {
+                "conciseness_score": result.get("conciseness_score", 0.0),
+                "conciseness_confidence": result.get("conciseness_confidence", 0.0),
+                "conciseness_issues": result.get("issues", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in conciseness analysis: {str(e)}")
+            return {"conciseness_score": 0.0, "conciseness_confidence": 0.0}
+
+    def analyze_correctness(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze factual correctness using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with correctness information
+        """
+        if not content or len(content) < 100:
+            return {"correctness_score": 0.0, "correctness_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for correctness analysis")
+            return {"correctness_score": 0.0, "correctness_confidence": 0.0}
+        
+        try:
+            # Load correctness prompt
+            prompt = self._load_prompt("correctness")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate the factual correctness of the following content.
+                Consider whether the statements are accurate, supported by evidence,
+                and consistent with general knowledge about Access and Benefit Sharing (ABS),
+                the Nagoya Protocol, and related topics.
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - correctness_score: A float from 0.0 (completely incorrect) to 1.0 (completely correct)
+                - correctness_confidence: Your confidence in this assessment (0.0-1.0)
+                - issues: Array of potential factual errors (if any)
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return correctness analysis with standard fields
+            return {
+                "correctness_score": result.get("correctness_score", 0.0),
+                "correctness_confidence": result.get("correctness_confidence", 0.0),
+                "correctness_issues": result.get("issues", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in correctness analysis: {str(e)}")
+            return {"correctness_score": 0.0, "correctness_confidence": 0.0}
+
+    def analyze_hallucination(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze for potential hallucinations/fabrications using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with hallucination information
+        """
+        if not content or len(content) < 100:
+            return {"hallucination_score": 0.0, "hallucination_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for hallucination analysis")
+            return {"hallucination_score": 0.0, "hallucination_confidence": 0.0}
+        
+        try:
+            # Load hallucination prompt
+            prompt = self._load_prompt("hallucination")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate whether the following content contains hallucinations or fabricated information.
+                Focus specifically on statements about:
+                - Organizations, projects, or initiatives that don't exist
+                - Events or dates that seem fabricated
+                - Quotes or statistics without proper attribution
+                - Claims that contradict established facts about Access and Benefit Sharing
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - hallucination_score: A float from 0.0 (no hallucinations) to 1.0 (completely fabricated)
+                - hallucination_confidence: Your confidence in this assessment (0.0-1.0)
+                - issues: Array of specific suspected hallucinations (if any)
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return hallucination analysis with standard fields
+            return {
+                "hallucination_score": result.get("hallucination_score", 0.0),
+                "hallucination_confidence": result.get("hallucination_confidence", 0.0),
+                "hallucination_issues": result.get("issues", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in hallucination analysis: {str(e)}")
+            return {"hallucination_score": 0.0, "hallucination_confidence": 0.0}
+
+    def analyze_helpfulness(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze helpfulness of the content using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with helpfulness information
+        """
+        if not content or len(content) < 100:
+            return {"helpfulness_score": 0.0, "helpfulness_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for helpfulness analysis")
+            return {"helpfulness_score": 0.0, "helpfulness_confidence": 0.0}
+        
+        try:
+            # Load helpfulness prompt
+            prompt = self._load_prompt("helpfulness")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate how helpful the following content would be for stakeholders interested in
+                Access and Benefit Sharing (ABS), the Nagoya Protocol, or related topics.
+                Consider whether the content:
+                - Provides actionable information
+                - Addresses key questions or challenges
+                - Explains complex concepts clearly
+                - Offers resources or guidance
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - helpfulness_score: A float from 0.0 (not helpful) to 1.0 (extremely helpful)
+                - helpfulness_confidence: Your confidence in this assessment (0.0-1.0)
+                - notes: Array of ways the content is helpful or could be more helpful
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return helpfulness analysis with standard fields
+            return {
+                "helpfulness_score": result.get("helpfulness_score", 0.0),
+                "helpfulness_confidence": result.get("helpfulness_confidence", 0.0),
+                "helpfulness_notes": result.get("notes", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in helpfulness analysis: {str(e)}")
+            return {"helpfulness_score": 0.0, "helpfulness_confidence": 0.0}
+        
+    def analyze_toxicity(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze content for toxic or harmful language using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with toxicity information
+        """
+        if not content or len(content) < 100:
+            return {"toxicity_score": 0.0, "toxicity_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for toxicity analysis")
+            return {"toxicity_score": 0.0, "toxicity_confidence": 0.0}
+        
+        try:
+            # Load toxicity prompt
+            prompt = self._load_prompt("toxicity")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate the following content for potentially toxic, harmful, biased, or offensive language.
+                Consider:
+                - Presence of hate speech, discrimination, or prejudice
+                - Aggressive or hostile tone
+                - Misinformation that could cause harm
+                - Offensive stereotypes or characterizations
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - toxicity_score: A float from 0.0 (not toxic) to 1.0 (extremely toxic)
+                - toxicity_confidence: Your confidence in this assessment (0.0-1.0)
+                - concerns: Array of specific concerns (if any)
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return toxicity analysis with standard fields
+            return {
+                "toxicity_score": result.get("toxicity_score", 0.0),
+                "toxicity_confidence": result.get("toxicity_confidence", 0.0),
+                "toxicity_concerns": result.get("concerns", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in toxicity analysis: {str(e)}")
+            return {"toxicity_score": 0.0, "toxicity_confidence": 0.0}
+
+    def analyze_relevance(self, content: str) -> Dict[str, Any]:
+        """
+        Analyze general relevance of the content using OpenAI API.
+        
+        Args:
+            content: Content text to analyze
+            
+        Returns:
+            Dictionary with relevance information
+        """
+        if not content or len(content) < 100:
+            return {"relevance_score": 0.0, "relevance_confidence": 0.0}
+        
+        if not self.openai_client:
+            logger.error("OpenAI client not available for relevance analysis")
+            return {"relevance_score": 0.0, "relevance_confidence": 0.0}
+        
+        try:
+            # Load relevance prompt
+            prompt = self._load_prompt("relevance")
+            if not prompt:
+                # Create a default prompt if file not found
+                prompt = """
+                Evaluate the overall relevance of the following content to stakeholders in the 
+                ABS Initiative (Access and Benefit Sharing). 
+                Consider:
+                - Current relevance to policy or practice
+                - Importance to various stakeholder groups
+                - Whether it addresses significant issues in the field
+                
+                Content:
+                {content}
+                
+                Return your analysis as a JSON object with:
+                - relevance_score: A float from 0.0 (completely irrelevant) to 1.0 (highly relevant)
+                - relevance_confidence: Your confidence in this assessment (0.0-1.0)
+                - key_points: Array of key points that establish relevance
+                """
+            
+            # Truncate content to save tokens
+            excerpt = content[:3000] + ("..." if len(content) > 3000 else "")
+            
+            # Format the prompt
+            formatted_prompt = prompt.format(content=excerpt)
+            
+            # Make API call
+            response = self.openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "user", "content": formatted_prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=300
+            )
+            
+            # Parse the result
+            result = json.loads(response.choices[0].message.content)
+            
+            # Return relevance analysis with standard fields
+            return {
+                "relevance_score": result.get("relevance_score", 0.0),
+                "relevance_confidence": result.get("relevance_confidence", 0.0),
+                "relevance_key_points": result.get("key_points", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in relevance analysis: {str(e)}")
+            return {"relevance_score": 0.0, "relevance_confidence": 0.0}
     
     def generate_embedding(self, text: str, language: str = "English") -> List[float]:
         """
@@ -743,7 +1234,81 @@ class Analysis:
         else:
             logger.warning("Failed to analyze sentiment")
             print("Warning: Sentiment analysis failed")
-
+        
+        # NEW ANALYSES
+        
+        # Analyze context relevance
+        logger.info("Analyzing context relevance...")
+        context_relevance_info = self.analyze_context_relevance(content, title, url)
+        if context_relevance_info:
+            result.update(context_relevance_info)
+            print("Context relevance analysis completed")
+        else:
+            logger.warning("Failed to analyze context relevance")
+            print("Warning: Context relevance analysis failed")
+        
+        # Analyze conciseness
+        logger.info("Analyzing conciseness...")
+        conciseness_info = self.analyze_conciseness(content)
+        if conciseness_info:
+            result.update(conciseness_info)
+            print("Conciseness analysis completed")
+        else:
+            logger.warning("Failed to analyze conciseness")
+            print("Warning: Conciseness analysis failed")
+        
+        # Analyze correctness
+        logger.info("Analyzing correctness...")
+        correctness_info = self.analyze_correctness(content)
+        if correctness_info:
+            result.update(correctness_info)
+            print("Correctness analysis completed")
+        else:
+            logger.warning("Failed to analyze correctness")
+            print("Warning: Correctness analysis failed")
+        
+        # Analyze hallucination
+        logger.info("Analyzing hallucination...")
+        hallucination_info = self.analyze_hallucination(content)
+        if hallucination_info:
+            result.update(hallucination_info)
+            print("Hallucination analysis completed")
+        else:
+            logger.warning("Failed to analyze hallucination")
+            print("Warning: Hallucination analysis failed")
+        
+        # Analyze helpfulness
+        logger.info("Analyzing helpfulness...")
+        helpfulness_info = self.analyze_helpfulness(content)
+        if helpfulness_info:
+            result.update(helpfulness_info)
+            print("Helpfulness analysis completed")
+        else:
+            logger.warning("Failed to analyze helpfulness")
+            print("Warning: Helpfulness analysis failed")
+        
+        # Analyze relevance
+        logger.info("Analyzing relevance...")
+        relevance_info = self.analyze_relevance(content)
+        if relevance_info:
+            result.update(relevance_info)
+            print("Relevance analysis completed")
+        else:
+            logger.warning("Failed to analyze relevance")
+            print("Warning: Relevance analysis failed")
+        
+        # Analyze toxicity
+        logger.info("Analyzing toxicity...")
+        toxicity_info = self.analyze_toxicity(content)
+        if toxicity_info:
+            result.update(toxicity_info)
+            print("Toxicity analysis completed")
+        else:
+            logger.warning("Failed to analyze toxicity")
+            print("Warning: Toxicity analysis failed")
+        
+        # Continue with existing analyses
+        
         # Identify themes
         logger.info("Identifying themes...")
         themes = self.identify_themes(content)
@@ -768,7 +1333,7 @@ class Analysis:
         geo_focus = self.extract_geographic_focus(content)
         if geo_focus:
             result["geographic_focus"] = geo_focus
-            print(f"Identified geographic focus: {geo_focus}")
+            print(f"Identified geographic focus: {len(geo_focus)} locations")
         else:
             logger.info("No clear geographic focus identified")
 
@@ -807,9 +1372,24 @@ class Analysis:
             print(f"Extracted {len(audiences)} target audiences")
         else:
             logger.info("No target audiences found")
+        
+        # Collect all issues from different analyses into a single array
+        all_issues = []
+        for issue_key in [
+            "correctness_issues", "context_relevance_issues", "conciseness_issues", 
+            "hallucination_issues", "toxicity_concerns", "helpfulness_notes"
+        ]:
+            if issue_key in result and result[issue_key]:
+                all_issues.extend([{
+                    "category": issue_key.replace("_issues", "").replace("_concerns", "").replace("_notes", ""),
+                    "issue": issue
+                } for issue in result[issue_key]])
+        
+        if all_issues:
+            result["all_issues"] = all_issues
 
         print("Comprehensive content analysis completed")
-        logger.info("Content analysis result: %s", result)
+        logger.info("Content analysis completed with all metrics")
 
         return result
     

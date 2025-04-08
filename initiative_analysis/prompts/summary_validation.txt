@@ -1,0 +1,38 @@
+Validate the accuracy and fidelity of the generated summary against the original content.
+
+Summary: {summary}
+Original Content: {content}
+
+Validation Criteria:
+- Factual accuracy of summary claims
+- Preservation of original content's key messages
+- Absence of hallucinations or fabricated information
+- Maintenance of original context and nuance
+
+Specific Evaluation Points:
+- Do all summary statements exist in the original text?
+- Are key points represented accurately?
+- Has the original meaning been preserved?
+- Are there any distortions or misrepresentations?
+
+Validation Focus Areas:
+- Factual statements
+- Interpretative claims
+- Contextual representation
+- Potential information loss or addition
+
+Respond in JSON format:
+{
+  "valid": true/false,
+  "issues": [
+    "Specific validation concern",
+    "Potential misrepresentation"
+  ],
+  "explanation": "Brief rationale for validation result"
+}
+
+Validation Guidelines:
+- Strict interpretation of content fidelity
+- Careful cross-referencing of summary and original text
+- Consideration of context and implied meanings
+- Balanced assessment of summarization challenges

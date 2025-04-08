@@ -1,0 +1,31 @@
+Evaluate the conciseness of the following text excerpt.
+
+Content: {content}
+
+Conciseness Assessment Criteria:
+- Efficiency of information delivery
+- Absence of unnecessary repetition
+- Clarity of expression
+- Direct communication of key points
+
+Specific Considerations:
+- Are ideas expressed succinctly?
+- Is there unnecessary elaboration?
+- Do sentences serve a clear purpose?
+- Is the language direct and to the point?
+
+Respond in JSON format:
+{
+  "conciseness_score": 0.0-1.0,
+  "conciseness_confidence": 0.0-1.0,
+  "issues": [
+    "Specific area of verbosity",
+    "Redundant explanation"
+  ]
+}
+
+Scoring Guidelines:
+- 0.0-0.2: Extremely verbose and inefficient
+- 0.3-0.5: Significant room for improvement
+- 0.6-0.8: Generally concise with some areas to tighten
+- 0.9-1.0: Extremely efficient and direct communication

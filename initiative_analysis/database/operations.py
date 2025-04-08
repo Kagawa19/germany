@@ -58,6 +58,26 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             sentiment_score = sentiment_info.get("sentiment_score", 0.0)
             sentiment_confidence = sentiment_info.get("sentiment_confidence", 0.5)
             
+            # Handle all new scores consistently
+            context_relevance_score = item.get("context_relevance_score", 0.0)
+            context_relevance_confidence = item.get("context_relevance_confidence", 0.0)
+            conciseness_score = item.get("conciseness_score", 0.0)
+            conciseness_confidence = item.get("conciseness_confidence", 0.0)
+            correctness_score = item.get("correctness_score", 0.0)
+            correctness_confidence = item.get("correctness_confidence", 0.0)
+            hallucination_score = item.get("hallucination_score", 0.0)
+            hallucination_confidence = item.get("hallucination_confidence", 0.0)
+            helpfulness_score = item.get("helpfulness_score", 0.0)
+            helpfulness_confidence = item.get("helpfulness_confidence", 0.0)
+            relevance_score = item.get("relevance_score", 0.0)
+            relevance_confidence = item.get("relevance_confidence", 0.0)
+            toxicity_score = item.get("toxicity_score", 0.0)
+            toxicity_confidence = item.get("toxicity_confidence", 0.0)
+            
+            # Prepare JSON for issues
+            all_issues = item.get("all_issues", [])
+            issues_json = json.dumps(all_issues) if all_issues else None
+            
             # Validate sentiment values
             sentiment_score = max(-1.0, min(sentiment_score, 1.0))
             sentiment_confidence = max(0.0, min(sentiment_confidence, 1.0))
@@ -133,6 +153,64 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
             except Exception as sentiment_error:
                 logger.warning(f"Failed to insert sentiment: {sentiment_error}")
                 print(f"Warning: Sentiment insertion failed for {title}")
+            
+            # NEW: Insert Content Scores with all metrics
+            try:
+                # Store additional content scores with all the new metrics
+                scores_query = """
+                INSERT INTO content_scores
+                (source_id, context_relevance_score, context_relevance_confidence, 
+                conciseness_score, conciseness_confidence, 
+                correctness_score, correctness_confidence, 
+                hallucination_score, hallucination_confidence, 
+                helpfulness_score, helpfulness_confidence, 
+                relevance_score, relevance_confidence, 
+                toxicity_score, toxicity_confidence,
+                issues_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (source_id) DO UPDATE 
+                SET context_relevance_score = EXCLUDED.context_relevance_score,
+                    context_relevance_confidence = EXCLUDED.context_relevance_confidence,
+                    conciseness_score = EXCLUDED.conciseness_score,
+                    conciseness_confidence = EXCLUDED.conciseness_confidence,
+                    correctness_score = EXCLUDED.correctness_score,
+                    correctness_confidence = EXCLUDED.correctness_confidence,
+                    hallucination_score = EXCLUDED.hallucination_score,
+                    hallucination_confidence = EXCLUDED.hallucination_confidence,
+                    helpfulness_score = EXCLUDED.helpfulness_score,
+                    helpfulness_confidence = EXCLUDED.helpfulness_confidence,
+                    relevance_score = EXCLUDED.relevance_score,
+                    relevance_confidence = EXCLUDED.relevance_confidence,
+                    toxicity_score = EXCLUDED.toxicity_score,
+                    toxicity_confidence = EXCLUDED.toxicity_confidence,
+                    issues_json = EXCLUDED.issues_json;
+                """
+                
+                cursor.execute(
+                    scores_query,
+                    (
+                        source_id,
+                        context_relevance_score,
+                        context_relevance_confidence,
+                        conciseness_score,
+                        conciseness_confidence,
+                        correctness_score,
+                        correctness_confidence,
+                        hallucination_score,
+                        hallucination_confidence,
+                        helpfulness_score,
+                        helpfulness_confidence,
+                        relevance_score,
+                        relevance_confidence,
+                        toxicity_score,
+                        toxicity_confidence,
+                        issues_json
+                    )
+                )
+                print(f"Added comprehensive content scores for {title}")
+            except Exception as scores_error:
+                logger.warning(f"Failed to insert content scores: {scores_error}")
+                print(f"Warning: Content scores insertion failed for {title}")
             
             # Embedding Insertion with Robust Fallback
             try:
@@ -411,13 +489,11 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
                 logger.warning(f"Failed to insert target audiences: {audience_error}")
                 print(f"Warning: Target audience insertion failed for {title}")
             
-            # Modified: Remove benefit categories and examples code since columns don't exist
-            
             # Commit transaction
             conn.commit()
             success_count += 1
             logger.info(f"Successfully stored item {i+1}/{len(extracted_data)} with ID {source_id}")
-            print(f"✓ Successfully stored item {i+1} with ID {source_id}")
+            print(f"✓ Successfully stored item {i+1} with ID {source_id}: comprehensive data stored")
         
         except Exception as e:
             error_msg = f"Error storing item {i+1}: {str(e)}"
@@ -446,6 +522,7 @@ def store_extract_data(extracted_data: List[Dict[str, Any]]) -> List[int]:
     print(f"Total items processed: {total_processed}")
     print(f"Successfully stored: {success_count} records ({success_rate:.1f}%)")
     print(f"Failed to store: {error_count} records")
+    print(f"Enhanced data with comprehensive scores and metrics stored")
     print("="*50)
     
     return inserted_ids
@@ -512,6 +589,63 @@ def fetch_comprehensive_data(source_id: int) -> Dict[str, Any]:
                 "confidence": sentiment_data[2]
             }
         
+        # Get content scores (NEW)
+        scores_query = """
+        SELECT 
+            context_relevance_score, context_relevance_confidence, 
+            conciseness_score, conciseness_confidence, 
+            correctness_score, correctness_confidence, 
+            hallucination_score, hallucination_confidence, 
+            helpfulness_score, helpfulness_confidence, 
+            relevance_score, relevance_confidence, 
+            toxicity_score, toxicity_confidence,
+            issues_json
+        FROM content_scores
+        WHERE source_id = %s;
+        """
+        
+        cursor.execute(scores_query, (source_id,))
+        scores_data = cursor.fetchone()
+        
+        if scores_data:
+            result["content_scores"] = {
+                "context_relevance": {
+                    "score": float(scores_data[0]) if scores_data[0] is not None else 0.0,
+                    "confidence": float(scores_data[1]) if scores_data[1] is not None else 0.0
+                },
+                "conciseness": {
+                    "score": float(scores_data[2]) if scores_data[2] is not None else 0.0,
+                    "confidence": float(scores_data[3]) if scores_data[3] is not None else 0.0
+                },
+                "correctness": {
+                    "score": float(scores_data[4]) if scores_data[4] is not None else 0.0,
+                    "confidence": float(scores_data[5]) if scores_data[5] is not None else 0.0
+                },
+                "hallucination": {
+                    "score": float(scores_data[6]) if scores_data[6] is not None else 0.0,
+                    "confidence": float(scores_data[7]) if scores_data[7] is not None else 0.0
+                },
+                "helpfulness": {
+                    "score": float(scores_data[8]) if scores_data[8] is not None else 0.0,
+                    "confidence": float(scores_data[9]) if scores_data[9] is not None else 0.0
+                },
+                "relevance": {
+                    "score": float(scores_data[10]) if scores_data[10] is not None else 0.0,
+                    "confidence": float(scores_data[11]) if scores_data[11] is not None else 0.0
+                },
+                "toxicity": {
+                    "score": float(scores_data[12]) if scores_data[12] is not None else 0.0,
+                    "confidence": float(scores_data[13]) if scores_data[13] is not None else 0.0
+                }
+            }
+            
+            # Parse issues_json if present
+            if scores_data[14]:
+                try:
+                    result["content_issues"] = json.loads(scores_data[14])
+                except:
+                    result["content_issues"] = []
+        
         # Get themes
         themes_query = """
         SELECT theme
@@ -543,6 +677,9 @@ def fetch_comprehensive_data(source_id: int) -> Dict[str, Any]:
             
             for row in mentions_data:
                 mention = dict(zip(mention_columns, row))
+                # Convert numeric types to ensure JSON serialization
+                if "relevance_score" in mention and mention["relevance_score"] is not None:
+                    mention["relevance_score"] = float(mention["relevance_score"])
                 mentions.append(mention)
             
             result["abs_mentions"] = mentions

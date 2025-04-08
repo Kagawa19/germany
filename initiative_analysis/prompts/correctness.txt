@@ -1,0 +1,31 @@
+Evaluate the factual correctness of the following text excerpt with a focus on Access and Benefit Sharing (ABS) and related topics.
+
+Content: {content}
+
+Factual Correctness Assessment Criteria:
+- Accuracy of statements about ABS concepts
+- Alignment with established scientific and policy information
+- Precision of technical and scientific claims
+- Consistency with current knowledge in biodiversity and genetic resources
+
+Specific Evaluation Points:
+- Verify claims against known scientific and policy facts
+- Check for potential misrepresentations of ABS principles
+- Assess the reliability of statistical or numerical claims
+- Examine the accuracy of references to international protocols
+
+Respond in JSON format:
+{
+  "correctness_score": 0.0-1.0,
+  "correctness_confidence": 0.0-1.0,
+  "issues": [
+    "Specific factual inaccuracy",
+    "Potential misrepresentation"
+  ]
+}
+
+Scoring Guidelines:
+- 0.0-0.2: Contains multiple significant factual errors
+- 0.3-0.5: Several inaccuracies or misrepresentations
+- 0.6-0.8: Mostly accurate with minor inconsistencies
+- 0.9-1.0: Highly accurate and factually sound

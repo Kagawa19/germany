@@ -1,0 +1,34 @@
+Evaluate the relevance of the following content to Access and Benefit Sharing (ABS), the Nagoya Protocol, and related initiatives.
+
+Title: {title}
+URL: {url}
+Content: {content}
+
+Evaluation Criteria:
+- Directness of ABS-related discussions
+- Depth of engagement with ABS concepts
+- Significance to biodiversity and genetic resources
+- Potential impact on ABS policy or practice
+
+Assess based on:
+- Explicit mentions of ABS
+- Discussion of genetic resources
+- References to traditional knowledge
+- Biodiversity conservation contexts
+- Policy or implementation discussions
+
+Respond in JSON format:
+{
+  "context_relevance_score": 0.0-1.0,
+  "context_relevance_confidence": 0.0-1.0,
+  "key_relevance_points": [
+    "Specific reason for relevance",
+    "Another key relevance indicator"
+  ]
+}
+
+Scoring Guidelines:
+- 0.0-0.2: Minimal or no relevance
+- 0.3-0.5: Tangential or indirect relevance
+- 0.6-0.8: Moderate direct relevance
+- 0.9-1.0: Highly focused and directly relevant to ABS

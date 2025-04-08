@@ -341,7 +341,7 @@ def display_detailed_view(data):
 
 def export_content():
     """
-    Export content data in various formats.
+    Export content data in various formats with comprehensive data including all content scores.
     """
     st.title("Export Content Data")
     
@@ -382,7 +382,15 @@ def export_content():
     filter_theme = st.selectbox("Theme", themes)
     filter_sentiment = st.selectbox("Sentiment", sentiments)
     
+    # Add score filters
+    st.subheader("Score Filters")
+    
+    min_relevance = st.slider("Minimum Relevance Score", 0.0, 1.0, 0.0, 0.05)
+    min_correctness = st.slider("Minimum Correctness Score", 0.0, 1.0, 0.0, 0.05)
+    max_toxicity = st.slider("Maximum Toxicity Score", 0.0, 1.0, 1.0, 0.05)
+    
     # Date range
+    st.subheader("Date Range")
     min_date_query = text("SELECT MIN(publication_date) FROM content_sources WHERE publication_date IS NOT NULL")
     max_date_query = text("SELECT MAX(publication_date) FROM content_sources WHERE publication_date IS NOT NULL")
     
@@ -400,22 +408,8 @@ def export_content():
     else:
         date_range = None
     
-    # Prepare filters
-    filters = {}
-    if filter_language != "All":
-        filters['language'] = filter_language
-    if filter_theme != "All":
-        filters['theme'] = filter_theme
-    if filter_sentiment != "All":
-        filters['sentiment'] = filter_sentiment
-    
-    # Add date range to filters
-    if date_range:
-        filters['start_date'] = date_range[0]
-        filters['end_date'] = date_range[1]
-    
-    # Get data based on scope and filters
-    if st.button("Prepare Export"):
+    # Button to prepare the export
+    if st.button("Prepare Export", type="primary"):
         with st.spinner("Preparing export data..."):
             try:
                 if export_scope == "Basic Data":
@@ -496,34 +490,99 @@ def export_content():
                     query = " ".join(query_parts)
                     df = pd.read_sql(query, engine, params=query_params)
                     
-                else:  # Comprehensive Data
-                    # Use fetch_data function to get filtered data
-                    df = fetch_data(limit=10000, filters=filters)
+                else:  # Comprehensive Data - include all metrics and scores
+                    # Use the comprehensive view with all data fields
+                    query_parts = ["SELECT * FROM v_abs_content_analysis"]
+                    
+                    # Build all filter conditions
+                    where_clauses = []
+                    query_params = {}
+                    
+                    if filter_language != "All":
+                        where_clauses.append("language = %(language)s")
+                        query_params['language'] = filter_language
+                    
+                    if filter_theme != "All":
+                        where_clauses.append("themes @> ARRAY[%(theme)s]")
+                        query_params['theme'] = filter_theme
+                    
+                    if filter_sentiment != "All":
+                        where_clauses.append("overall_sentiment = %(sentiment)s")
+                        query_params['sentiment'] = filter_sentiment
+                    
+                    # Add score filters
+                    if min_relevance > 0:
+                        where_clauses.append("relevance_score >= %(min_relevance)s")
+                        query_params['min_relevance'] = min_relevance
+                    
+                    if min_correctness > 0:
+                        where_clauses.append("correctness_score >= %(min_correctness)s")
+                        query_params['min_correctness'] = min_correctness
+                    
+                    if max_toxicity < 1.0:
+                        where_clauses.append("toxicity_score <= %(max_toxicity)s")
+                        query_params['max_toxicity'] = max_toxicity
+                    
+                    if date_range:
+                        where_clauses.append("publication_date BETWEEN %(start_date)s AND %(end_date)s")
+                        query_params['start_date'] = date_range[0]
+                        query_params['end_date'] = date_range[1]
+                    
+                    if where_clauses:
+                        query_parts.append("WHERE " + " AND ".join(where_clauses))
+                    
+                    # Add ORDER BY clause
+                    query_parts.append("ORDER BY publication_date DESC, relevance_score DESC")
+                    
+                    # Execute query
+                    query = " ".join(query_parts)
+                    df = pd.read_sql(query, engine, params=query_params)
                 
                 # Format date columns
                 for col in df.columns:
                     if col.endswith('_date') and not df[col].empty:
                         df[col] = pd.to_datetime(df[col]).dt.strftime('%Y-%m-%d')
                 
+                # Special handling for JSONB fields
+                if 'issues_json' in df.columns:
+                    # Convert from JSONB to a string representation for CSV/Excel
+                    df['issues_json'] = df['issues_json'].apply(lambda x: json.dumps(x) if x else "")
+                
                 # Prepare export based on format
                 if export_format == "CSV":
                     csv_data = df.to_csv(index=False)
+                    filename = f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                    
                     st.download_button(
                         label="Download CSV",
                         data=csv_data,
-                        file_name=f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        file_name=filename,
                         mime="text/csv"
                     )
                     
+                    st.success(f"CSV export prepared with {len(df)} records.")
+                    
                 elif export_format == "JSON":
                     # Handle non-serializable types by converting them
+                    # For arrays, convert to standard Python lists
+                    for col in df.columns:
+                        if df[col].dtype == 'object':
+                            # Check if column contains arrays
+                            if len(df) > 0 and isinstance(df[col].iloc[0], list):
+                                df[col] = df[col].apply(lambda x: x if x else [])
+                    
+                    # Convert to JSON
                     json_data = df.to_json(orient="records", date_format="iso")
+                    filename = f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    
                     st.download_button(
                         label="Download JSON",
                         data=json_data,
-                        file_name=f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        file_name=filename,
                         mime="application/json"
                     )
+                    
+                    st.success(f"JSON export prepared with {len(df)} records.")
                     
                 elif export_format == "Excel":
                     # Create Excel file in memory
@@ -531,26 +590,63 @@ def export_content():
                     from xlsxwriter import Workbook
                     
                     buffer = io.BytesIO()
+                    
                     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                        df.to_excel(writer, sheet_name='ABS Initiative Data', index=False)
+                        # Write main data
+                        df.to_excel(writer, sheet_name='ABS Data', index=False)
+                        
+                        # Create a separate sheet for array/JSON data if needed
+                        array_columns = [col for col in df.columns if df[col].dtype == 'object' and 
+                                        len(df) > 0 and isinstance(df[col].iloc[0], list)]
+                        
+                        if array_columns and len(df) > 0:
+                            # Create a data dictionary sheet
+                            metadata_df = pd.DataFrame({
+                                'Column': array_columns,
+                                'Type': ['Array' for _ in array_columns],
+                                'Description': [f'Contains multiple {col} values' for col in array_columns]
+                            })
+                            metadata_df.to_excel(writer, sheet_name='Data Dictionary', index=False)
                     
                     buffer.seek(0)
+                    filename = f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
                     
                     st.download_button(
                         label="Download Excel",
                         data=buffer,
-                        file_name=f"abs_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        file_name=filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+                    
+                    st.success(f"Excel export prepared with {len(df)} records.")
                 
                 # Show preview
                 st.subheader("Data Preview")
                 st.markdown(f"**Total Records:** {len(df)}")
-                st.dataframe(df.head(10))
+                
+                # Display the columns in the dataframe
+                st.markdown("**Columns in export:**")
+                columns_text = ", ".join(df.columns)
+                st.markdown(f"`{columns_text}`")
+                
+                # Show a subset of the data
+                preview_columns = df.columns[:min(10, len(df.columns))]
+                st.dataframe(df[preview_columns].head(5))
+                
+                # Show statistics for score columns if in comprehensive mode
+                if export_scope == "Comprehensive Data":
+                    st.subheader("Score Statistics")
+                    
+                    score_cols = [col for col in df.columns if col.endswith('_score')]
+                    if score_cols:
+                        score_stats = df[score_cols].describe().T[['count', 'mean', 'min', 'max']].reset_index()
+                        score_stats.columns = ['Score', 'Count', 'Mean', 'Min', 'Max']
+                        st.dataframe(score_stats)
                 
             except Exception as e:
                 st.error(f"Error preparing export: {str(e)}")
                 logger.error(f"Export error: {str(e)}")
+                st.exception(e)
 
 def export_content_by_language(language="All"):
     """
